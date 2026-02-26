@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard - Rohi Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/teacher-dashboard.css">
+</head>
+<body>
+
+<div class="d-flex" id="wrapper">
+  <!-- Sidebar -->
+  <nav id="sidebar" class="bg-dark text-white p-3">
+    <h4 class="text-center mb-4">Teacher Panel</h4>
+    <ul class="nav flex-column">
+      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-book"></i> My Subjects</a></li>
+      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-upload"></i> Upload Questions</a></li>
+      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-card-checklist"></i> Manage Results</a></li>
+      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-people"></i> Students</a></li>
+      <li class="nav-item mt-3"><a href="portal.html" class="btn btn-outline-light w-100">Logout</a></li>
+    </ul>
+  </nav>
+
+  <!-- Page Content -->
+  <div id="page-content" class="flex-grow-1">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+      <div class="container-fluid">
+        <!-- Hamburger button -->
+        <button class="btn btn-dark d-lg-none" id="menu-toggle"><i class="bi bi-list"></i></button>
+        <span class="navbar-brand mb-0 h1">Welcome, Teacher</span>
+      </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-book"></i> My Subjects</h5>
+              <p class="card-text">View and manage assigned subjects.</p>
+              <a href="#" class="btn btn-primary btn-sm">Go</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-upload"></i> Upload Questions</h5>
+              <p class="card-text">Upload exam/test questions for CBT.</p>
+              <a href="#" class="btn btn-primary btn-sm">Upload</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-card-checklist"></i> Results</h5>
+              <p class="card-text">Enter or review students’ results.</p>
+              <a href="#" class="btn btn-primary btn-sm">Manage</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mt-2">
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-people"></i> Students</h5>
+              <p class="card-text">View students in your classes.</p>
+              <a href="#" class="btn btn-primary btn-sm">View</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-chat-left-text"></i> Announcements</h5>
+              <p class="card-text">Post announcements to your classes.</p>
+              <a href="#" class="btn btn-primary btn-sm">Post</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS for sidebar toggle -->
+<script>
+  const toggleBtn = document.getElementById("menu-toggle");
+  const sidebar = document.getElementById("sidebar");
+
+  toggleBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("active");
+  });
+</script>
+
+</body>
+</html>

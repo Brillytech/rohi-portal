@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Rohi Schools</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+  <div id="wrapper">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="brand">
+        Rohi Admin
+        <button id="close-btn"><i class="ri-close-line"></i></button>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#"><i class="ri-dashboard-line"></i> Dashboard</a></li>
+          <li><a href="#"><i class="ri-user-add-line"></i> Manage Students</a></li>
+          <li><a href="#"><i class="ri-user-settings-line"></i> Manage Teachers</a></li>
+          <li><a href="#"><i class="ri-book-2-line"></i> Exam Results</a></li>
+          <li><a href="#"><i class="ri-article-line"></i> Homepage Posts</a></li>
+          <li><a href="#"><i class="ri-settings-3-line"></i> Settings</a></li>
+          <li><a href="#"><i class="ri-logout-box-r-line"></i> Logout</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Overlay for mobile -->
+    <div id="overlay"></div>
+
+    <!-- Main content -->
+    <main id="content">
+      <header>
+        <button id="toggle-btn"><i class="ri-menu-line"></i></button>
+        <h1>Admin Dashboard</h1>
+      </header>
+
+      <section class="cards">
+        <div class="card">
+          <h3>Total Students</h3>
+          <p>1,230</p>
+        </div>
+        <div class="card">
+          <h3>Total Teachers</h3>
+          <p>85</p>
+        </div>
+        <div class="card">
+          <h3>Pending Results</h3>
+          <p>12</p>
+        </div>
+        <div class="card">
+          <h3>Homepage Posts</h3>
+          <p>7</p>
+        </div>
+      </section>
+
+      <section class="table-section">
+        <h2>Recent Registrations</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>John Doe</td>
+              <td>Student</td>
+              <td>Sept 28, 2025</td>
+              <td><span class="status active">Active</span></td>
+            </tr>
+            <tr>
+              <td>Mary Ann</td>
+              <td>Teacher</td>
+              <td>Sept 27, 2025</td>
+              <td><span class="status inactive">Inactive</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Elements
+    const toggleBtn = document.getElementById('toggle-btn');
+    const closeBtn = document.getElementById('close-btn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    // Open sidebar
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.add('open');
+      overlay.classList.add('show');
+    });
+
+    // Close sidebar
+    closeBtn.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+  </script>
+</body>
+</html>

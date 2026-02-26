@@ -1,0 +1,32 @@
+body {
+  background-color: #f9f9f9;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Dashboard Card Style */
+.dashboard-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+}
+
+.btn-outline-dark {
+  border-radius: 8px;
+  font-weight: 500;
+}
+/* Remove outline when clicking sidebar links */
+.nav-link:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Placeholder Profile Style */
+.bg-secondary i.bi-person-circle {
+  display: block;
+  margin: auto;
+}

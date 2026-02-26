@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rohi School Portal</title>
+  <link rel="stylesheet" href="css/portal.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+  <div class="portal-container d-flex">
+    <!-- Left Side (Logo & Image) -->
+    <div class="portal-left d-none d-md-flex flex-column justify-content-center align-items-center">
+      <img src="img/rohilo.jpg" alt="Rohi Logo" class="mb-3 portal-logo">
+      <h2 class="text-white text-center mb-2">Rohi Schools</h2>
+      <p class="text-white text-center fw-light">Raising principled leaders through sound education</p>
+    </div>
+
+    <!-- Right Side (Login Form) -->
+    <div class="portal-right d-flex align-items-center justify-content-center">
+      <div class="login-card p-4 shadow-sm">
+        <div class="text-start mb-3">
+  <a href="index.html" class="back-arrow">
+    <i class="bi bi-arrow-left"></i> Back to Home
+  </a>
+</div>
+        <h4 class="mb-3 text-center fw-bold">Portal Login</h4>
+       <form id="loginForm">
+  <div class="mb-3">
+    <label for="role" class="form-label">Select Role</label>
+    <select class="form-select" id="role" name="role">
+      <option value="student">Student</option>
+      <option value="staff">Staff</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label for="username" class="form-label">Username/ID</label>
+    <input type="text" class="form-control" id="username" name="username" placeholder="Enter your ID" required>
+  </div>
+
+  <div class="mb-3 position-relative">
+    <label for="password" class="form-label">Password</label>
+    <div class="input-group">
+      <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+      <span class="input-group-text" id="togglePassword" style="cursor:pointer;">
+        <i class="bi bi-eye-slash" id="eyeIcon"></i>
+      </span>
+    </div>
+  </div>
+  <div class="d-grid">
+    <button type="submit" class="btn btn-primary">Login</button>
+  </div>
+</form>
+        <p class="small text-center mt-3 text-muted">
+          Powered by <strong style="color: #ff8c00;">Brillytech Networks</strong>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Password toggle
+  const togglePassword = document.getElementById("togglePassword");
+  const passwordInput = document.getElementById("password");
+  const eyeIcon = document.getElementById("eyeIcon");
+
+  togglePassword.addEventListener("click", () => {
+    const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+    passwordInput.setAttribute("type", type);
+    eyeIcon.classList.toggle("bi-eye");
+    eyeIcon.classList.toggle("bi-eye-slash");
+  });
+
+  // Dummy users database
+  const users = [
+    { username: "admin001", password: "admin001", role: "admin" },
+    { username: "teacher001", password: "teach001", role: "staff" },
+    { username: "student001", password: "stud001", role: "student" }
+  ];
+
+  const loginForm = document.getElementById("loginForm");
+  const errorBox = document.createElement("div");
+  errorBox.classList.add("alert", "alert-danger", "mt-3", "d-none");
+  loginForm.appendChild(errorBox);
+
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const role = document.getElementById("role").value;
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    const user = users.find(
+      u => u.username === username && u.password === password && u.role === role
+    );
+
+    if (user) {
+      // Store fake session
+      localStorage.setItem("loggedInUser", JSON.stringify(user));
+
+      if (role === "admin") window.location.href = "admin-dashboard.html";
+      else if (role === "staff") window.location.href = "teacher-dashboard.html";
+      else if (role === "student") window.location.href = "student.html";
+    } else {
+      errorBox.textContent = "❌ Invalid login credentials!";
+      errorBox.classList.remove("d-none");
+    }
+  });
+</script>
+
+</body>
+</html>

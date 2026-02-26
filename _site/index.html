@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Rohi Group of Schools – Excellence in learning and character.">
+  <meta name="keywords" content="Rohi Schools, Education, Ogun, Learning, Students, Academics, Rohi, Rohi College">
+
+  <title>Rohi Schools</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <!-- AOS Animation CSS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Header/Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="/">Rohi Schools</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/about/">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="/portal.html">Portal</a></li>
+          <li class="nav-item"><a class="nav-link" href="/contact/">Contact</a></li>
+          <li class="nav-item"><a class="nav-link" href="/news/">News</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  
+<!-- Hero Carousel -->
+<div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="7000">
+  <div class="carousel-inner">
+
+    <!-- Slide 1 -->
+    <div class="carousel-item active">
+      <div class="hero-slide d-flex align-items-center justify-content-center text-center text-white"
+        style="background: url('/img/hero1.jpg') center/cover no-repeat; height: 90vh;">
+        <div class="overlay"></div>
+        <div class="container">
+          <h1 class="display-4 fw-bold">Welcome to Rohi Schools</h1>
+          <p class="lead">Raising principled leaders through sound education.</p>
+          <a href="/about/" class="btn hero-btn btn-lg mt-4">Learn About Us</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="carousel-item">
+      <div class="hero-slide d-flex align-items-center justify-content-center text-center text-white"
+        style="background: url('/img/hero2.jpg') center/cover no-repeat; height: 90vh;">
+        <div class="overlay"></div>
+        <div class="container">
+          <h1 class="display-4 fw-bold">Nursery, Primary & Secondary Excellence</h1>
+          <p class="lead">Academic strength. Moral integrity. Spiritual growth.</p>
+          <a href="/about/#programAccordion" class="btn hero-btn btn-lg mt-4">Explore Programs</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="carousel-item">
+      <div class="hero-slide d-flex align-items-center justify-content-center text-center text-white"
+        style="background: url('/img/hero3.jpg') center/cover no-repeat; height: 90vh;">
+        <div class="overlay"></div>
+        <div class="container">
+          <h1 class="display-4 fw-bold">We Shape Young Minds</h1>
+          <p class="lead">Rohi Schools – A foundation for greatness.</p>
+          <a href="/contact/" class="btn hero-btn btn-lg mt-4">Contact Admission</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Carousel Controls -->
+  <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon"></span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+    <span class="carousel-control-next-icon"></span>
+  </button>
+</div>
+
+<!-- News & Updates Section -->
+<section class="py-5 bg-light" id="news">
+  <div class="container">
+
+    <!-- Date & Time Widget -->
+    <div class="text-center py-2" id="datetime-widget">
+      <span id="date" class="d-block small text-muted"></span>
+      <span id="time" class="fw-semibold small"></span>
+    </div>
+
+    <h2 class="text-center fw-bold mb-3">Keep Up With Us</h2>
+    <p class="text-center text-muted mb-5">Stay updated with our latest announcements, events, and academic milestones.</p>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      
+      
+
+      
+        <div class="col-12">
+          <div class="alert alert-info mb-0">No updates yet. Check back soon.</div>
+        </div>
+      
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="/news/" class="btn btn-outline-dark">View All News</a>
+    </div>
+
+  </div>
+</section>
+<!-- ====== SCHOOL GALLERIES ====== -->
+<section class="py-5" id="school-gallery">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-4">Our School in Pictures</h2>
+
+    <!-- Navigation Tabs for Albums -->
+    <ul class="nav nav-pills justify-content-center mb-4" id="galleryTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="excursion-tab" data-bs-toggle="pill" data-bs-target="#excursion" type="button" role="tab">
+          Class Projects 2025
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="cultural-tab" data-bs-toggle="pill" data-bs-target="#cultural" type="button" role="tab">
+          Cultural Day
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="graduation-tab" data-bs-toggle="pill" data-bs-target="#graduation" type="button" role="tab">
+          Daily Moments
+        </button>
+      </li>
+    </ul>
+
+    <!-- Album Tabs -->
+    <div class="tab-content" id="galleryContent">
+
+      <!-- Class Projects Album -->
+      <div class="tab-pane fade show active" id="excursion" role="tabpanel">
+        <div class="row g-3">
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject1.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 1" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject2.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 2" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject3.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 3" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject4.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 4" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject5.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 5" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject6.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 6" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject7.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 7" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject8.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 8" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject9.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 9" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/classproject10.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Class Project 10" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Cultural Album -->
+      <div class="tab-pane fade" id="cultural" role="tabpanel">
+        <div class="row g-3">
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural1.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 1" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural2.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 2" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural3.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 3" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural4.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 4" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural5.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 5" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural6.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 6" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural7.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 7" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural8.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 8" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural9.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 9" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/cultural10.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Cultural 10" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+        </div>
+      </div>
+
+      <!-- Daily Moments Album -->
+      <div class="tab-pane fade" id="graduation" role="tabpanel">
+        <div class="row g-3">
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment1.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 1" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment2.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 2" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment3.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 3" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment4.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 4" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment5.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 5" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment6.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 6" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment7.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 7" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+          <div class="col-6 col-md-4 col-lg-3" data-aos="zoom-in">
+            <img src="/img/Dmoment8.jpg" class="img-fluid rounded shadow-sm gallery-img" alt="Daily Moment 8" data-bs-toggle="modal" data-bs-target="#imgModal" onclick="showImage(this)">
+          </div>
+          
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Image Modal Preview -->
+  <div class="modal fade" id="imgModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-transparent border-0">
+        <img id="modalImage" class="img-fluid rounded shadow-lg" src="" alt="">
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function showImage(img) {
+    const modalImage = document.getElementById("modalImage");
+    if (modalImage) modalImage.src = img.src;
+  }
+</script>
+
+<script>
+  function updateDateTime() {
+    const now = new Date();
+    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Africa/Lagos' };
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Africa/Lagos' };
+
+    const timeString = now.toLocaleTimeString('en-NG', timeOptions);
+    const dateString = now.toLocaleDateString('en-NG', dateOptions);
+
+    const timeEl = document.getElementById('time');
+    const dateEl = document.getElementById('date');
+    if (timeEl) timeEl.textContent = `🕒 ${timeString}`;
+    if (dateEl) dateEl.textContent = `📅 ${dateString}`;
+  }
+  setInterval(updateDateTime, 1000);
+  updateDateTime();
+</script>
+
+  <!-- ======= Footer ======= -->
+  <footer class="bg-dark text-white pt-5 pb-3 mt-5">
+    <div class="container">
+      <div class="row g-4">
+
+        <!-- Logo and Tagline -->
+        <div class="col-md-4">
+          <img src="/img/rohilo.jpg" alt="Rohi Logo" width="40" class="mb-2 rounded">
+          <h5 class="fw-bold mt-2">Rohi Schools</h5>
+          <p>Raising principled leaders through sound education.</p>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="col-md-4">
+          <h6 class="text-uppercase fw-bold mb-3">Quick Links</h6>
+          <ul class="list-unstyled">
+            <li><a href="/" class="footer-link">Home</a></li>
+            <li><a href="/about/" class="footer-link">About</a></li>
+            <li><a href="/about/#programAccordion" class="footer-link">Programs</a></li>
+            <li><a href="/contact/" class="footer-link">Contact</a></li>
+            <li><a href="/news/" class="footer-link">News</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact & Socials -->
+        <div class="col-md-4">
+          <h6 class="text-uppercase fw-bold mb-3">Contact Us</h6>
+          <p><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Adjacent Wise hotel New Range Ogun Radio,
+            Abeokuta Ogun State.</p>
+          <p><i class="bi bi-telephone-fill me-2"></i>+234 803 240 8415</p>
+          <p><i class="bi bi-telephone-fill me-2"></i>+234 703 136 2416</p>
+          <p><i class="bi bi-envelope-fill me-2"></i>rohicollegeogunradio@gmail.com</p>
+          <div class="mt-3">
+            <a href="https://www.facebook.com/profile.php?id=100063597926687" class="me-3 footer-icon"><i class="bi bi-facebook"></i></a>
+            <a href="https://wa.me/2347031362416" target="_blank" class="me-3 footer-icon"><i class="bi bi-whatsapp"></i></a>
+            <a href="#" class="me-3 footer-icon"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="footer-icon"><i class="bi bi-youtube"></i></a>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="border-top mt-4" />
+
+      <div class="text-center small">
+        <p class="mb-1">&copy; <span id="year"></span> Rohi Schools. All rights reserved.</p>
+        <p class="" style="color: #ffffffc5;">🔧 Powered by <strong style="color: var(--rc-primary);">Brillytech Networks</strong></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts (only once) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- AOS Animation Script -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    AOS.init();
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

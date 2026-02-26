@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
+  <link rel="stylesheet" href="css/students.css"/>
+</head>
+<body>
+<script>
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!user) {
+    // No login found, go back to portal
+    window.location.href = "portal.html"; // change this to your login page filename
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      const welcome = document.getElementById("welcomeUser");
+      if (welcome) welcome.textContent = `Welcome, ${user.username}! (${user.role.toUpperCase()})`;
+    });
+  }
+</script>
+
+<!-- Topbar -->
+<nav class="navbar navbar-dark fixed-top" style="background-color: rgba(0, 0, 0, 0.6);">
+  <div class="container-fluid d-flex align-items-center justify-content-between">
+    <span class="navbar-brand mb-0 h1">Rohi Portal</span>
+
+    <div class="d-flex align-items-center">
+      <span id="clock" class="text-light small me-3"></span>
+      <span class="text-light small me-3">Student Portal</span>
+      <i class="bi bi-bell text-white fs-5 me-3" title="Notifications"></i>
+      <i class="bi bi-gear text-white fs-5" title="Settings"></i>
+    </div>
+  </div>
+</nav>
+<!-- Sidebar -->
+<div class="offcanvas offcanvas-start bg-dark text-white" style="background-color: rgba(0, 0, 0, 0.6);" id="sidebar" >
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Menu</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul class="nav flex-column">
+      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-book me-2"></i>Subjects</a></li>
+      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-pen me-2"></i>Take Exam</a></li>
+      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-bar-chart-line me-2"></i>Results</a></li>
+      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Main Content -->
+<main class="container-fluid" style="margin-top: 70px;">
+  <div class="container py-4">
+
+    <!-- Welcome Block -->
+    <div class="bg-light p-4 rounded shadow-sm mb-4" data-aos="fade-down">
+      <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+        <div>
+          <h4>👋 Welcome, <strong>Oluwadarasimi Brilliance</strong></h4>
+          <p class="mb-1">Class: SS2 | Admission No: ROH12345</p>
+          <p>Academic Session: 2024/2025</p>
+        </div>
+        <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center" style="width: 80px; height: 80px;">
+          <i class="bi bi-person-circle fs-1 text-white"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-4" data-aos="fade-up">
+        <div class="card dashboard-card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-book fs-1 text-primary mb-2"></i>
+            <h5>Subjects</h5>
+            <p class="text-muted small">Check your registered subjects</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="card dashboard-card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-pen fs-1 text-success mb-2"></i>
+            <h5>Take Exam</h5>
+            <p class="text-muted small">Access available CBT exams</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="card dashboard-card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-bar-chart-line fs-1 text-warning mb-2"></i>
+            <h5>Results</h5>
+            <p class="text-muted small">View your performance and grades</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Access (no edit/profile change here) -->
+    <div class="bg-white p-4 rounded shadow-sm" data-aos="fade-up">
+      <h5 class="mb-3">Quick Access</h5>
+      <div class="row row-cols-1 row-cols-md-3 g-3">
+        <div class="col"><button class="btn btn-outline-dark w-100">Profile Details</button></div>
+        <div class="col"><button class="btn btn-outline-dark w-100">View Timetable</button></div>
+        <div class="col"><button class="btn btn-outline-dark w-100">Start Exam</button></div>
+        <div class="col"><button class="btn btn-outline-dark w-100">Check Results</button></div>
+        <div class="col"><button class="btn btn-outline-dark w-100">View Attendance</button></div>
+        <div class="col"><button class="btn btn-outline-dark w-100">Logout</button></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>AOS.init();</script>
+</body>
+</html>
