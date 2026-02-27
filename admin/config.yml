@@ -11,9 +11,10 @@ collections:
     folder: "src/posts"
     create: true
     slug: "{{slug}}"
+    format: "frontmatter"
     fields:
       - { label: "Title", name: "title", widget: "string" }
-      - { label: "Publish Date", name: "date", widget: "datetime", format: "YYYY-MM-DD" }
-      - { label: "Excerpt", name: "excerpt", widget: "text", required: false }
-      - { label: "Featured Image", name: "image", widget: "image", required: false }
+      - { label: "Publish Date", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - { label: "Image", name: "image", widget: "image", required: false }
+      - { label: "Tags", name: "tags", widget: "hidden", default: ["posts"] }
       - { label: "Body", name: "body", widget: "markdown" }
