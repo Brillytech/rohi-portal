@@ -60,6 +60,34 @@
             </div>
           </div>
         
+          <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+              
+                <img src="/img/uploads/img-20251001-wa0061.jpg" class="card-img-top" alt="Celebrating Our Cultural Heritage in Style!">
+              
+              <div class="card-body">
+                <h5 class="card-title">Celebrating Our Cultural Heritage in Style!</h5>
+                <small class="text-muted">February 27, 2026</small>
+                <p class="mt-2"></p>
+                <a href="/posts/celebrating-our-cultural-heritage-in-style/" class="btn btn-sm btn-outline-primary mt-2">Read More</a>
+              </div>
+            </div>
+          </div>
+        
+          <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+              
+                <img src="/img/uploads/img-20251001-wa0061.jpg" class="card-img-top" alt=" Celebrating Our Cultural Heritage in Style!">
+              
+              <div class="card-body">
+                <h5 class="card-title"> Celebrating Our Cultural Heritage in Style!</h5>
+                <small class="text-muted">February 27, 2026</small>
+                <p class="mt-2"></p>
+                <a href="/posts/celebrating-our-cultural-heritage-in-style-1/" class="btn btn-sm btn-outline-primary mt-2">Read More</a>
+              </div>
+            </div>
+          </div>
+        
       </div>
     
 
@@ -122,10 +150,24 @@
 
   <!-- AOS Animation Script -->
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
   <script>
     AOS.init();
     const yearEl = document.getElementById("year");
     if (yearEl) yearEl.textContent = new Date().getFullYear();
   </script>
+
+  <!-- ✅ NETLIFY IDENTITY WIDGET + FIX FOR FREE PLAN INVITE LINKS -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script>
+    // If Netlify sends invite/recovery tokens to "/" (free plan behavior),
+    // forward them to "/admin/" where the Identity widget is handled.
+    if (window.location.hash.includes("invite_token") ||
+        window.location.hash.includes("recovery_token") ||
+        window.location.hash.includes("confirmation_token")) {
+      window.location.href = "/admin/" + window.location.hash;
+    }
+  </script>
+
 </body>
 </html>

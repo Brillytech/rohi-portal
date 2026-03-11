@@ -173,10 +173,24 @@
 
   <!-- AOS Animation Script -->
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
   <script>
     AOS.init();
     const yearEl = document.getElementById("year");
     if (yearEl) yearEl.textContent = new Date().getFullYear();
   </script>
+
+  <!-- ✅ NETLIFY IDENTITY WIDGET + FIX FOR FREE PLAN INVITE LINKS -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script>
+    // If Netlify sends invite/recovery tokens to "/" (free plan behavior),
+    // forward them to "/admin/" where the Identity widget is handled.
+    if (window.location.hash.includes("invite_token") ||
+        window.location.hash.includes("recovery_token") ||
+        window.location.hash.includes("confirmation_token")) {
+      window.location.href = "/admin/" + window.location.hash;
+    }
+  </script>
+
 </body>
 </html>
