@@ -71,42 +71,42 @@ description: Rohi Group of Schools – Excellence in learning and character.
     <h2 class="text-center fw-bold mb-3">Keep Up With Us</h2>
     <p class="text-center text-muted mb-5">Stay updated with our latest announcements, events, and academic milestones.</p>
 
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-      {# Get only 3 latest posts (no head filter needed) #}
-      {% set latestPosts = collections.posts | slice(0, 3) %}
+    {% set latestPosts = collections.posts | head(3) %}
 
-      {% if latestPosts and latestPosts.length > 0 %}
+    {% if latestPosts and latestPosts.length > 0 %}
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for post in latestPosts %}
           <div class="col" data-aos="fade-up" data-aos-delay="{{ 100 * loop.index }}">
-            <div class="card h-100 shadow-sm news-card">
+            <div class="card h-100 shadow-sm news-card border-0">
 
               {% if post.data.image %}
-                <img src="{{ post.data.image }}" class="card-img-top" alt="{{ post.data.title }}">
+                <img src="{{ post.data.image }}" class="card-img-top news-img" alt="{{ post.data.title }}">
               {% endif %}
 
-              <div class="card-body">
-                <h5 class="card-title">{{ post.data.title }}</h5>
-                <small class="text-muted">{{ post.date | date("MMMM dd, yyyy") }}</small>
+              <div class="card-body d-flex flex-column">
+                <small class="news-date mb-2">{{ post.date | date("MMMM dd, yyyy") }}</small>
 
-                {% if post.data.excerpt %}
-                  <p class="card-text mt-2">{{ post.data.excerpt }}</p>
-                {% endif %}
+                <h5 class="card-title fw-bold">{{ post.data.title }}</h5>
 
-                <a href="{{ post.url }}" class="btn btn-sm btn-outline-primary mt-2">Read More</a>
+                <p class="card-text text-muted flex-grow-1 mt-2">
+                  {{ post.data.excerpt or post.templateContent | striptags | truncate(120) }}
+                </p>
+
+                <a href="{{ post.url }}" class="btn btn-dark btn-sm mt-3 align-self-start rounded-pill px-3">
+                  Read More
+                </a>
               </div>
 
             </div>
           </div>
         {% endfor %}
-      {% else %}
-        <div class="col-12">
-          <div class="alert alert-info mb-0">No updates yet. Check back soon.</div>
-        </div>
-      {% endif %}
-    </div>
+      </div>
+    {% else %}
+      <div class="alert alert-info mb-0">No updates yet. Check back soon.</div>
+    {% endif %}
 
     <div class="text-center mt-4">
-      <a href="/news/" class="btn btn-outline-dark">View All News</a>
+      <a href="/news/" class="btn btn-outline-dark rounded-pill px-4">View All News</a>
     </div>
 
   </div>
