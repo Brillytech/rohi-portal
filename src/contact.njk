@@ -22,9 +22,8 @@ permalink: /contact/
         <div class="p-4 shadow rounded bg-white">
 
           <!-- NOTE: This is UI only for now (no backend). We will connect it later. -->
-          <form name="contact" method="POST" data-netlify="true">
-            <input type="hidden" name="form-name" value="contact" />
-
+      <form name="contact" method="POST" data-netlify="true" action="/thank-you/">
+  <input type="hidden" name="form-name" value="contact">
             <div class="mb-3">
               <label class="form-label">Full Name</label>
               <input name="name" type="text" class="form-control" placeholder="Enter your name" required>
