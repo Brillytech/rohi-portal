@@ -21,6 +21,8 @@ collections:
 
       - { label: "Excerpt", name: "excerpt", widget: "text", required: false }
 
+      - { label: "Layout", name: "layout", widget: "hidden", default: "layouts/post.njk" }
+
       - { label: "Tags", name: "tags", widget: "hidden", default: ["posts"] }
 
       - { label: "Body", name: "body", widget: "markdown" }
