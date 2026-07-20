@@ -3,123 +3,358 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Student Dashboard</title>
+  <title>Student Dashboard | Rohi Portal</title>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
   <link rel="stylesheet" href="css/students.css"/>
 </head>
 <body>
-<script>
-  const user = JSON.parse(localStorage.getItem("loggedInUser"));
-  if (!user) {
-    // No login found, go back to portal
-    window.location.href = "portal.html"; // change this to your login page filename
-  } else {
-    document.addEventListener("DOMContentLoaded", () => {
-      const welcome = document.getElementById("welcomeUser");
-      if (welcome) welcome.textContent = `Welcome, ${user.username}! (${user.role.toUpperCase()})`;
-    });
-  }
-</script>
+  <script>
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
 
-<!-- Topbar -->
-<nav class="navbar navbar-dark fixed-top" style="background-color: rgba(0, 0, 0, 0.6);">
-  <div class="container-fluid d-flex align-items-center justify-content-between">
-    <span class="navbar-brand mb-0 h1">Rohi Portal</span>
+    if (!user) {
+      window.location.href = "portal.html";
+    }
+  </script>
 
-    <div class="d-flex align-items-center">
-      <span id="clock" class="text-light small me-3"></span>
-      <span class="text-light small me-3">Student Portal</span>
-      <i class="bi bi-bell text-white fs-5 me-3" title="Notifications"></i>
-      <i class="bi bi-gear text-white fs-5" title="Settings"></i>
+  <!-- Topbar -->
+  <nav class="navbar navbar-expand-lg student-topbar fixed-top">
+    <div class="container-fluid px-3 px-lg-4">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn sidebar-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+          <i class="bi bi-list"></i>
+        </button>
+        <a class="navbar-brand mb-0" href="#">Rohi Portal</a>
+      </div>
+
+      <div class="d-flex align-items-center gap-3 ms-auto">
+        <span id="clock" class="topbar-clock d-none d-md-inline"></span>
+        <span class="topbar-badge d-none d-sm-inline">Student Portal</span>
+        <button class="topbar-icon" type="button" title="Notifications">
+          <i class="bi bi-bell"></i>
+        </button>
+        <button class="topbar-icon" type="button" title="Settings">
+          <i class="bi bi-gear"></i>
+        </button>
+      </div>
     </div>
-  </div>
-</nav>
-<!-- Sidebar -->
-<div class="offcanvas offcanvas-start bg-dark text-white" style="background-color: rgba(0, 0, 0, 0.6);" id="sidebar" >
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title">Menu</h5>
-    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
-  </div>
-  <div class="offcanvas-body">
-    <ul class="nav flex-column">
-      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
-      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-book me-2"></i>Subjects</a></li>
-      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-pen me-2"></i>Take Exam</a></li>
-      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-bar-chart-line me-2"></i>Results</a></li>
-      <li class="nav-item mb-2"><a href="#" class="nav-link text-white"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-    </ul>
-  </div>
-</div>
+  </nav>
 
-<!-- Main Content -->
-<main class="container-fluid" style="margin-top: 70px;">
-  <div class="container py-4">
+  <!-- Sidebar -->
+  <div class="offcanvas offcanvas-start student-sidebar" tabindex="-1" id="sidebar">
+    <div class="offcanvas-header border-bottom">
+      <div>
+        <h5 class="offcanvas-title mb-0">Student Menu</h5>
+        <small class="text-white-50">Rohi School Portal</small>
+      </div>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
 
-    <!-- Welcome Block -->
-    <div class="bg-light p-4 rounded shadow-sm mb-4" data-aos="fade-down">
-      <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+    <div class="offcanvas-body d-flex flex-column">
+      <div class="student-mini-profile">
+        <div class="student-mini-avatar">
+          <i class="bi bi-person-circle"></i>
+        </div>
         <div>
-          <h4>👋 Welcome, <strong>Oluwadarasimi Brilliance</strong></h4>
-          <p class="mb-1">Class: SS2 | Admission No: ROH12345</p>
-          <p>Academic Session: 2024/2025</p>
+          <h6 class="mb-1" id="sidebarUserName">Student User</h6>
+          <small id="sidebarUserRole">Student</small>
         </div>
-        <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center" style="width: 80px; height: 80px;">
-          <i class="bi bi-person-circle fs-1 text-white"></i>
-        </div>
+      </div>
+
+      <ul class="nav flex-column sidebar-links mt-4">
+        <li class="nav-item">
+          <a href="#" class="nav-link active">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="bi bi-book"></i>
+            <span>Subjects</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="bi bi-calendar3"></i>
+            <span>Timetable</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="bi bi-pen"></i>
+            <span>Take Exam</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="bi bi-bar-chart-line"></i>
+            <span>Results</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="bi bi-person-vcard"></i>
+            <span>Profile</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="mt-auto pt-4">
+        <button class="btn sidebar-logout-btn w-100" id="logoutBtn">
+          <i class="bi bi-box-arrow-right me-2"></i>Logout
+        </button>
       </div>
     </div>
-
-    <!-- Dashboard Cards -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-4" data-aos="fade-up">
-        <div class="card dashboard-card h-100">
-          <div class="card-body text-center">
-            <i class="bi bi-book fs-1 text-primary mb-2"></i>
-            <h5>Subjects</h5>
-            <p class="text-muted small">Check your registered subjects</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-        <div class="card dashboard-card h-100">
-          <div class="card-body text-center">
-            <i class="bi bi-pen fs-1 text-success mb-2"></i>
-            <h5>Take Exam</h5>
-            <p class="text-muted small">Access available CBT exams</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-        <div class="card dashboard-card h-100">
-          <div class="card-body text-center">
-            <i class="bi bi-bar-chart-line fs-1 text-warning mb-2"></i>
-            <h5>Results</h5>
-            <p class="text-muted small">View your performance and grades</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Access (no edit/profile change here) -->
-    <div class="bg-white p-4 rounded shadow-sm" data-aos="fade-up">
-      <h5 class="mb-3">Quick Access</h5>
-      <div class="row row-cols-1 row-cols-md-3 g-3">
-        <div class="col"><button class="btn btn-outline-dark w-100">Profile Details</button></div>
-        <div class="col"><button class="btn btn-outline-dark w-100">View Timetable</button></div>
-        <div class="col"><button class="btn btn-outline-dark w-100">Start Exam</button></div>
-        <div class="col"><button class="btn btn-outline-dark w-100">Check Results</button></div>
-        <div class="col"><button class="btn btn-outline-dark w-100">View Attendance</button></div>
-        <div class="col"><button class="btn btn-outline-dark w-100">Logout</button></div>
-      </div>
-    </div>
-
   </div>
-</main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script>AOS.init();</script>
+  <!-- Main Content -->
+  <main class="student-main">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <!-- Welcome -->
+      <section class="welcome-card" data-aos="fade-down">
+        <div class="row align-items-center g-4">
+          <div class="col-lg-8">
+            <div class="welcome-text">
+              <div class="welcome-label">Student Dashboard</div>
+              <h2 id="welcomeUser">Welcome, Student</h2>
+              <p class="mb-2">Class: SS2 | Admission No: ROH12345</p>
+              <p class="mb-0">Academic Session: 2024/2025</p>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="welcome-profile-card">
+              <div class="welcome-avatar">
+                <i class="bi bi-person-circle"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">Portal Access</h6>
+                <small>Student account active</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats / Main Actions -->
+      <section class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-4" data-aos="fade-up">
+          <div class="portal-card action-card">
+            <div class="action-icon icon-blue">
+              <i class="bi bi-book"></i>
+            </div>
+            <div class="action-content">
+              <h5>Subjects</h5>
+              <p>Check your registered subjects and class materials.</p>
+              <a href="#" class="action-link">Open Subjects <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="portal-card action-card">
+            <div class="action-icon icon-green">
+              <i class="bi bi-pencil-square"></i>
+            </div>
+            <div class="action-content">
+              <h5>Take Exam</h5>
+              <p>Access available CBT exams and ongoing assessments.</p>
+              <a href="#" class="action-link">Start Exam <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="portal-card action-card">
+            <div class="action-icon icon-orange">
+              <i class="bi bi-bar-chart-line"></i>
+            </div>
+            <div class="action-content">
+              <h5>Results</h5>
+              <p>View your performance, scores and academic progress.</p>
+              <a href="student-results.html" class="action-link">View Results <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Access + Notices -->
+      <section class="row g-4 mb-4">
+        <div class="col-xl-8" data-aos="fade-up">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <div>
+                <h5 class="mb-1">Quick Access</h5>
+                <p class="mb-0">Fast actions for your day-to-day portal activities</p>
+              </div>
+            </div>
+
+            <div class="quick-actions-grid">
+              <a href="#" class="quick-action-btn"><i class="bi bi-person-vcard"></i><span>Profile Details</span></a>
+              <a href="#" class="quick-action-btn"><i class="bi bi-calendar-week"></i><span>View Timetable</span></a>
+              <a href="#" class="quick-action-btn"><i class="bi bi-journal-text"></i><span>Registered Subjects</span></a>
+              <a href="#" class="quick-action-btn"><i class="bi bi-check2-square"></i><span>Start Exam</span></a>
+              <a href="#" class="quick-action-btn"><i class="bi bi-clipboard-data"></i><span>Check Results</span></a>
+              <a href="#" class="quick-action-btn"><i class="bi bi-person-check"></i><span>Attendance</span></a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="portal-card section-card h-100">
+            <div class="section-header">
+              <div>
+                <h5 class="mb-1">Notices</h5>
+                <p class="mb-0">Latest updates from the school portal</p>
+              </div>
+            </div>
+
+            <div class="notice-list">
+              <div class="notice-item">
+                <span class="notice-dot"></span>
+                <div>
+                  <h6>CBT exam schedule available</h6>
+                  <p>Check your exam section for active assessments.</p>
+                </div>
+              </div>
+
+              <div class="notice-item">
+                <span class="notice-dot"></span>
+                <div>
+                  <h6>Second term result update</h6>
+                  <p>Results for selected classes are now accessible.</p>
+                </div>
+              </div>
+
+              <div class="notice-item">
+                <span class="notice-dot"></span>
+                <div>
+                  <h6>Attendance records</h6>
+                  <p>Your attendance summary has been updated.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Extra Section -->
+      <section class="row g-4">
+        <div class="col-xl-7" data-aos="fade-up">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <div>
+                <h5 class="mb-1">Recent Activity</h5>
+                <p class="mb-0">Overview of recent actions on your account</p>
+              </div>
+            </div>
+
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-icon"><i class="bi bi-book"></i></div>
+                <div>
+                  <h6>Subjects viewed</h6>
+                  <p>You checked your registered subjects recently.</p>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+                <div>
+                  <h6>Results accessed</h6>
+                  <p>Your academic records were updated successfully.</p>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-icon"><i class="bi bi-calendar-check"></i></div>
+                <div>
+                  <h6>Attendance updated</h6>
+                  <p>Your latest attendance information is available.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-5" data-aos="fade-up" data-aos-delay="100">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <div>
+                <h5 class="mb-1">Student Summary</h5>
+                <p class="mb-0">A quick look at your current portal records</p>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-box">
+                <h3>9</h3>
+                <p>Registered Subjects</p>
+              </div>
+              <div class="summary-box">
+                <h3>3</h3>
+                <p>Available Exams</p>
+              </div>
+              <div class="summary-box">
+                <h3>87%</h3>
+                <p>Attendance Rate</p>
+              </div>
+              <div class="summary-box">
+                <h3>B+</h3>
+                <p>Current Grade Trend</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <script>
+    AOS.init({
+      duration: 700,
+      once: true
+    });
+
+    const savedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+    if (savedUser) {
+      const userName = savedUser.username || "Student";
+      const role = savedUser.role || "student";
+
+      const welcomeUser = document.getElementById("welcomeUser");
+      const sidebarUserName = document.getElementById("sidebarUserName");
+      const sidebarUserRole = document.getElementById("sidebarUserRole");
+
+      welcomeUser.textContent = `Welcome, ${userName}`;
+      sidebarUserName.textContent = userName;
+      sidebarUserRole.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+    }
+
+    function updateClock() {
+      const clock = document.getElementById("clock");
+      const now = new Date();
+      clock.textContent = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      localStorage.removeItem("loggedInUser");
+      window.location.href = "portal.html";
+    });
+  </script>
 </body>
 </html>

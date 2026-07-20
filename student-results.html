@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Results | Rohi Portal</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="css/student-results.css" />
+</head>
+<body>
+  <script>
+    const savedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (!savedUser) {
+      window.location.href = "portal.html";
+    }
+  </script>
+
+  <div class="results-page">
+    <!-- Topbar -->
+    <header class="results-topbar">
+      <div class="container-fluid px-3 px-lg-4">
+        <div class="topbar-wrap">
+          <div class="topbar-left">
+            <a href="student.html" class="back-link">
+              <i class="bi bi-arrow-left"></i>
+              <span>Back to Dashboard</span>
+            </a>
+            <div>
+              <h1 class="page-title mb-0">Student Result Sheet</h1>
+              <small class="page-subtitle">View and download academic result</small>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <button class="btn topbar-btn" onclick="window.print()">
+              <i class="bi bi-printer"></i>
+              Print / Download PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="results-main">
+      <div class="container-fluid px-3 px-lg-4">
+        <div class="result-card" id="printArea">
+          <!-- School Header -->
+          <div class="school-header">
+            <div class="school-logo-wrap">
+              <img src="img/rohilo.jpg" alt="Rohi Logo" class="school-logo" />
+            </div>
+
+            <div class="school-info text-center">
+              <h2>ROHI SCHOOLS</h2>
+              <p class="mb-1">Comprehensive Digital Academic Report</p>
+              <small>Raising principled leaders through sound education</small>
+            </div>
+
+            <div class="result-badge">
+              <span>Official Result</span>
+            </div>
+          </div>
+
+          <!-- Student Info -->
+          <div class="info-grid">
+            <div class="info-box">
+              <h6>Student Name</h6>
+              <p id="studentName">Brilliance Anibaba</p>
+            </div>
+
+            <div class="info-box">
+              <h6>Admission No</h6>
+              <p>ROH/2025/0142</p>
+            </div>
+
+            <div class="info-box">
+              <h6>Class</h6>
+              <p>SS 2</p>
+            </div>
+
+            <div class="info-box">
+              <h6>Term</h6>
+              <p>Second Term</p>
+            </div>
+
+            <div class="info-box">
+              <h6>Session</h6>
+              <p>2025/2026</p>
+            </div>
+
+            <div class="info-box">
+              <h6>Position</h6>
+              <p>5th</p>
+            </div>
+          </div>
+
+          <!-- Result Table -->
+          <div class="table-card">
+            <div class="section-heading">
+              <h4>Academic Performance</h4>
+              <p class="mb-0">Breakdown of subject scores and grades</p>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table result-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>CA</th>
+                    <th>Exam</th>
+                    <th>Total</th>
+                    <th>Grade</th>
+                    <th>Remark</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>English Language</td>
+                    <td>18</td>
+                    <td>62</td>
+                    <td>80</td>
+                    <td><span class="grade grade-a">A</span></td>
+                    <td>Excellent</td>
+                  </tr>
+                  <tr>
+                    <td>Mathematics</td>
+                    <td>16</td>
+                    <td>58</td>
+                    <td>74</td>
+                    <td><span class="grade grade-a">A</span></td>
+                    <td>Very Good</td>
+                  </tr>
+                  <tr>
+                    <td>Biology</td>
+                    <td>15</td>
+                    <td>50</td>
+                    <td>65</td>
+                    <td><span class="grade grade-b">B</span></td>
+                    <td>Good</td>
+                  </tr>
+                  <tr>
+                    <td>Chemistry</td>
+                    <td>14</td>
+                    <td>47</td>
+                    <td>61</td>
+                    <td><span class="grade grade-b">B</span></td>
+                    <td>Good</td>
+                  </tr>
+                  <tr>
+                    <td>Physics</td>
+                    <td>17</td>
+                    <td>55</td>
+                    <td>72</td>
+                    <td><span class="grade grade-a">A</span></td>
+                    <td>Very Good</td>
+                  </tr>
+                  <tr>
+                    <td>Civic Education</td>
+                    <td>19</td>
+                    <td>60</td>
+                    <td>79</td>
+                    <td><span class="grade grade-a">A</span></td>
+                    <td>Excellent</td>
+                  </tr>
+                  <tr>
+                    <td>Economics</td>
+                    <td>13</td>
+                    <td>45</td>
+                    <td>58</td>
+                    <td><span class="grade grade-c">C</span></td>
+                    <td>Fair</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="summary-layout">
+            <div class="summary-card">
+              <div class="section-heading">
+                <h4>Performance Summary</h4>
+              </div>
+
+              <div class="summary-grid">
+                <div class="summary-box">
+                  <h3>489</h3>
+                  <p>Total Score</p>
+                </div>
+                <div class="summary-box">
+                  <h3>69.9%</h3>
+                  <p>Average Score</p>
+                </div>
+                <div class="summary-box">
+                  <h3>7</h3>
+                  <p>Subjects Offered</p>
+                </div>
+                <div class="summary-box">
+                  <h3>B+</h3>
+                  <p>Overall Grade</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="summary-card">
+              <div class="section-heading">
+                <h4>Remarks</h4>
+              </div>
+
+              <div class="remarks-box">
+                <p><strong>Class Teacher:</strong> A very promising performance. More effort should be given to Economics and Chemistry for better balance.</p>
+                <p><strong>Principal:</strong> Keep up the good work and remain focused.</p>
+              </div>
+
+              <div class="signature-grid">
+                <div class="signature-box">
+                  <span class="sign-line"></span>
+                  <p>Class Teacher</p>
+                </div>
+                <div class="signature-box">
+                  <span class="sign-line"></span>
+                  <p>Principal</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grading System -->
+          <div class="grading-card">
+            <div class="section-heading">
+              <h4>Grading System</h4>
+            </div>
+
+            <div class="grading-grid">
+              <div class="grading-item"><strong>A:</strong> 70 - 100</div>
+              <div class="grading-item"><strong>B:</strong> 60 - 69</div>
+              <div class="grading-item"><strong>C:</strong> 50 - 59</div>
+              <div class="grading-item"><strong>D:</strong> 45 - 49</div>
+              <div class="grading-item"><strong>E:</strong> 40 - 44</div>
+              <div class="grading-item"><strong>F:</strong> 0 - 39</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const resultUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (resultUser && resultUser.username) {
+      document.getElementById("studentName").textContent = resultUser.username;
+    }
+  </script>
+</body>
+</html>
