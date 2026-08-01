@@ -225,34 +225,8 @@
 
         <div class="panel">
           <div class="panel-header">
-            <h2>Assign a subject to a class</h2>
-            <p>Optionally pick a teacher — leave it unassigned if you're not sure yet.</p>
-          </div>
-          <form id="assignSubjectForm" class="inline-form">
-            <div class="form-row">
-              <div class="field">
-                <label for="assignSubjectSelect">Subject</label>
-                <select id="assignSubjectSelect" required><option value="">Select a subject</option></select>
-              </div>
-              <div class="field">
-                <label for="assignClassSelect">Class</label>
-                <select id="assignClassSelect" required><option value="">Select a class</option></select>
-              </div>
-              <div class="field">
-                <label for="assignTeacherSelect">Teacher (optional)</label>
-                <select id="assignTeacherSelect"><option value="">— Unassigned —</option></select>
-              </div>
-            </div>
-            <button type="submit" class="primary-btn" id="assignSubjectBtn">
-              <span class="btn-text">Assign</span>
-            </button>
-            <div id="assignSubjectResult"></div>
-          </form>
-        </div>
-
-        <div class="panel">
-          <div class="panel-header">
             <h2>All subjects</h2>
+            <p>Click a level to expand it, then use Assign or Delete right beside each subject.</p>
           </div>
           <div id="subjectGroups"></div>
           <p class="empty-hint" id="subjectsEmptyHint">No subjects added yet.</p>
@@ -823,22 +797,14 @@ document.getElementById("addClassForm").addEventListener("submit", async (e) => 
 // ---- Subjects ----
 let allSubjects = [];
 let allAssignments = [];
+let openCategoryGroups = new Set();
+let manageSubjectId = null; // which subject's assignment panel is currently open
 
 async function loadSubjects() {
   const { data: subjects } = await supabaseClient.from("subjects").select("*").order("name");
-  const { data: assignments } = await supabaseClient.from("subject_assignments").select("*");
+  const { data: assignments } = await supabaseClient.from("subject_teachers").select("*");
   allSubjects = subjects || [];
   allAssignments = assignments || [];
-
-  const subjectOptions = allSubjects.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
-  document.getElementById("assignSubjectSelect").innerHTML = '<option value="">Select a subject</option>' + subjectOptions;
-
-  const classOptions = allClasses.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
-  document.getElementById("assignClassSelect").innerHTML = '<option value="">Select a class</option>' + classOptions;
-
-  const teacherOptions = allTeachers.map((t) => `<option value="${t.id}">${t.full_name}</option>`).join("");
-  document.getElementById("assignTeacherSelect").innerHTML = '<option value="">— Unassigned —</option>' + teacherOptions;
-
   renderSubjects();
 }
 
@@ -867,59 +833,86 @@ function renderSubjects() {
     const subjectsInCategory = allSubjects.filter((s) => (s.category || "General") === category);
     if (!subjectsInCategory.length) return;
 
-    const categoryHeader = document.createElement("h3");
-    categoryHeader.className = "subject-category-heading";
-    categoryHeader.textContent = category;
-    container.appendChild(categoryHeader);
+    const isOpen = openCategoryGroups.has(category);
+    const groupEl = document.createElement("div");
+    groupEl.className = "class-group";
 
-    subjectsInCategory.forEach((subj) => {
-      const rows = allAssignments.filter((a) => a.subject_id === subj.id);
-      const groupEl = document.createElement("div");
-      groupEl.className = "class-group";
+    const rowsHtml = subjectsInCategory.map((subj) => {
+      const assignmentsForSubject = allAssignments.filter((a) => a.subject_id === subj.id);
+      const summary = assignmentsForSubject.length
+        ? assignmentsForSubject.map((a) => allTeachers.find((t) => t.id === a.teacher_id)?.full_name).filter(Boolean).join(", ")
+        : "No teacher assigned yet";
 
-      const rowsHtml = rows.length
-        ? rows.map((a) => {
-            const cls = allClasses.find((c) => c.id === a.class_id);
-            const teacher = allTeachers.find((t) => t.id === a.teacher_id);
-            return `<tr>
-              <td>${cls ? cls.name : "—"}</td>
-              <td>${teacher ? teacher.full_name : '<span class="empty-hint" style="padding:0;display:inline;">Unassigned</span>'}</td>
-              <td><button class="approve-btn delete-btn unassign-subject-btn" data-id="${a.id}">Remove</button></td>
-            </tr>`;
-          }).join("")
-        : `<tr><td colspan="3" class="empty-hint">Not assigned to any class yet.</td></tr>`;
+      let manageRow = "";
+      if (manageSubjectId === subj.id) {
+        const assignedTeacherIds = new Set(assignmentsForSubject.map((a) => a.teacher_id));
+        const checkboxes = allTeachers.map((t) => `
+          <label class="class-checkbox">
+            <input type="checkbox" value="${t.id}" ${assignedTeacherIds.has(t.id) ? "checked" : ""} />
+            ${t.full_name}
+          </label>`).join("");
 
-      groupEl.innerHTML = `
-        <button type="button" class="class-group-header" data-group="subj-${subj.id}">
-          <span class="class-group-name"><i class="bi bi-chevron-right"></i> ${subj.name}</span>
-          <span class="class-group-count">${rows.length} class${rows.length === 1 ? "" : "es"}
-            <button class="approve-btn delete-btn delete-subject-btn" data-id="${subj.id}" style="margin-left:10px;">Delete subject</button>
-          </span>
-        </button>
-        <div class="class-group-body" style="display:none;">
-          <table class="data-table">
-            <thead><tr><th>Class</th><th>Teacher</th><th></th></tr></thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-        </div>`;
-      container.appendChild(groupEl);
-    });
+        manageRow = `<tr class="manage-subject-row">
+          <td colspan="3">
+            <p class="empty-hint" style="text-align:left;padding:0 0 0.6rem;">Tick every teacher who teaches this subject:</p>
+            <div class="class-checkbox-grid">${checkboxes || '<p class="empty-hint">No approved teachers yet.</p>'}</div>
+            <div style="margin-top:0.75rem;display:flex;gap:8px;">
+              <button type="button" class="approve-btn save-subject-assign-btn" data-subject="${subj.id}">Save</button>
+              <button type="button" class="approve-btn cancel-manage-btn">Close</button>
+            </div>
+          </td>
+        </tr>`;
+      }
+
+      return `<tr>
+        <td>${subj.name}</td>
+        <td>${summary}</td>
+        <td class="row-actions">
+          <button class="approve-btn manage-subject-btn" data-id="${subj.id}">${manageSubjectId === subj.id ? "Close" : "Assign"}</button>
+          <button class="approve-btn delete-btn delete-subject-btn" data-id="${subj.id}">Delete</button>
+        </td>
+      </tr>${manageRow}`;
+    }).join("");
+
+    groupEl.innerHTML = `
+      <button type="button" class="class-group-header" data-category="${category}">
+        <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${category}</span>
+        <span class="class-group-count">${subjectsInCategory.length} subject${subjectsInCategory.length === 1 ? "" : "s"}</span>
+      </button>
+      <div class="class-group-body${isOpen ? " open" : ""}">
+        <table class="data-table">
+          <thead><tr><th>Subject</th><th>Teacher(s)</th><th></th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+    container.appendChild(groupEl);
   });
 
   container.querySelectorAll(".class-group-header").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      if (e.target.closest(".delete-subject-btn")) return; // don't toggle when clicking delete
-      const body = btn.nextElementSibling;
-      const chevron = btn.querySelector("i");
-      const isOpen = body.style.display === "block";
-      body.style.display = isOpen ? "none" : "block";
-      chevron.className = isOpen ? "bi bi-chevron-right" : "bi bi-chevron-down";
+    btn.addEventListener("click", () => {
+      const category = btn.dataset.category;
+      if (openCategoryGroups.has(category)) openCategoryGroups.delete(category);
+      else openCategoryGroups.add(category);
+      renderSubjects();
+    });
+  });
+
+  container.querySelectorAll(".manage-subject-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      manageSubjectId = manageSubjectId === btn.dataset.id ? null : btn.dataset.id;
+      renderSubjects();
+    });
+  });
+
+  container.querySelectorAll(".cancel-manage-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      manageSubjectId = null;
+      renderSubjects();
     });
   });
 
   container.querySelectorAll(".delete-subject-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
+    btn.addEventListener("click", async () => {
       if (!(await appConfirm("Delete this subject? This also removes all its class assignments."))) return;
       const { error } = await supabaseClient.from("subjects").delete().eq("id", btn.dataset.id);
       if (!error) {
@@ -931,14 +924,40 @@ function renderSubjects() {
     });
   });
 
-  container.querySelectorAll(".unassign-subject-btn").forEach((btn) => {
+  container.querySelectorAll(".save-subject-assign-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const { error } = await supabaseClient.from("subject_assignments").delete().eq("id", btn.dataset.id);
-      if (!error) {
-        logActivity(`Removed a subject-class assignment`);
+      const subjectId = btn.dataset.subject;
+      const wrapper = btn.closest(".manage-subject-row");
+      const checkedIds = new Set(
+        [...wrapper.querySelectorAll(".class-checkbox input:checked")].map((el) => el.value)
+      );
+      const currentlyAssigned = allAssignments.filter((a) => a.subject_id === subjectId);
+      const currentlyAssignedIds = new Set(currentlyAssigned.map((a) => a.teacher_id));
+
+      const toAdd = [...checkedIds].filter((id) => !currentlyAssignedIds.has(id));
+      const toRemove = currentlyAssigned.filter((a) => !checkedIds.has(a.teacher_id));
+
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+
+      try {
+        if (toAdd.length) {
+          const { error } = await supabaseClient.from("subject_teachers").insert(
+            toAdd.map((teacherId) => ({ subject_id: subjectId, teacher_id: teacherId }))
+          );
+          if (error) throw error;
+        }
+        if (toRemove.length) {
+          const { error } = await supabaseClient.from("subject_teachers").delete().in("id", toRemove.map((a) => a.id));
+          if (error) throw error;
+        }
+        logActivity(`Updated teacher assignments for a subject`);
+        manageSubjectId = null;
         loadSubjects();
-      } else {
-        showToast(error.message);
+      } catch (err) {
+        showToast(err.message);
+        btn.disabled = false;
+        btn.textContent = "Save";
       }
     });
   });
@@ -960,9 +979,10 @@ document.getElementById("addSubjectForm").addEventListener("submit", async (e) =
     resultBox.innerHTML = `<div class="alert alert-success">Subject added.</div>`;
     logActivity(`Added subject <strong>${name}</strong>`);
     document.getElementById("addSubjectForm").reset();
+    openCategoryGroups.add(category);
     loadSubjects();
   } catch (err) {
-    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message.includes("duplicate") ? "This subject already exists at this level." : err.message}</div>`;
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<span class="btn-text">Add subject</span>';
@@ -996,40 +1016,15 @@ document.getElementById("bulkSubjectForm").addEventListener("submit", async (e) 
   }
 
   resultBox.innerHTML = failed.length
-    ? `<div class="alert alert-danger">${successCount} added. Skipped (likely already exist): ${failed.join(", ")}</div>`
+    ? `<div class="alert alert-danger">${successCount} added. Already existed at this level, skipped: ${failed.join(", ")}</div>`
     : `<div class="alert alert-success">${successCount} subjects added under ${category}.</div>`;
 
   logActivity(`Bulk-added ${successCount} subjects under ${category}`);
   document.getElementById("bulkSubjectForm").reset();
+  openCategoryGroups.add(category);
   loadSubjects();
   btn.disabled = false;
   btn.innerHTML = '<span class="btn-text">Add all</span>';
-});
-
-document.getElementById("assignSubjectForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const subject_id = document.getElementById("assignSubjectSelect").value;
-  const class_id = document.getElementById("assignClassSelect").value;
-  const teacher_id = document.getElementById("assignTeacherSelect").value || null;
-  const btn = document.getElementById("assignSubjectBtn");
-  const resultBox = document.getElementById("assignSubjectResult");
-  resultBox.innerHTML = "";
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Assigning...';
-
-  try {
-    const { error } = await supabaseClient.from("subject_assignments").insert({ subject_id, class_id, teacher_id });
-    if (error) throw error;
-    resultBox.innerHTML = `<div class="alert alert-success">Assigned.</div>`;
-    logActivity(`Assigned a subject to a class`);
-    document.getElementById("assignSubjectForm").reset();
-    loadSubjects();
-  } catch (err) {
-    resultBox.innerHTML = `<div class="alert alert-danger">${err.message.includes("duplicate") ? "This subject is already assigned to that class." : err.message}</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<span class="btn-text">Assign</span>';
-  }
 });
 
 // ---- Students ----
@@ -1109,7 +1104,7 @@ function renderStudents(list) {
         <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${groupName}</span>
         <span class="class-group-count">${visibleCount} student${visibleCount === 1 ? "" : "s"}</span>
       </button>
-      <div class="class-group-body" style="display:${isOpen ? "block" : "none"};">
+      <div class="class-group-body${isOpen ? " open" : ""}">
         <table class="data-table">
           <thead><tr><th>Full name</th><th>Surname</th><th>Class</th><th>Portal number</th><th></th></tr></thead>
           <tbody>${rowsHtml}</tbody>
