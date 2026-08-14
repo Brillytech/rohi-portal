@@ -10,63 +10,69 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
   <link rel="stylesheet" href="css/students.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body style="padding-top:0;">
 
-  <nav class="navbar navbar-expand-lg student-topbar">
-    <div class="container-fluid px-3 px-lg-4">
-      <div class="d-flex align-items-center gap-2">
-        <a href="student.html" class="back-link" style="color:var(--purple-deep);text-decoration:none;font-weight:600;">
-          <i class="bi bi-arrow-left"></i> Back to Dashboard
-        </a>
+  <div id="loadingState" class="text-center py-5">
+    <div class="list-empty"><i class="bi bi-hourglass-split"></i>Loading exam...</div>
+  </div>
+
+  <div id="unavailableState" class="container-fluid px-3 py-5 text-center" style="display:none;max-width:520px;">
+    <i class="bi bi-clipboard-x" style="font-size:2.5rem;color:#cbd5e1;"></i>
+    <p class="mt-3 mb-3 text-muted" id="unavailableText">This exam isn't available to you.</p>
+    <a href="student.html" class="action-link">Back to Dashboard</a>
+  </div>
+
+  <div id="examWrap" style="display:none;">
+    <header class="exam-header">
+      <div class="exam-header-left">
+        <a href="student.html" class="exam-back-link"><i class="bi bi-arrow-left"></i> Exit</a>
+        <div>
+          <h5 id="examTitle">—</h5>
+          <p id="examMeta">—</p>
+        </div>
       </div>
-      <div class="d-flex align-items-center gap-3 ms-auto">
-        <span id="examTimer" class="topbar-badge" style="display:none;"></span>
-      </div>
-    </div>
-  </nav>
+      <div class="exam-timer" id="examTimer">--:--</div>
+    </header>
 
-  <main class="container-fluid px-3 px-lg-4 py-4" style="max-width:820px;">
-
-    <div id="loadingState" class="portal-card section-card text-center py-5">
-      <div class="list-empty"><i class="bi bi-hourglass-split"></i>Loading exam...</div>
-    </div>
-
-    <div id="unavailableState" class="portal-card section-card text-center py-5" style="display:none;">
-      <i class="bi bi-clipboard-x" style="font-size:2.5rem;color:#cbd5e1;"></i>
-      <p class="mt-3 mb-3 text-muted" id="unavailableText">This exam isn't available to you.</p>
-      <a href="student.html" class="action-link">Back to Dashboard</a>
-    </div>
-
-    <div id="examWrap" style="display:none;">
-      <div class="portal-card section-card mb-4">
-        <div class="section-header">
-          <h5 class="mb-1" id="examTitle">—</h5>
-          <p class="mb-0" id="examMeta">—</p>
+    <main class="exam-body">
+      <div>
+        <div class="exam-question-card">
+          <div class="exam-question-progress" id="questionProgress">Question 1</div>
+          <p class="exam-question-text katex-content" id="questionText"></p>
+          <img id="questionImage" class="exam-question-image" style="display:none;" />
+          <div id="optionsWrap"></div>
+          <button type="button" class="exam-flag-btn" id="flagBtn"><i class="bi bi-flag"></i> Flag for review</button>
+        </div>
+        <div class="exam-nav-row">
+          <button type="button" class="exam-nav-btn" id="prevBtn"><i class="bi bi-arrow-left"></i> Previous</button>
+          <button type="button" class="exam-nav-btn primary" id="nextBtn">Next <i class="bi bi-arrow-right"></i></button>
         </div>
       </div>
 
-      <form id="examForm">
-        <div id="questionsWrap"></div>
-
-        <div class="portal-card section-card d-flex justify-content-between align-items-center">
-          <p class="mb-0 text-muted" id="answeredCount">0 of 0 answered</p>
-          <button type="submit" class="btn sidebar-logout-btn" style="background:linear-gradient(135deg, var(--purple-deep), var(--purple-dark));color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:600;" id="submitExamBtn">
-            Submit Exam
-          </button>
+      <aside class="exam-palette-col">
+        <p class="exam-palette-summary" id="answeredCount">0 of 0 answered</p>
+        <div class="palette-grid" id="paletteGrid"></div>
+        <div class="exam-palette-legend">
+          <span><span class="legend-dot" style="background:var(--success-bg);border:1.5px solid var(--success-fg);"></span> Answered</span>
+          <span><span class="legend-dot" style="background:rgba(255,255,255,0.6);border:1.5px solid var(--border-c);"></span> Not answered</span>
+          <span><span class="legend-dot" style="background:#b56200;"></span> Flagged for review</span>
         </div>
-      </form>
-    </div>
+        <button type="button" class="exam-nav-btn primary" id="submitExamBtn" style="width:100%;justify-content:center;">Submit Exam</button>
+      </aside>
+    </main>
+  </div>
 
-    <div id="scoreState" class="portal-card section-card text-center py-5" style="display:none;">
-      <i class="bi bi-check-circle-fill" style="font-size:2.5rem;color:var(--success-fg);"></i>
-      <h4 class="mt-3 mb-1" id="scoreText">—</h4>
-      <p class="text-muted mb-3">Your teacher can review this in their gradebook.</p>
-      <a href="student.html" class="action-link">Back to Dashboard</a>
-    </div>
-
-  </main>
+  <div id="scoreState" class="container-fluid px-3 py-5 text-center" style="display:none;max-width:520px;">
+    <i class="bi bi-check-circle-fill" style="font-size:2.5rem;color:var(--success-fg);"></i>
+    <h4 class="mt-3 mb-1" id="scoreText">—</h4>
+    <p class="text-muted mb-3">Your result will be released on your report sheet once it's ready — check with your teacher.</p>
+    <a href="student.html" class="action-link">Back to Dashboard</a>
+  </div>
 
   <div class="toast-stack" id="toastStack"></div>
 
@@ -122,22 +128,54 @@
 
     function showState(id) {
       ["loadingState", "unavailableState", "examWrap", "scoreState"].forEach((s) => {
-        document.getElementById(s).style.display = s === id ? (s === "examWrap" ? "block" : "block") : "none";
+        document.getElementById(s).style.display = s === id ? "block" : "none";
       });
     }
 
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str ?? "";
+      return div.innerHTML;
+    }
+
+    function renderMath(container) {
+      if (window.renderMathInElement && container) {
+        renderMathInElement(container, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
+          ],
+          throwOnError: false,
+        });
+      }
+    }
+
+    async function resolveImageUrl(path) {
+      if (!path) return null;
+      const { data } = await supabaseClient.storage.from("exam-images").createSignedUrl(path, 3600);
+      return data ? data.signedUrl : null;
+    }
+
+    // ---- Exam state ----
+    let questions = [];
+    let answers = {};
+    let flagged = new Set();
+    let currentIndex = 0;
+    let imageUrls = {};
+    let examId = null;
     let timerInterval = null;
     let autoSubmitted = false;
 
     function startTimer(minutes, onExpire) {
       let secondsLeft = minutes * 60;
       const timerEl = document.getElementById("examTimer");
-      timerEl.style.display = "inline-block";
 
       function tick() {
         const mins = Math.floor(secondsLeft / 60);
         const secs = secondsLeft % 60;
-        timerEl.textContent = `${mins}:${secs.toString().padStart(2, "0")} left`;
+        timerEl.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
+        timerEl.classList.toggle("timer-warning", secondsLeft <= 300 && secondsLeft > 60);
+        timerEl.classList.toggle("timer-critical", secondsLeft <= 60);
         if (secondsLeft <= 0) {
           clearInterval(timerInterval);
           onExpire();
@@ -149,9 +187,95 @@
       timerInterval = setInterval(tick, 1000);
     }
 
+    function renderPalette() {
+      const grid = document.getElementById("paletteGrid");
+      grid.innerHTML = questions.map((q, i) => {
+        const classes = ["palette-btn"];
+        if (i === currentIndex) classes.push("current");
+        if (answers[q.question_id]) classes.push("answered");
+        if (flagged.has(q.question_id)) classes.push("flagged");
+        return `<button type="button" class="${classes.join(" ")}" data-index="${i}">${i + 1}</button>`;
+      }).join("");
+
+      grid.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => goToQuestion(parseInt(btn.dataset.index, 10)));
+      });
+
+      const answeredCount = Object.keys(answers).length;
+      document.getElementById("answeredCount").textContent = `${answeredCount} of ${questions.length} answered`;
+    }
+
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      document.getElementById("questionProgress").textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+      document.getElementById("questionText").innerHTML = escapeHtml(q.question_text);
+      renderMath(document.getElementById("questionText"));
+
+      const imgEl = document.getElementById("questionImage");
+      if (imageUrls[q.question_id]) {
+        imgEl.src = imageUrls[q.question_id];
+        imgEl.style.display = "block";
+      } else {
+        imgEl.style.display = "none";
+      }
+
+      const optionsWrap = document.getElementById("optionsWrap");
+      optionsWrap.innerHTML = ["a", "b", "c", "d"].map((opt) => `
+        <button type="button" class="exam-option katex-content ${answers[q.question_id] === opt ? "selected" : ""}" data-opt="${opt}">
+          <span class="exam-option-letter">${opt.toUpperCase()}</span>
+          <span>${escapeHtml(q["option_" + opt])}</span>
+        </button>`).join("");
+      renderMath(optionsWrap);
+
+      optionsWrap.querySelectorAll(".exam-option").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          answers[q.question_id] = btn.dataset.opt;
+          renderQuestion();
+          renderPalette();
+        });
+      });
+
+      const flagBtn = document.getElementById("flagBtn");
+      flagBtn.classList.toggle("flagged", flagged.has(q.question_id));
+      flagBtn.innerHTML = flagged.has(q.question_id)
+        ? '<i class="bi bi-flag-fill"></i> Flagged — click to unflag'
+        : '<i class="bi bi-flag"></i> Flag for review';
+
+      document.getElementById("prevBtn").disabled = currentIndex === 0;
+      const nextBtn = document.getElementById("nextBtn");
+      if (currentIndex === questions.length - 1) {
+        nextBtn.innerHTML = 'Submit Exam <i class="bi bi-check2"></i>';
+      } else {
+        nextBtn.innerHTML = 'Next <i class="bi bi-arrow-right"></i>';
+      }
+
+      renderPalette();
+    }
+
+    function goToQuestion(index) {
+      currentIndex = Math.max(0, Math.min(questions.length - 1, index));
+      renderQuestion();
+    }
+
+    document.getElementById("flagBtn").addEventListener("click", () => {
+      const q = questions[currentIndex];
+      if (flagged.has(q.question_id)) flagged.delete(q.question_id); else flagged.add(q.question_id);
+      renderQuestion();
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => goToQuestion(currentIndex - 1));
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      if (currentIndex === questions.length - 1) {
+        submitExam(false);
+      } else {
+        goToQuestion(currentIndex + 1);
+      }
+    });
+    document.getElementById("submitExamBtn").addEventListener("click", () => submitExam(false));
+
     async function init() {
       const params = new URLSearchParams(window.location.search);
-      const examId = params.get("exam");
+      examId = params.get("exam");
 
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -170,90 +294,92 @@
         return;
       }
 
+      // Pre-flight check against the exam's own metadata (readable by the
+      // student via RLS since it's published + matches their class) so we
+      // can give a specific reason instead of a generic "not available" —
+      // the get_exam_for_taking()/submit_exam_attempt() functions remain
+      // the actual security boundary regardless of what this shows.
+      const { data: examRow } = await supabaseClient.from("exams").select("*").eq("id", examId).maybeSingle();
+      if (!examRow) {
+        showState("unavailableState");
+        document.getElementById("unavailableText").textContent = "This exam isn't available for your class.";
+        return;
+      }
+
+      const now = new Date();
+      if (examRow.available_from && now < new Date(examRow.available_from)) {
+        showState("unavailableState");
+        document.getElementById("unavailableText").textContent = `This exam opens on ${new Date(examRow.available_from).toLocaleString()}.`;
+        return;
+      }
+      if (examRow.available_until && now > new Date(examRow.available_until)) {
+        showState("unavailableState");
+        document.getElementById("unavailableText").textContent = `This exam closed on ${new Date(examRow.available_until).toLocaleString()}.`;
+        return;
+      }
+
+      const { data: priorAttempt } = await supabaseClient.from("exam_attempts").select("*").eq("exam_id", examId).eq("student_id", session.user.id).maybeSingle();
+      if (priorAttempt) {
+        showState("scoreState");
+        document.getElementById("scoreText").textContent = "You've already completed this exam.";
+        return;
+      }
+
       const { data: rows, error } = await supabaseClient.rpc("get_exam_for_taking", { p_exam_id: examId });
 
       if (error || !rows || !rows.length) {
         showState("unavailableState");
-        document.getElementById("unavailableText").textContent =
-          "This exam isn't available — it may not be published for your class, or you've already submitted it.";
+        document.getElementById("unavailableText").textContent = "This exam isn't available right now.";
         return;
       }
 
+      questions = rows;
       const { title, duration_minutes } = rows[0];
       document.getElementById("examTitle").textContent = title;
       document.getElementById("examMeta").textContent = `${rows.length} question${rows.length === 1 ? "" : "s"} · ${duration_minutes} minute${duration_minutes === 1 ? "" : "s"}`;
 
-      const questionsWrap = document.getElementById("questionsWrap");
-      questionsWrap.innerHTML = rows.map((q, i) => `
-        <div class="portal-card section-card mb-3">
-          <p class="fw-semibold mb-3">${i + 1}. ${q.question_text}</p>
-          <div class="d-flex flex-column gap-2">
-            ${["a", "b", "c", "d"].map((opt) => `
-              <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
-                <input type="radio" name="q_${q.question_id}" value="${opt}" class="question-radio" data-question="${q.question_id}" />
-                <span>${opt.toUpperCase()}) ${q["option_" + opt]}</span>
-              </label>`).join("")}
-          </div>
-        </div>`).join("");
-
-      const totalQuestions = rows.length;
-      function updateAnsweredCount() {
-        const answered = new Set([...questionsWrap.querySelectorAll(".question-radio:checked")].map((r) => r.dataset.question)).size;
-        document.getElementById("answeredCount").textContent = `${answered} of ${totalQuestions} answered`;
-      }
-      questionsWrap.addEventListener("change", updateAnsweredCount);
-      updateAnsweredCount();
+      await Promise.all(rows.filter((q) => q.image_url).map(async (q) => { imageUrls[q.question_id] = await resolveImageUrl(q.image_url); }));
 
       showState("examWrap");
+      renderQuestion();
+
       startTimer(duration_minutes, () => {
         showToast("Time's up — submitting your answers.");
-        submitExam(examId, totalQuestions, true);
-      });
-
-      document.getElementById("examForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        submitExam(examId, totalQuestions, false);
+        submitExam(true);
       });
     }
 
-    async function submitExam(examId, totalQuestions, isAutoSubmit) {
+    async function submitExam(isAutoSubmit) {
       if (autoSubmitted) return;
-      autoSubmitted = true;
-      clearInterval(timerInterval);
-
-      const answers = {};
-      document.querySelectorAll(".question-radio:checked").forEach((r) => {
-        answers[r.dataset.question] = r.value;
-      });
 
       if (!isAutoSubmit) {
         const answeredCount = Object.keys(answers).length;
-        if (answeredCount < totalQuestions) {
-          const proceed = await appConfirm(`You've answered ${answeredCount} of ${totalQuestions} questions. Submit anyway?`);
-          if (!proceed) {
-            autoSubmitted = false;
-            return;
-          }
-        }
+        const message = answeredCount < questions.length
+          ? `You've answered ${answeredCount} of ${questions.length} questions. Submit anyway?`
+          : "Submit your exam? You won't be able to change your answers after this.";
+        const proceed = await appConfirm(message);
+        if (!proceed) return;
       }
 
+      autoSubmitted = true;
+      clearInterval(timerInterval);
+
       const btn = document.getElementById("submitExamBtn");
-      if (btn) { btn.disabled = true; btn.textContent = "Submitting..."; }
+      btn.disabled = true;
+      btn.textContent = "Submitting...";
 
       const { data, error } = await supabaseClient.rpc("submit_exam_attempt", { p_exam_id: examId, p_answers: answers });
 
       if (error) {
         showToast(error.message);
         autoSubmitted = false;
-        if (btn) { btn.disabled = false; btn.textContent = "Submit Exam"; }
+        btn.disabled = false;
+        btn.textContent = "Submit Exam";
         return;
       }
 
-      const result = data && data[0];
       showState("scoreState");
-      document.getElementById("scoreText").textContent = result
-        ? `You scored ${result.score} out of ${result.total_questions}`
-        : "Exam submitted.";
+      document.getElementById("scoreText").textContent = "Exam submitted successfully!";
     }
 
     init();

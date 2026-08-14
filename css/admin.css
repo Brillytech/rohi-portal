@@ -958,7 +958,8 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-btn span {
   border-radius: 999px;
   cursor: pointer;
 }
-.term-pill.is-current button { visibility: hidden; }
+.term-pill button i { pointer-events: none; }
+.term-pill input, .term-pill select { font-family: 'Inter', sans-serif; }
 
 /* ---------- Results review groups ---------- */
 .results-group-head {

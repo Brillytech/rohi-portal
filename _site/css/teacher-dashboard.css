@@ -442,6 +442,96 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-chip span { font-family: 'Sora'
 
 @media (max-width: 480px) { .toast-stack { left: 16px; right: 16px; max-width: none; } }
 
+/* ---------- Score distribution chart ---------- */
+.score-chart-wrap { padding: 0.6rem 0 0.2rem; }
+.score-chart-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+.score-chart-avg { font-family: 'Sora', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--purple-ink); margin-right: 8px; }
+.score-chart-avg-label { font-size: 0.78rem; color: var(--muted); }
+.score-chart-svg { width: 100%; max-width: 320px; height: auto; aspect-ratio: 320 / 110; display: block; }
+.score-chart-svg .score-bar-fill { fill: var(--purple-deep); }
+.score-chart-svg .score-bar-count { font-family: 'Sora', sans-serif; font-size: 9px; font-weight: 700; fill: var(--purple-ink); }
+.score-chart-svg .score-bar-label { font-family: 'Inter', sans-serif; font-size: 8.5px; fill: var(--muted); }
+
+/* ---------- Bulk upload ---------- */
+.template-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--purple-deep);
+  text-decoration: none;
+  margin-bottom: 1rem;
+}
+.template-link:hover { text-decoration: underline; }
+
+.bulk-upload-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; }
+.bulk-upload-row input[type="file"] {
+  font-size: 0.83rem;
+  padding: 8px;
+  border: 1px solid var(--border-c);
+  border-radius: 9px;
+  background: rgba(255,255,255,0.7);
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ---------- Math symbol palette ---------- */
+.math-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--purple-deep);
+  background: rgba(89,6,148,0.06);
+  color: var(--purple-deep);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.math-toolbar-toggle:hover { background: rgba(89,6,148,0.12); }
+
+.math-palette {
+  border: 1px solid var(--border-c);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.6);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.math-palette-hint { font-size: 0.76rem; color: var(--muted); margin: 0 0 8px; }
+.math-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 6px;
+}
+.math-symbol-btn {
+  border: 1px solid var(--border-c);
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: var(--purple-ink);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.math-symbol-btn:hover { border-color: var(--purple-deep); background: rgba(89,6,148,0.08); }
+.math-active-field-label { font-size: 0.74rem; color: var(--muted); margin: 8px 0 2px; }
+
+/* ---------- Math preview + image upload ---------- */
+.math-preview {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px dashed var(--border-c);
+  background: rgba(255,255,255,0.5);
+  font-size: 0.9rem;
+  min-height: 20px;
+}
+.math-preview:empty::before { content: "Preview appears here as you type."; color: var(--muted); font-size: 0.82rem; }
+.katex-content img { max-width: 100%; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) { .panel-row { grid-template-columns: 1fr; } }
 

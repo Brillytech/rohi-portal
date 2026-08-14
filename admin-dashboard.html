@@ -386,9 +386,11 @@
                 <label for="teacherEmail">Email</label>
                 <input type="email" id="teacherEmail" placeholder="teacher@example.com" required />
               </div>
-              <div class="field">
-                <label for="teacherSubject">Subjects (comma-separated)</label>
-                <input type="text" id="teacherSubject" placeholder="e.g. Mathematics, Further Maths" required />
+            </div>
+            <div class="field">
+              <label>Subjects</label>
+              <div class="class-checkbox-grid" id="teacherSubjectsGrid">
+                <p class="empty-hint" style="padding:0;">Add subjects first, then they'll appear here to pick from.</p>
               </div>
             </div>
             <button type="submit" class="primary-btn" id="addTeacherBtn">
@@ -407,7 +409,7 @@
           </div>
           <div class="table-wrap">
             <table class="data-table" id="pendingTeachersTable">
-              <thead><tr><th>Full name</th><th>Email</th><th>Subjects</th><th></th></tr></thead>
+              <thead><tr><th>Full name</th><th>Email</th><th>Subjects</th><th></th><th></th></tr></thead>
               <tbody></tbody>
             </table>
             <div class="empty-state" id="pendingEmptyHint"><i class="bi bi-hourglass"></i><p>No teachers awaiting approval.</p></div>
@@ -423,7 +425,7 @@
           </div>
           <div class="table-wrap">
             <table class="data-table" id="approvedTeachersTable">
-              <thead><tr><th>Full name</th><th>Email</th><th>Subjects</th><th>Class teacher of</th></tr></thead>
+              <thead><tr><th>Full name</th><th>Email</th><th>Subjects</th><th>Class teacher of</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
             <div class="empty-state" id="approvedEmptyHint"><i class="bi bi-patch-check"></i><p>No approved teachers yet.</p></div>
@@ -445,7 +447,7 @@
             <div class="form-row">
               <div class="field">
                 <label for="termSession">Session</label>
-                <input type="text" id="termSession" placeholder="e.g. 2025/2026" required />
+                <select id="termSession" required></select>
               </div>
               <div class="field">
                 <label for="termName">Term</label>
@@ -454,6 +456,18 @@
                   <option>Second Term</option>
                   <option>Third Term</option>
                 </select>
+              </div>
+              <div class="field">
+                <label for="termDaysOpened">Days school opened (optional)</label>
+                <input type="number" id="termDaysOpened" min="0" placeholder="e.g. 118" />
+              </div>
+              <div class="field">
+                <label for="termEnded">Term ended (optional)</label>
+                <input type="date" id="termEnded" />
+              </div>
+              <div class="field">
+                <label for="termNextBegins">Next term begins (optional)</label>
+                <input type="date" id="termNextBegins" />
               </div>
             </div>
             <button type="submit" class="primary-btn" id="addTermBtn">
@@ -491,14 +505,23 @@
                 <select id="resultTerm" required><option value="">Select a term</option></select>
               </div>
               <div class="field">
-                <label for="resultCa">CA score</label>
-                <input type="number" id="resultCa" min="0" step="0.5" value="0" required />
+                <label for="resultTest1">Test 1 (out of 15)</label>
+                <input type="number" id="resultTest1" min="0" step="0.5" value="0" required />
               </div>
               <div class="field">
-                <label for="resultExam">Exam score</label>
+                <label for="resultTest2">Test 2 (out of 15)</label>
+                <input type="number" id="resultTest2" min="0" step="0.5" value="0" required />
+              </div>
+              <div class="field">
+                <label for="resultCbt">CBT (out of 40)</label>
+                <input type="number" id="resultCbt" min="0" step="0.5" value="0" required />
+              </div>
+              <div class="field">
+                <label for="resultExam">Exam (out of 30)</label>
                 <input type="number" id="resultExam" min="0" step="0.5" value="0" required />
               </div>
             </div>
+            <p class="empty-hint" style="text-align:left;padding:0 0 1rem;">If the subject had a CBT exam, the CBT score is already filled in automatically — this form is mainly for Test 1, Test 2, and Exam.</p>
             <button type="submit" class="primary-btn" id="addResultBtn">
               <span class="btn-text">Save result</span>
             </button>
@@ -519,6 +542,29 @@
           </div>
           <div id="resultsReviewGroups"></div>
           <div class="empty-state" id="resultsReviewEmptyHint"><i class="bi bi-clipboard-x"></i><p>No results submitted for this term yet.</p></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Fees</h2>
+              <p>Set each student's fee status for a term — a simple status only, not payment processing.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-cash-coin"></i></div>
+          </div>
+          <div class="form-row" style="margin-bottom:1.25rem;">
+            <div class="field">
+              <label for="feesClass">Class</label>
+              <select id="feesClass"><option value="">Select a class</option></select>
+            </div>
+            <div class="field">
+              <label for="feesTerm">Term</label>
+              <select id="feesTerm"><option value="">Select a term</option></select>
+            </div>
+          </div>
+          <div id="feesWrap">
+            <div class="empty-state"><i class="bi bi-cash-coin"></i><p>Choose a class and term to load students.</p></div>
+          </div>
         </div>
       </section>
 
@@ -583,6 +629,43 @@
   </div>
 </div>
 
+<!-- Student profile modal (gender / date of birth / photo, for the report card header) -->
+<div class="app-modal-backdrop" id="studentProfileModalBackdrop">
+  <div class="app-modal" style="max-width:420px;">
+    <div class="panel-header" style="margin-bottom:1rem;">
+      <h2 style="margin:0;font-size:1.05rem;">Student profile — <span id="studentProfileName"></span></h2>
+      <p style="margin:2px 0 0;">Used on the report card header.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div id="studentProfilePhotoPreview" style="width:72px;height:72px;border-radius:12px;background:var(--panel-alt,#f3eefc);border:1px solid var(--border-c);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+          <i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <input type="file" id="studentProfilePhotoInput" accept="image/*" style="font-size:0.78rem;" />
+          <button type="button" class="app-modal-cancel" id="studentProfileRemovePhotoBtn" style="font-size:0.75rem;padding:5px 10px;">Remove photo</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="studentProfileGender">Gender</label>
+        <select id="studentProfileGender">
+          <option value="">— Not set —</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="studentProfileDob">Date of birth</label>
+        <input type="date" id="studentProfileDob" />
+      </div>
+    </div>
+    <div class="app-modal-actions" style="margin-top:1.25rem;">
+      <button type="button" class="app-modal-cancel" id="studentProfileCancelBtn">Cancel</button>
+      <button type="button" class="app-modal-confirm" id="studentProfileSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container (replaces browser alert()) -->
 <div class="toast-stack" id="toastStack"></div>
 
@@ -629,6 +712,106 @@ function showToast(message, type = "error") {
     setTimeout(() => toast.remove(), 300);
   }, 4500);
 }
+
+// ---- Student profile modal (gender / DOB / photo) ----
+let studentProfileTarget = null;
+let studentProfilePendingFile = null;
+let studentProfileRemoveRequested = false;
+
+async function studentPhotoUrl(photoPath) {
+  if (!photoPath) return null;
+  const { data, error } = await supabaseClient.storage.from("student-photos").createSignedUrl(photoPath, 3600);
+  if (error) return null;
+  return data.signedUrl;
+}
+
+async function openStudentProfileModal(student) {
+  studentProfileTarget = student;
+  studentProfilePendingFile = null;
+  studentProfileRemoveRequested = false;
+
+  document.getElementById("studentProfileName").textContent = student.full_name;
+  document.getElementById("studentProfileGender").value = student.gender || "";
+  document.getElementById("studentProfileDob").value = student.date_of_birth || "";
+  document.getElementById("studentProfilePhotoInput").value = "";
+
+  const preview = document.getElementById("studentProfilePhotoPreview");
+  preview.innerHTML = `<i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>`;
+  if (student.photo_path) {
+    const url = await studentPhotoUrl(student.photo_path);
+    if (url) preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;" />`;
+  }
+
+  document.getElementById("studentProfileModalBackdrop").classList.add("show");
+}
+
+function closeStudentProfileModal() {
+  document.getElementById("studentProfileModalBackdrop").classList.remove("show");
+  studentProfileTarget = null;
+}
+
+document.getElementById("studentProfileCancelBtn").addEventListener("click", closeStudentProfileModal);
+
+document.getElementById("studentProfilePhotoInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  studentProfilePendingFile = file;
+  studentProfileRemoveRequested = false;
+  const preview = document.getElementById("studentProfilePhotoPreview");
+  const reader = new FileReader();
+  reader.onload = () => { preview.innerHTML = `<img src="${reader.result}" style="width:100%;height:100%;object-fit:cover;" />`; };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("studentProfileRemovePhotoBtn").addEventListener("click", () => {
+  studentProfileRemoveRequested = true;
+  studentProfilePendingFile = null;
+  document.getElementById("studentProfilePhotoInput").value = "";
+  document.getElementById("studentProfilePhotoPreview").innerHTML = `<i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>`;
+});
+
+document.getElementById("studentProfileSaveBtn").addEventListener("click", async () => {
+  if (!studentProfileTarget) return;
+  const btn = document.getElementById("studentProfileSaveBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+
+  const gender = document.getElementById("studentProfileGender").value || null;
+  const date_of_birth = document.getElementById("studentProfileDob").value || null;
+  let photo_path = studentProfileTarget.photo_path || null;
+
+  try {
+    if (studentProfileRemoveRequested && studentProfileTarget.photo_path) {
+      await supabaseClient.storage.from("student-photos").remove([studentProfileTarget.photo_path]);
+      photo_path = null;
+    }
+
+    if (studentProfilePendingFile) {
+      const ext = studentProfilePendingFile.name.split(".").pop();
+      const path = `${studentProfileTarget.id}/photo.${ext}`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from("student-photos")
+        .upload(path, studentProfilePendingFile, { upsert: true });
+      if (uploadError) throw uploadError;
+      photo_path = path;
+    }
+
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update({ gender, date_of_birth, photo_path })
+      .eq("id", studentProfileTarget.id);
+    if (error) throw error;
+
+    logActivity(`Updated profile details for <strong>${studentProfileTarget.full_name}</strong>`);
+    closeStudentProfileModal();
+    loadStudents();
+  } catch (err) {
+    showToast(err.message || "Could not save profile details.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+});
 
 // ---- View switching ----
 const navItems = document.querySelectorAll(".nav-item");
@@ -969,6 +1152,7 @@ async function loadClasses() {
   document.getElementById("studentClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
   document.getElementById("studentClassFilter").innerHTML = '<option value="">All classes</option>' + classOptions + '<option value="Graduated">Graduated</option><option value="Left School">Left School</option>';
   document.getElementById("resultClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
+  document.getElementById("feesClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
 
   const audienceSelect = document.getElementById("announcementAudience");
   audienceSelect.querySelector("optgroup")?.remove();
@@ -1017,7 +1201,7 @@ function renderClasses() {
         <td>${studentCount}</td>
         <td class="row-actions">
           <button class="approve-btn edit-class-btn" data-id="${c.id}">${teacher ? "Edit" : "Assign / Edit"}</button>
-          <button class="approve-btn delete-btn" data-id="${c.id}">Delete</button>
+          <button class="approve-btn delete-btn" data-id="${c.id}"><i class="bi bi-trash-fill"></i> Delete</button>
         </td>`;
     }
     tbody.appendChild(tr);
@@ -1203,6 +1387,7 @@ let allSubjects = [];
 let allAssignments = [];
 let openCategoryGroups = new Set();
 let manageSubjectId = null; // which subject's assignment panel is currently open
+let editingSubjectId = null;
 
 async function loadSubjects() {
   const { data: subjects } = await supabaseClient.from("subjects").select("*").order("name");
@@ -1213,6 +1398,15 @@ async function loadSubjects() {
   const resultSubjectSelect = document.getElementById("resultSubject");
   resultSubjectSelect.innerHTML = '<option value="">Select a subject</option>' +
     allSubjects.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
+
+  const teacherSubjectsGrid = document.getElementById("teacherSubjectsGrid");
+  teacherSubjectsGrid.innerHTML = allSubjects.length
+    ? allSubjects.map((s) => `
+        <label class="class-checkbox">
+          <input type="checkbox" value="${s.id}" data-name="${s.name}" />
+          ${s.name} <span style="color:var(--muted);font-size:0.78rem;">(${s.category || "General"})</span>
+        </label>`).join("")
+    : '<p class="empty-hint" style="padding:0;">Add subjects first, then they\'ll appear here to pick from.</p>';
 
   renderSubjects();
 }
@@ -1273,12 +1467,25 @@ function renderSubjects() {
         </tr>`;
       }
 
+      if (editingSubjectId === subj.id) {
+        const categoryOptions = CATEGORY_ORDER.map((c) => `<option value="${c}" ${c === (subj.category || "General") ? "selected" : ""}>${c}</option>`).join("");
+        return `<tr>
+          <td><input type="text" class="edit-subject-name" value="${subj.name}" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;" /></td>
+          <td><select class="edit-subject-category" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;">${categoryOptions}</select></td>
+          <td class="row-actions">
+            <button class="approve-btn save-subject-btn" data-id="${subj.id}">Save</button>
+            <button class="approve-btn cancel-subject-edit-btn">Cancel</button>
+          </td>
+        </tr>`;
+      }
+
       return `<tr>
         <td>${subj.name}</td>
         <td>${summary}</td>
         <td class="row-actions">
+          <button class="approve-btn edit-subject-btn" data-id="${subj.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
           <button class="approve-btn manage-subject-btn" data-id="${subj.id}">${manageSubjectId === subj.id ? "Close" : "Assign"}</button>
-          <button class="approve-btn delete-btn delete-subject-btn" data-id="${subj.id}">Delete</button>
+          <button class="approve-btn delete-btn delete-subject-btn" data-id="${subj.id}"><i class="bi bi-trash-fill"></i> Delete</button>
         </td>
       </tr>${manageRow}`;
     }).join("");
@@ -1310,6 +1517,41 @@ function renderSubjects() {
     btn.addEventListener("click", () => {
       manageSubjectId = manageSubjectId === btn.dataset.id ? null : btn.dataset.id;
       renderSubjects();
+    });
+  });
+
+  container.querySelectorAll(".edit-subject-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingSubjectId = btn.dataset.id;
+      renderSubjects();
+    });
+  });
+
+  container.querySelectorAll(".cancel-subject-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingSubjectId = null;
+      renderSubjects();
+    });
+  });
+
+  container.querySelectorAll(".save-subject-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const newName = row.querySelector(".edit-subject-name").value.trim();
+      const newCategory = row.querySelector(".edit-subject-category").value;
+      if (!newName) return;
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const { error } = await supabaseClient.from("subjects").update({ name: newName, category: newCategory }).eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Updated subject <strong>${newName}</strong>`);
+        editingSubjectId = null;
+        loadSubjects();
+      } else {
+        showToast(error.message.includes("duplicate") ? "A subject with this name already exists at this level." : error.message);
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
     });
   });
 
@@ -1500,9 +1742,10 @@ function renderStudents(list) {
           <td>${s.class || "—"}</td>
           <td class="mono">${s.portal_number}</td>
           <td class="row-actions">
-            <button class="approve-btn edit-student-btn" data-id="${s.id}">Edit</button>
+            <button class="approve-btn edit-student-btn" data-id="${s.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
+            <button class="approve-btn student-profile-btn" data-id="${s.id}"><i class="bi bi-person-vcard-fill"></i> Profile</button>
             ${!isTerminal ? `<button class="approve-btn leave-btn" data-id="${s.id}">Mark left school</button>` : ""}
-            <button class="approve-btn delete-btn delete-student-btn" data-id="${s.id}">Delete</button>
+            <button class="approve-btn delete-btn delete-student-btn" data-id="${s.id}"><i class="bi bi-trash-fill"></i> Delete</button>
           </td>
         </tr>`;
       })
@@ -1550,6 +1793,13 @@ function renderStudents(list) {
     btn.addEventListener("click", () => {
       editingStudentId = btn.dataset.id;
       renderStudents(currentFilteredList);
+    });
+  });
+
+  container.querySelectorAll(".student-profile-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const student = allStudents.find((s) => s.id === btn.dataset.id);
+      if (student) openStudentProfileModal(student);
     });
   });
 
@@ -1763,6 +2013,8 @@ async function loadTeachers(refreshClasses = true) {
   if (refreshClasses) loadClasses();
 }
 
+let editingTeacherId = null;
+
 function renderTeacherTable(tableId, emptyId, list, showApprove, showClassTeacherOf) {
   const tbody = document.querySelector(`#${tableId} tbody`);
   const emptyHint = document.getElementById(emptyId);
@@ -1776,15 +2028,24 @@ function renderTeacherTable(tableId, emptyId, list, showApprove, showClassTeache
     const subjectsText = (t.subjects && t.subjects.length) ? t.subjects.join(", ") : "—";
     const classTeacherOf = allClasses.find((c) => c.class_teacher_id === t.id);
     const tr = document.createElement("tr");
-    let rowHtml = `<td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(t.full_name)}</span>${t.full_name}</td><td>${t.email}</td><td>${subjectsText}</td>`;
-    if (showApprove) rowHtml += `<td><button class="approve-btn" data-id="${t.id}">Approve</button></td>`;
+    const isEditing = editingTeacherId === t.id;
+
+    const nameCell = isEditing
+      ? `<input type="text" class="edit-teacher-name" value="${t.full_name}" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;" />`
+      : `<span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(t.full_name)}</span>${t.full_name}`;
+
+    let rowHtml = `<td>${nameCell}</td><td>${t.email}</td><td>${subjectsText}</td>`;
+    if (showApprove) rowHtml += `<td><button class="approve-btn approve-teacher-btn" data-id="${t.id}">Approve</button></td>`;
     if (showClassTeacherOf) rowHtml += `<td>${classTeacherOf ? classTeacherOf.name : "—"}</td>`;
+    rowHtml += isEditing
+      ? `<td class="row-actions"><button class="approve-btn save-teacher-btn" data-id="${t.id}">Save</button><button class="approve-btn cancel-teacher-btn">Cancel</button></td>`
+      : `<td class="row-actions"><button class="approve-btn edit-teacher-btn" data-id="${t.id}"><i class="bi bi-pencil-fill"></i> Edit</button><button class="approve-btn delete-btn delete-teacher-btn" data-id="${t.id}"><i class="bi bi-trash-fill"></i> Delete</button></td>`;
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
 
   if (showApprove) {
-    tbody.querySelectorAll(".approve-btn").forEach((btn) => {
+    tbody.querySelectorAll(".approve-teacher-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.textContent = "Approving...";
@@ -1797,17 +2058,65 @@ function renderTeacherTable(tableId, emptyId, list, showApprove, showClassTeache
       });
     });
   }
+
+  tbody.querySelectorAll(".edit-teacher-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingTeacherId = btn.dataset.id; loadTeachers(false); });
+  });
+
+  tbody.querySelectorAll(".cancel-teacher-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingTeacherId = null; loadTeachers(false); });
+  });
+
+  tbody.querySelectorAll(".save-teacher-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const newName = row.querySelector(".edit-teacher-name").value.trim();
+      if (!newName) return;
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const { error } = await supabaseClient.from("profiles").update({ full_name: newName }).eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Updated teacher <strong>${newName}</strong>`);
+        editingTeacherId = null;
+        loadTeachers();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
+    });
+  });
+
+  tbody.querySelectorAll(".delete-teacher-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Remove this teacher's portal profile? This removes their portal access record but not their login account itself."))) return;
+      const { error } = await supabaseClient.from("profiles").delete().eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Removed a teacher record`);
+        loadTeachers();
+        loadOverview();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
 }
 
 document.getElementById("addTeacherForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const full_name = document.getElementById("teacherFullName").value.trim();
   const email = document.getElementById("teacherEmail").value.trim().toLowerCase();
-  const subjectsRaw = document.getElementById("teacherSubject").value.trim();
-  const subjects = subjectsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  const checkedBoxes = [...document.querySelectorAll("#teacherSubjectsGrid input:checked")];
+  const subjectIds = checkedBoxes.map((cb) => cb.value);
+  const subjectNames = checkedBoxes.map((cb) => cb.dataset.name);
   const btn = document.getElementById("addTeacherBtn");
   const resultBox = document.getElementById("addTeacherResult");
   resultBox.innerHTML = "";
+
+  if (!subjectIds.length) {
+    showToast("Tick at least one subject.");
+    return;
+  }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Adding...';
@@ -1821,15 +2130,25 @@ document.getElementById("addTeacherForm").addEventListener("submit", async (e) =
         "Authorization": `Bearer ${session.access_token}`,
         "apikey": SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ full_name, email, subjects }),
+      body: JSON.stringify({ full_name, email, subjects: subjectNames }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Registration failed.");
+
+    // The edge function doesn't return the new user's id, so look it up by
+    // email (unique) to link them to the actual subject records.
+    const { data: newProfile } = await supabaseClient.from("profiles").select("id").eq("email", email).single();
+    if (newProfile) {
+      await supabaseClient.from("subject_teachers").insert(
+        subjectIds.map((subject_id) => ({ subject_id, teacher_id: newProfile.id }))
+      );
+    }
 
     resultBox.innerHTML = `<div class="alert alert-success">Teacher added, pending approval.</div>`;
     logActivity(`Added teacher <strong>${full_name}</strong> (pending)`);
     document.getElementById("addTeacherForm").reset();
     loadTeachers();
+    loadSubjects();
     loadOverview();
   } catch (err) {
     resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
@@ -1848,6 +2167,21 @@ async function loadAnnouncements() {
   renderAnnouncements();
 }
 
+let editingAnnouncementId = null;
+
+function audienceOptionsHtml(selected) {
+  const base = [
+    { value: "all", label: "Everyone" },
+    { value: "students", label: "All students" },
+    { value: "teachers", label: "All teachers" },
+  ];
+  let html = base.map((o) => `<option value="${o.value}" ${o.value === selected ? "selected" : ""}>${o.label}</option>`).join("");
+  if (allClasses.length) {
+    html += `<optgroup label="A specific class">${allClasses.map((c) => `<option value="${c.name}" ${c.name === selected ? "selected" : ""}>${c.name}</option>`).join("")}</optgroup>`;
+  }
+  return html;
+}
+
 function renderAnnouncements() {
   const list = document.getElementById("announcementsList");
   const emptyHint = document.getElementById("announcementsEmptyHint");
@@ -1858,7 +2192,27 @@ function renderAnnouncements() {
   }
   emptyHint.style.display = "none";
 
-  list.innerHTML = allAnnouncements.map((a) => `
+  list.innerHTML = allAnnouncements.map((a) => {
+    if (editingAnnouncementId === a.id) {
+      return `
+        <div class="announcement-card">
+          <form class="edit-announcement-form inline-form" data-id="${a.id}">
+            <div class="form-row">
+              <div class="field"><label>Title</label><input type="text" class="ea-title" value="${a.title}" required /></div>
+              <div class="field"><label>Audience</label><select class="ea-audience">${audienceOptionsHtml(a.audience)}</select></div>
+            </div>
+            <div class="field">
+              <label>Message</label>
+              <textarea class="ea-body" rows="4" required style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border-c);font-family:'Inter',sans-serif;font-size:0.9rem;">${a.body}</textarea>
+            </div>
+            <div class="row-actions">
+              <button type="submit" class="approve-btn">Save</button>
+              <button type="button" class="approve-btn cancel-announcement-edit-btn">Cancel</button>
+            </div>
+          </form>
+        </div>`;
+    }
+    return `
     <div class="announcement-card">
       <div class="announcement-card-head">
         <h3>${a.title}</h3>
@@ -1867,9 +2221,40 @@ function renderAnnouncements() {
       <p class="announcement-body">${a.body}</p>
       <div class="announcement-card-foot">
         <span>${new Date(a.created_at).toLocaleString()}</span>
-        <button class="approve-btn delete-btn delete-announcement-btn" data-id="${a.id}">Delete</button>
+        <div class="row-actions">
+          <button class="approve-btn edit-announcement-btn" data-id="${a.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
+          <button class="approve-btn delete-btn delete-announcement-btn" data-id="${a.id}"><i class="bi bi-trash-fill"></i> Delete</button>
+        </div>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
+
+  list.querySelectorAll(".edit-announcement-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingAnnouncementId = btn.dataset.id; renderAnnouncements(); });
+  });
+
+  list.querySelectorAll(".cancel-announcement-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingAnnouncementId = null; renderAnnouncements(); });
+  });
+
+  list.querySelectorAll(".edit-announcement-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = form.dataset.id;
+      const title = form.querySelector(".ea-title").value.trim();
+      const body = form.querySelector(".ea-body").value.trim();
+      const audience = form.querySelector(".ea-audience").value;
+      const { error } = await supabaseClient.from("announcements").update({ title, body, audience }).eq("id", id);
+      if (!error) {
+        logActivity(`Updated an announcement`);
+        editingAnnouncementId = null;
+        loadAnnouncements();
+        loadOverview();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
 
   list.querySelectorAll(".delete-announcement-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -1920,14 +2305,37 @@ document.getElementById("postAnnouncementForm").addEventListener("submit", async
 let allTerms = [];
 let currentTermId = null;
 
+// Sessions run previous year through next 10, computed fresh from today's
+// date every time — so the window rolls forward on its own each year
+// (oldest drops off, a new one appears) with nothing to maintain.
+// Academic year is assumed to start in September.
+function getAcademicSessionOptions() {
+  const now = new Date();
+  const currentStart = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+  const options = [];
+  for (let y = currentStart - 1; y <= currentStart + 10; y++) {
+    options.push(`${y}/${y + 1}`);
+  }
+  return options;
+}
+
+function sessionSelectOptionsHtml(selected) {
+  const options = getAcademicSessionOptions();
+  if (selected && !options.includes(selected)) options.unshift(selected);
+  return options.map((s) => `<option value="${s}" ${s === selected ? "selected" : ""}>${s}</option>`).join("");
+}
+
 async function loadTerms() {
   const { data } = await supabaseClient.from("terms").select("*").order("created_at", { ascending: false });
   allTerms = data || [];
   const current = allTerms.find((t) => t.is_current);
   currentTermId = current ? current.id : (allTerms[0] ? allTerms[0].id : null);
+  document.getElementById("termSession").innerHTML = sessionSelectOptionsHtml();
   renderTermPills();
   populateTermSelects();
 }
+
+let editingTermId = null;
 
 function renderTermPills() {
   const row = document.getElementById("termPillRow");
@@ -1935,11 +2343,40 @@ function renderTermPills() {
     row.innerHTML = '<p class="empty-hint" style="padding:0;">No terms yet — add one above.</p>';
     return;
   }
-  row.innerHTML = allTerms.map((t) => `
+  row.innerHTML = allTerms.map((t) => {
+    if (editingTermId === t.id) {
+      return `
+        <div class="term-pill is-editing" style="flex-direction:column;align-items:stretch;border-radius:14px;padding:12px;gap:8px;width:100%;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <select class="edit-term-session" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border-c);font-size:0.8rem;">${sessionSelectOptionsHtml(t.session)}</select>
+            <select class="edit-term-name" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border-c);font-size:0.8rem;">
+              <option ${t.name === "First Term" ? "selected" : ""}>First Term</option>
+              <option ${t.name === "Second Term" ? "selected" : ""}>Second Term</option>
+              <option ${t.name === "Third Term" ? "selected" : ""}>Third Term</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <label style="font-size:0.72rem;color:var(--muted);">Days opened</label>
+            <input type="number" class="edit-term-days" min="0" value="${t.days_opened ?? ""}" style="width:70px;padding:5px 8px;border-radius:7px;border:1px solid var(--border-c);font-size:0.8rem;" />
+            <label style="font-size:0.72rem;color:var(--muted);">Term ended</label>
+            <input type="date" class="edit-term-ended" value="${t.term_ended || ""}" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border-c);font-size:0.8rem;" />
+            <label style="font-size:0.72rem;color:var(--muted);">Next term begins</label>
+            <input type="date" class="edit-term-next" value="${t.next_term_begins || ""}" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border-c);font-size:0.8rem;" />
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="save-term-btn" data-id="${t.id}">Save</button>
+            <button type="button" class="cancel-term-edit-btn">Cancel</button>
+          </div>
+        </div>`;
+    }
+    return `
     <div class="term-pill ${t.is_current ? "is-current" : ""}">
       <span>${t.name} · ${t.session}${t.is_current ? " (current)" : ""}</span>
-      <button type="button" class="set-current-term-btn" data-id="${t.id}">Set current</button>
-    </div>`).join("");
+      ${t.is_current ? "" : `<button type="button" class="set-current-term-btn" data-id="${t.id}">Set current</button>`}
+      <button type="button" class="edit-term-btn" data-id="${t.id}"><i class="bi bi-pencil-fill"></i></button>
+      <button type="button" class="delete-term-btn" data-id="${t.id}"><i class="bi bi-trash-fill"></i></button>
+    </div>`;
+  }).join("");
 
   row.querySelectorAll(".set-current-term-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -1950,6 +2387,57 @@ function renderTermPills() {
       if (error) { showToast(error.message); btn.disabled = false; return; }
       logActivity(`Changed the current term`);
       loadTerms();
+    });
+  });
+
+  row.querySelectorAll(".edit-term-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingTermId = btn.dataset.id; renderTermPills(); });
+  });
+
+  row.querySelectorAll(".cancel-term-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingTermId = null; renderTermPills(); });
+  });
+
+  row.querySelectorAll(".save-term-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const pill = btn.closest(".term-pill");
+      const session = pill.querySelector(".edit-term-session").value.trim();
+      const name = pill.querySelector(".edit-term-name").value;
+      const daysOpenedRaw = pill.querySelector(".edit-term-days").value;
+      const termEndedRaw = pill.querySelector(".edit-term-ended").value;
+      const nextTermRaw = pill.querySelector(".edit-term-next").value;
+      if (!session) return;
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const { error } = await supabaseClient.from("terms").update({
+        session,
+        name,
+        days_opened: daysOpenedRaw === "" ? null : parseInt(daysOpenedRaw, 10),
+        term_ended: termEndedRaw || null,
+        next_term_begins: nextTermRaw || null,
+      }).eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Updated a term`);
+        editingTermId = null;
+        loadTerms();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
+    });
+  });
+
+  row.querySelectorAll(".delete-term-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this term? Any results already recorded against it will keep their data but the term will no longer appear in dropdowns."))) return;
+      const { error } = await supabaseClient.from("terms").delete().eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Deleted a term`);
+        loadTerms();
+      } else {
+        showToast(error.message);
+      }
     });
   });
 }
@@ -1965,12 +2453,19 @@ function populateTermSelects() {
   reviewFilter.innerHTML = options || '<option value="">No terms yet</option>';
   if (currentTermId) reviewFilter.value = currentTermId;
   loadResultsReview();
+
+  const feesTermSelect = document.getElementById("feesTerm");
+  feesTermSelect.innerHTML = '<option value="">Select a term</option>' + options;
+  if (currentTermId) feesTermSelect.value = currentTermId;
 }
 
 document.getElementById("addTermForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const session = document.getElementById("termSession").value.trim();
   const name = document.getElementById("termName").value;
+  const days_opened = document.getElementById("termDaysOpened").value ? parseInt(document.getElementById("termDaysOpened").value, 10) : null;
+  const term_ended = document.getElementById("termEnded").value || null;
+  const next_term_begins = document.getElementById("termNextBegins").value || null;
   const btn = document.getElementById("addTermBtn");
   const resultBox = document.getElementById("addTermResult");
   resultBox.innerHTML = "";
@@ -1979,7 +2474,7 @@ document.getElementById("addTermForm").addEventListener("submit", async (e) => {
 
   try {
     const makeCurrent = allTerms.length === 0;
-    const { error } = await supabaseClient.from("terms").insert({ session, name, is_current: makeCurrent });
+    const { error } = await supabaseClient.from("terms").insert({ session, name, is_current: makeCurrent, days_opened, term_ended, next_term_begins });
     if (error) throw error;
     resultBox.innerHTML = `<div class="alert alert-success">Term added.</div>`;
     logActivity(`Added term <strong>${name} · ${session}</strong>`);
@@ -2007,21 +2502,54 @@ document.getElementById("resultClass").addEventListener("change", () => {
     : '<option value="">No students in this class</option>';
 });
 
+// Standard WAEC/NECO 9-point scale, matching the school's actual report card.
 function gradeFor(total) {
-  if (total >= 70) return "A";
-  if (total >= 60) return "B";
-  if (total >= 50) return "C";
-  if (total >= 45) return "D";
-  if (total >= 40) return "E";
-  return "F";
+  if (total >= 75) return "A1";
+  if (total >= 70) return "B2";
+  if (total >= 65) return "B3";
+  if (total >= 60) return "C4";
+  if (total >= 55) return "C5";
+  if (total >= 50) return "C6";
+  if (total >= 45) return "D7";
+  if (total >= 40) return "E8";
+  return "F9";
 }
+function gradeMeaning(grade) {
+  return { A1: "Excellent", B2: "Very Good", B3: "Good", C4: "Credit", C5: "Credit", C6: "Credit", D7: "Pass", E8: "Pass", F9: "Fail" }[grade] || "—";
+}
+
+// Pre-fills Test1/Test2/CBT/Exam with whatever's already on file for this
+// student+subject+term (e.g. a CBT-auto-filled score), so saving this form
+// doesn't silently zero out data no one meant to touch.
+async function prefillResultForm() {
+  const studentId = document.getElementById("resultStudent").value;
+  const subjectId = document.getElementById("resultSubject").value;
+  const termId = document.getElementById("resultTerm").value;
+  if (!studentId || !subjectId || !termId) return;
+
+  const { data } = await supabaseClient
+    .from("results").select("*")
+    .eq("student_id", studentId).eq("subject_id", subjectId).eq("term_id", termId)
+    .maybeSingle();
+
+  document.getElementById("resultTest1").value = data ? data.test1_score : 0;
+  document.getElementById("resultTest2").value = data ? data.test2_score : 0;
+  document.getElementById("resultCbt").value = data ? data.cbt_score : 0;
+  document.getElementById("resultExam").value = data ? data.exam_score : 0;
+}
+
+["resultStudent", "resultSubject", "resultTerm"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", prefillResultForm);
+});
 
 document.getElementById("addResultForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const studentId = document.getElementById("resultStudent").value;
   const subjectId = document.getElementById("resultSubject").value;
   const termId = document.getElementById("resultTerm").value;
-  const ca = parseFloat(document.getElementById("resultCa").value) || 0;
+  const test1 = parseFloat(document.getElementById("resultTest1").value) || 0;
+  const test2 = parseFloat(document.getElementById("resultTest2").value) || 0;
+  const cbt = parseFloat(document.getElementById("resultCbt").value) || 0;
   const exam = parseFloat(document.getElementById("resultExam").value) || 0;
   const btn = document.getElementById("addResultBtn");
   const resultBox = document.getElementById("addResultResult");
@@ -2031,8 +2559,8 @@ document.getElementById("addResultForm").addEventListener("submit", async (e) =>
     showToast("Pick a class, student, subject, and term first.");
     return;
   }
-  if (ca + exam > 100) {
-    showToast("CA + Exam can't add up to more than 100.");
+  if (test1 + test2 + cbt + exam > 100) {
+    showToast("Test 1 + Test 2 + CBT + Exam can't add up to more than 100.");
     return;
   }
 
@@ -2047,7 +2575,9 @@ document.getElementById("addResultForm").addEventListener("submit", async (e) =>
       term_id: termId,
       teacher_id: currentAdmin.id,
       class_at_entry: student ? student.class : null,
-      ca_score: ca,
+      test1_score: test1,
+      test2_score: test2,
+      cbt_score: cbt,
       exam_score: exam,
       status: "submitted",
     }, { onConflict: "student_id,subject_id,term_id" });
@@ -2097,13 +2627,15 @@ function renderResultsReview() {
     const rowsHtml = rows.map((r) => {
       const student = allStudents.find((s) => s.id === r.student_id);
       const subject = allSubjects.find((s) => s.id === r.subject_id);
-      const total = r.ca_score + r.exam_score;
+      const total = r.test1_score + r.test2_score + r.cbt_score + r.exam_score;
 
       if (editingResultId === r.id) {
         return `<tr>
           <td>${student ? student.full_name : "—"}</td>
           <td>${subject ? subject.name : "—"}</td>
-          <td><input type="number" min="0" step="0.5" class="score-input edit-result-ca" value="${r.ca_score}" /></td>
+          <td><input type="number" min="0" step="0.5" class="score-input edit-result-test1" value="${r.test1_score}" /></td>
+          <td><input type="number" min="0" step="0.5" class="score-input edit-result-test2" value="${r.test2_score}" /></td>
+          <td><input type="number" min="0" step="0.5" class="score-input edit-result-cbt" value="${r.cbt_score}" /></td>
           <td><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
           <td>—</td>
           <td>${r.status}</td>
@@ -2117,14 +2649,16 @@ function renderResultsReview() {
       return `<tr>
         <td>${student ? student.full_name : "—"}</td>
         <td>${subject ? subject.name : "—"}</td>
-        <td>${r.ca_score}</td>
+        <td>${r.test1_score}</td>
+        <td>${r.test2_score}</td>
+        <td>${r.cbt_score}</td>
         <td>${r.exam_score}</td>
         <td>${total} (${gradeFor(total)})</td>
         <td><span class="badge-pill badge-${r.status}">${r.status}</span></td>
         <td class="row-actions">
           ${r.status === "submitted" ? `<button class="approve-btn publish-result-btn" data-id="${r.id}">Publish</button>` : ""}
-          <button class="approve-btn edit-result-btn" data-id="${r.id}">Edit</button>
-          <button class="approve-btn delete-btn delete-result-btn" data-id="${r.id}">Delete</button>
+          <button class="approve-btn edit-result-btn" data-id="${r.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
+          <button class="approve-btn delete-btn delete-result-btn" data-id="${r.id}"><i class="bi bi-trash-fill"></i> Delete</button>
         </td>
       </tr>`;
     }).join("");
@@ -2139,7 +2673,7 @@ function renderResultsReview() {
       <div class="class-group-body${isOpen ? " open" : ""}">
         ${submittedCount ? `<button type="button" class="approve-btn publish-group-btn" data-group="${groupName}" style="margin-bottom:0.75rem;">Publish all submitted in ${groupName}</button>` : ""}
         <table class="data-table">
-          <thead><tr><th>Student</th><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Student</th><th>Subject</th><th>Test1</th><th>Test2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
       </div>`;
@@ -2206,12 +2740,14 @@ function renderResultsReview() {
   container.querySelectorAll(".save-result-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const row = btn.closest("tr");
-      const ca = parseFloat(row.querySelector(".edit-result-ca").value) || 0;
+      const test1 = parseFloat(row.querySelector(".edit-result-test1").value) || 0;
+      const test2 = parseFloat(row.querySelector(".edit-result-test2").value) || 0;
+      const cbt = parseFloat(row.querySelector(".edit-result-cbt").value) || 0;
       const exam = parseFloat(row.querySelector(".edit-result-exam").value) || 0;
-      if (ca + exam > 100) { showToast("CA + Exam can't add up to more than 100."); return; }
+      if (test1 + test2 + cbt + exam > 100) { showToast("Test 1 + Test 2 + CBT + Exam can't add up to more than 100."); return; }
       btn.disabled = true;
       btn.textContent = "Saving...";
-      const { error } = await supabaseClient.from("results").update({ ca_score: ca, exam_score: exam }).eq("id", btn.dataset.id);
+      const { error } = await supabaseClient.from("results").update({ test1_score: test1, test2_score: test2, cbt_score: cbt, exam_score: exam }).eq("id", btn.dataset.id);
       if (!error) {
         logActivity(`Updated a result`);
         editingResultId = null;
@@ -2237,6 +2773,92 @@ function renderResultsReview() {
     });
   });
 }
+
+// ---- Fees ----
+const FEE_STATUS_LABELS = { paid: "Paid", owing: "Owing", part_payment: "Part payment" };
+
+async function loadFeesWrap() {
+  const className = document.getElementById("feesClass").value;
+  const termId = document.getElementById("feesTerm").value;
+  const wrap = document.getElementById("feesWrap");
+
+  if (!className || !termId) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-cash-coin"></i><p>Choose a class and term to load students.</p></div>';
+    return;
+  }
+
+  const students = allStudents.filter((s) => s.class === className).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  if (!students.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-people"></i><p>No students in this class yet.</p></div>';
+    return;
+  }
+
+  const [{ data: existingFees }, { data: existingRemarks }] = await Promise.all([
+    supabaseClient.from("fee_status").select("*").eq("term_id", termId).in("student_id", students.map((s) => s.id)),
+    supabaseClient.from("student_term_remarks").select("student_id, principal_comment").eq("term_id", termId).in("student_id", students.map((s) => s.id)),
+  ]);
+  const feeByStudent = {};
+  (existingFees || []).forEach((f) => { feeByStudent[f.student_id] = f.status; });
+  const commentByStudent = {};
+  (existingRemarks || []).forEach((r) => { commentByStudent[r.student_id] = r.principal_comment || ""; });
+
+  wrap.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Status</th><th>Principal's comment</th></tr></thead>
+        <tbody>
+          ${students.map((s) => `
+            <tr data-student="${s.id}">
+              <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+              <td>
+                <select class="fee-status-select" data-student="${s.id}">
+                  <option value="owing" ${(feeByStudent[s.id] || "owing") === "owing" ? "selected" : ""}>Owing</option>
+                  <option value="part_payment" ${feeByStudent[s.id] === "part_payment" ? "selected" : ""}>Part payment</option>
+                  <option value="paid" ${feeByStudent[s.id] === "paid" ? "selected" : ""}>Paid</option>
+                </select>
+              </td>
+              <td>
+                <input type="text" class="principal-comment-input" data-student="${s.id}" value="${commentByStudent[s.id] || ""}" placeholder="e.g. Keep up the good work" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;" />
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+
+  wrap.querySelectorAll(".fee-status-select").forEach((select) => {
+    select.addEventListener("change", async () => {
+      select.disabled = true;
+      const { error } = await supabaseClient.from("fee_status").upsert({
+        student_id: select.dataset.student, term_id: termId, status: select.value,
+      }, { onConflict: "student_id,term_id" });
+      select.disabled = false;
+      if (!error) {
+        showToast(`Fee status updated.`, "success");
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+
+  wrap.querySelectorAll(".principal-comment-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      input.disabled = true;
+      const { error } = await supabaseClient.from("student_term_remarks").upsert({
+        student_id: input.dataset.student, term_id: termId, principal_comment: input.value.trim(),
+      }, { onConflict: "student_id,term_id" });
+      input.disabled = false;
+      if (!error) {
+        showToast(`Principal's comment saved.`, "success");
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+}
+
+["feesClass", "feesTerm"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", loadFeesWrap);
+});
 
 guardAndInit();
 </script>

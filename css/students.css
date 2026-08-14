@@ -277,6 +277,155 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .welcome-label { font-family: 'Sora', san
 
 @media (max-width: 480px) { .toast-stack { left: 16px; right: 16px; max-width: none; } }
 
+/* ---------- CBT exam-taking UI ---------- */
+.exam-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0.9rem 1.25rem;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid rgba(229, 222, 239, 0.7);
+  box-shadow: 0 4px 20px rgba(20,4,40,0.06);
+}
+.exam-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.exam-header-left h5 { margin: 0; font-size: 1rem; color: var(--purple-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exam-header-left p { margin: 0; font-size: 0.78rem; color: var(--muted); }
+.exam-back-link { color: var(--purple-deep); text-decoration: none; font-weight: 600; font-size: 0.85rem; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+
+.exam-timer {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(89,6,148,0.1);
+  color: var(--purple-deep);
+  white-space: nowrap;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.exam-timer.timer-warning { background: rgba(255,140,0,0.16); color: #b56200; }
+.exam-timer.timer-critical { background: rgba(179,38,30,0.14); color: var(--danger-fg, #b3261e); animation: examPulse 1s ease infinite; }
+@keyframes examPulse { 50% { opacity: 0.6; } }
+
+.exam-body { display: grid; grid-template-columns: 1fr 300px; gap: 20px; max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem; align-items: start; }
+
+.exam-question-card {
+  background: var(--glass-bg, rgba(255,255,255,0.65));
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.5));
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 34px rgba(89, 6, 148, 0.06);
+}
+.exam-question-progress { font-size: 0.78rem; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.exam-question-text { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin-bottom: 1rem; line-height: 1.5; }
+.exam-question-image { max-width: 100%; border-radius: 12px; margin-bottom: 1rem; display: block; }
+
+.exam-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--border-c);
+  border-radius: 13px;
+  background: rgba(255,255,255,0.55);
+  cursor: pointer;
+  font-size: 0.94rem;
+  color: var(--ink);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+.exam-option:hover { border-color: var(--purple-deep); transform: translateX(2px); }
+.exam-option-letter {
+  flex: none;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(89,6,148,0.08);
+  color: var(--purple-deep);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.exam-option.selected { border-color: var(--purple-deep); background: rgba(89,6,148,0.1); }
+.exam-option.selected .exam-option-letter { background: var(--purple-deep); color: #fff; }
+
+.exam-flag-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border-c);
+  background: rgba(255,255,255,0.6);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+.exam-flag-btn.flagged { border-color: #b56200; color: #b56200; background: rgba(255,140,0,0.1); }
+
+.exam-nav-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 1rem; }
+.exam-nav-btn {
+  border: 1px solid var(--purple-deep);
+  background: rgba(255,255,255,0.7);
+  color: var(--purple-deep);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.exam-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.exam-nav-btn.primary { background: linear-gradient(135deg, var(--purple-deep), var(--purple-dark)); color: #fff; border: none; }
+
+.exam-palette-col {
+  background: var(--glass-bg, rgba(255,255,255,0.65));
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.5));
+  border-radius: 18px;
+  padding: 1.25rem;
+  position: sticky;
+  top: 90px;
+}
+.exam-palette-summary { font-size: 0.85rem; font-weight: 600; color: var(--purple-ink); margin-bottom: 12px; }
+.palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1rem; }
+.palette-btn {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-c);
+  background: rgba(255,255,255,0.6);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+}
+.palette-btn.current { border-color: var(--purple-deep); box-shadow: 0 0 0 2px rgba(89,6,148,0.25); }
+.palette-btn.answered { background: var(--success-bg, #e8f7ee); border-color: var(--success-fg, #1e7e3e); color: var(--success-fg, #1e7e3e); }
+.palette-btn.flagged::after {
+  content: "";
+  position: absolute; top: -3px; right: -3px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #b56200;
+  border: 1.5px solid #fff;
+}
+.exam-palette-legend { display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; color: var(--muted); margin-bottom: 1rem; }
+.exam-palette-legend span { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+@media (max-width: 860px) {
+  .exam-body { grid-template-columns: 1fr; }
+  .exam-palette-col { position: static; order: -1; }
+  .palette-grid { grid-template-columns: repeat(8, 1fr); }
+}
+
 /* Legacy classes kept for compatibility */
 .dashboard-card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: all 0.3s ease; }
 .dashboard-card:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,0.08); }

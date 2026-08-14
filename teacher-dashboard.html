@@ -10,6 +10,10 @@
 <link rel="stylesheet" href="css/teacher-dashboard.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -32,6 +36,7 @@
       <button class="nav-item" data-view="results"><i class="bi bi-clipboard-check-fill"></i> Manage Results</button>
       <button class="nav-item" data-view="exams"><i class="bi bi-pencil-square"></i> Exams</button>
       <button class="nav-item" data-view="students"><i class="bi bi-people-fill"></i> Students</button>
+      <button class="nav-item" data-view="remarks"><i class="bi bi-clipboard2-pulse-fill"></i> Remarks</button>
       <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
     </nav>
 
@@ -207,7 +212,20 @@
                 <label for="examDuration">Duration (minutes)</label>
                 <input type="number" id="examDuration" min="1" value="20" required />
               </div>
+              <div class="field">
+                <label for="examObjectiveMax">CBT score (out of)</label>
+                <input type="number" id="examObjectiveMax" min="1" value="40" required />
+              </div>
+              <div class="field">
+                <label for="examAvailableFrom">Opens (optional)</label>
+                <input type="datetime-local" id="examAvailableFrom" />
+              </div>
+              <div class="field">
+                <label for="examAvailableUntil">Closes (optional)</label>
+                <input type="datetime-local" id="examAvailableUntil" />
+              </div>
             </div>
+            <p class="empty-hint" style="text-align:left;padding:0 0 1rem;">When a student finishes this exam, their score is automatically scaled into this many points and filled into the CBT column of their result — no re-typing needed. Leave Opens/Closes blank for no time restriction.</p>
             <button type="submit" class="primary-btn" id="createExamBtn">
               <span class="btn-text">Create exam</span>
             </button>
@@ -240,6 +258,36 @@
           </div>
           <div id="myStudentsGroups"></div>
           <div class="empty-state" id="myStudentsEmptyHint"><i class="bi bi-people"></i><p>You're not set as class teacher for any class yet.</p></div>
+        </div>
+      </section>
+
+      <!-- REMARKS -->
+      <section class="view" id="view-remarks">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>End-of-term remarks</h2>
+              <p>Affective and psychomotor skill ratings, plus your comment — for students in the class you're the class teacher of.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+          </div>
+          <div class="form-row" style="margin-bottom:1.25rem;">
+            <div class="field">
+              <label for="remarksClass">Class</label>
+              <select id="remarksClass"><option value="">Select a class</option></select>
+            </div>
+            <div class="field">
+              <label for="remarksStudent">Student</label>
+              <select id="remarksStudent"><option value="">Select a class first</option></select>
+            </div>
+            <div class="field">
+              <label for="remarksTerm">Term</label>
+              <select id="remarksTerm"><option value="">Select a term</option></select>
+            </div>
+          </div>
+          <div id="remarksWrap">
+            <div class="empty-state"><i class="bi bi-clipboard2-pulse"></i><p>Choose a class, student, and term to enter their remarks.</p></div>
+          </div>
         </div>
       </section>
 
@@ -480,6 +528,11 @@ async function loadClasses() {
   const options = allClasses.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
   document.getElementById("entryClass").innerHTML = '<option value="">Select a class</option>' + options;
   document.getElementById("examClass").innerHTML = '<option value="">Select a class</option>' + options;
+
+  const myClassOptions = allClasses
+    .filter((c) => c.class_teacher_id === currentTeacher.id)
+    .map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
+  document.getElementById("remarksClass").innerHTML = '<option value="">Select a class</option>' + (myClassOptions || "");
 }
 
 async function loadTerms() {
@@ -495,6 +548,10 @@ async function loadTerms() {
   const examTermSelect = document.getElementById("examTerm");
   examTermSelect.innerHTML = options || '<option value="">No terms yet</option>';
   if (currentTermId) examTermSelect.value = currentTermId;
+
+  const remarksTermSelect = document.getElementById("remarksTerm");
+  remarksTermSelect.innerHTML = options || '<option value="">No terms yet</option>';
+  if (currentTermId) remarksTermSelect.value = currentTermId;
 }
 
 // ---- My subjects ----
@@ -587,12 +644,15 @@ function renderOverviewAnnouncements() {
 
 // ---- Result entry ----
 function gradeFor(total) {
-  if (total >= 70) return "A";
-  if (total >= 60) return "B";
-  if (total >= 50) return "C";
-  if (total >= 45) return "D";
-  if (total >= 40) return "E";
-  return "F";
+  if (total >= 75) return "A1";
+  if (total >= 70) return "B2";
+  if (total >= 65) return "B3";
+  if (total >= 60) return "C4";
+  if (total >= 55) return "C5";
+  if (total >= 50) return "C6";
+  if (total >= 45) return "D7";
+  if (total >= 40) return "E8";
+  return "F9";
 }
 
 async function loadResultEntry() {
@@ -624,10 +684,17 @@ async function loadResultEntry() {
   const rowsHtml = students.map((s) => {
     const r = existingByStudent[s.id];
     const isPublished = r && r.status === "published";
+    const total = r ? (r.test1_score + r.test2_score + r.cbt_score + r.exam_score) : 0;
     return `<tr data-student="${s.id}">
       <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
-      <td><input type="number" class="score-input entry-ca" min="0" step="0.5" value="${r ? r.ca_score : 0}" ${isPublished ? "disabled" : ""} /></td>
-      <td><input type="number" class="score-input entry-exam" min="0" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td><input type="number" class="score-input entry-test1" min="0" max="15" step="0.5" value="${r ? r.test1_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td><input type="number" class="score-input entry-test2" min="0" max="15" step="0.5" value="${r ? r.test2_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td>
+        <input type="number" class="score-input entry-cbt" min="0" max="40" step="0.5" value="${r ? r.cbt_score : 0}" ${isPublished ? "disabled" : ""} />
+        ${r && r.cbt_score > 0 ? '<div class="widget-list-meta" style="margin-top:2px;">from CBT</div>' : ""}
+      </td>
+      <td><input type="number" class="score-input entry-exam" min="0" max="30" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td class="entry-total">${total}</td>
       <td>${r ? `<span class="badge-pill badge-${r.status}">${r.status}</span>` : '<span class="empty-hint" style="padding:0;">Not entered</span>'}</td>
     </tr>`;
   }).join("");
@@ -635,13 +702,24 @@ async function loadResultEntry() {
   wrap.innerHTML = `
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Student</th><th>CA score</th><th>Exam score</th><th>Status</th></tr></thead>
+        <thead><tr><th>Student</th><th>Test1 (15)</th><th>Test2 (15)</th><th>CBT (40)</th><th>Exam (30)</th><th>Total</th><th>Status</th></tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
     </div>
     <button type="button" class="primary-btn" id="submitResultsBtn" style="margin-top:1rem;">
       <span class="btn-text">Submit for review</span>
     </button>`;
+
+  wrap.querySelectorAll("tr[data-student]").forEach((row) => {
+    const updateTotal = () => {
+      const test1 = parseFloat(row.querySelector(".entry-test1").value) || 0;
+      const test2 = parseFloat(row.querySelector(".entry-test2").value) || 0;
+      const cbt = parseFloat(row.querySelector(".entry-cbt").value) || 0;
+      const exam = parseFloat(row.querySelector(".entry-exam").value) || 0;
+      row.querySelector(".entry-total").textContent = test1 + test2 + cbt + exam;
+    };
+    row.querySelectorAll("input").forEach((input) => input.addEventListener("input", updateTotal));
+  });
 
   document.getElementById("submitResultsBtn").addEventListener("click", async () => {
     const subjectIdNow = document.getElementById("entrySubject").value;
@@ -650,31 +728,44 @@ async function loadResultEntry() {
     const resultBox = document.getElementById("resultEntryResult");
     resultBox.innerHTML = "";
 
-    const rows = [...wrap.querySelectorAll("tr[data-student]")].filter((row) => !row.querySelector(".entry-ca").disabled);
+    const rows = [...wrap.querySelectorAll("tr[data-student]")].filter((row) => !row.querySelector(".entry-test1").disabled);
     if (!rows.length) {
       showToast("Nothing to submit — every result here is already published.");
       return;
     }
 
     const payload = rows.map((row) => {
-      const ca = parseFloat(row.querySelector(".entry-ca").value) || 0;
-      const exam = parseFloat(row.querySelector(".entry-exam").value) || 0;
+      const test1_score = parseFloat(row.querySelector(".entry-test1").value) || 0;
+      const test2_score = parseFloat(row.querySelector(".entry-test2").value) || 0;
+      const cbt_score = parseFloat(row.querySelector(".entry-cbt").value) || 0;
+      const exam_score = parseFloat(row.querySelector(".entry-exam").value) || 0;
       return {
         student_id: row.dataset.student,
         subject_id: subjectIdNow,
         term_id: termIdNow,
         teacher_id: currentTeacher.id,
         class_at_entry: classNameNow,
-        ca_score: ca,
-        exam_score: exam,
+        test1_score, test2_score, cbt_score, exam_score,
         status: "submitted",
       };
     });
 
-    const overLimit = payload.find((p) => p.ca_score + p.exam_score > 100);
+    const overLimit = payload.find((p) => p.test1_score + p.test2_score + p.cbt_score + p.exam_score > 100);
     if (overLimit) {
-      showToast("CA + Exam can't add up to more than 100 for any student.");
+      showToast("Test1 + Test2 + CBT + Exam can't add up to more than 100 for any student.");
       return;
+    }
+
+    // Every score box defaults to 0, so submitting an untouched screen would
+    // quietly create a blank result for the whole class — which, once an
+    // admin publishes it, renders as a class full of F9s on the report cards.
+    const allBlank = payload.every((p) => p.test1_score + p.test2_score + p.cbt_score + p.exam_score === 0);
+    if (allBlank) {
+      const proceed = await appConfirm(
+        `Every score on this sheet is still 0 for all ${payload.length} student${payload.length === 1 ? "" : "s"}. ` +
+        `Submitting now records a blank result for the whole class. Submit anyway?`
+      );
+      if (!proceed) return;
     }
 
     const btn = document.getElementById("submitResultsBtn");
@@ -759,6 +850,8 @@ async function loadAnnouncements() {
   renderAnnouncements();
 }
 
+let editingAnnouncementId = null;
+
 function renderAnnouncements() {
   const list = document.getElementById("announcementsList");
   const emptyHint = document.getElementById("announcementsEmptyHint");
@@ -769,7 +862,25 @@ function renderAnnouncements() {
   }
   emptyHint.style.display = "none";
 
-  list.innerHTML = allAnnouncements.map((a) => `
+  list.innerHTML = allAnnouncements.map((a) => {
+    const isMine = a.created_by === currentTeacher.id;
+    if (editingAnnouncementId === a.id) {
+      return `
+        <div class="announcement-card">
+          <form class="edit-announcement-form inline-form" data-id="${a.id}">
+            <div class="field"><label>Title</label><input type="text" class="ea-title" value="${a.title}" required /></div>
+            <div class="field">
+              <label>Message</label>
+              <textarea class="ea-body" rows="3" required>${a.body}</textarea>
+            </div>
+            <div class="row-actions">
+              <button type="submit" class="approve-btn">Save</button>
+              <button type="button" class="approve-btn cancel-announcement-edit-btn">Cancel</button>
+            </div>
+          </form>
+        </div>`;
+    }
+    return `
     <div class="announcement-card">
       <div class="announcement-card-head">
         <h3>${a.title}</h3>
@@ -778,9 +889,37 @@ function renderAnnouncements() {
       <p class="announcement-body">${a.body}</p>
       <div class="announcement-card-foot" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <span>${new Date(a.created_at).toLocaleString()}</span>
-        ${a.created_by === currentTeacher.id ? `<button class="approve-btn delete-btn delete-my-announcement-btn" data-id="${a.id}">Delete</button>` : ""}
+        ${isMine ? `<div class="row-actions">
+          <button class="approve-btn edit-my-announcement-btn" data-id="${a.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
+          <button class="approve-btn delete-btn delete-my-announcement-btn" data-id="${a.id}"><i class="bi bi-trash-fill"></i> Delete</button>
+        </div>` : ""}
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
+
+  list.querySelectorAll(".edit-my-announcement-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingAnnouncementId = btn.dataset.id; renderAnnouncements(); });
+  });
+
+  list.querySelectorAll(".cancel-announcement-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingAnnouncementId = null; renderAnnouncements(); });
+  });
+
+  list.querySelectorAll(".edit-announcement-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = form.dataset.id;
+      const title = form.querySelector(".ea-title").value.trim();
+      const body = form.querySelector(".ea-body").value.trim();
+      const { error } = await supabaseClient.from("announcements").update({ title, body }).eq("id", id);
+      if (!error) {
+        editingAnnouncementId = null;
+        loadAnnouncements();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
 
   list.querySelectorAll(".delete-my-announcement-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -840,6 +979,8 @@ let allExams = [];
 let allExamQuestions = [];
 let allExamAttempts = [];
 let openExams = new Set();
+let editingQuestionId = null;
+let editingExamId = null;
 
 async function loadExams() {
   const { data: exams } = await supabaseClient.from("exams").select("*").order("created_at", { ascending: false });
@@ -868,6 +1009,11 @@ document.getElementById("createExamForm").addEventListener("submit", async (e) =
   const class_name = document.getElementById("examClass").value;
   const term_id = document.getElementById("examTerm").value;
   const duration_minutes = parseInt(document.getElementById("examDuration").value, 10) || 20;
+  const cbt_max_score = parseFloat(document.getElementById("examObjectiveMax").value) || 40;
+  const availableFromRaw = document.getElementById("examAvailableFrom").value;
+  const availableUntilRaw = document.getElementById("examAvailableUntil").value;
+  const available_from = availableFromRaw ? new Date(availableFromRaw).toISOString() : null;
+  const available_until = availableUntilRaw ? new Date(availableUntilRaw).toISOString() : null;
   const btn = document.getElementById("createExamBtn");
   const resultBox = document.getElementById("createExamResult");
   resultBox.innerHTML = "";
@@ -876,18 +1022,24 @@ document.getElementById("createExamForm").addEventListener("submit", async (e) =
     showToast("Pick a subject, class, and term first.");
     return;
   }
+  if (available_from && available_until && available_from >= available_until) {
+    showToast("The exam must close after it opens.");
+    return;
+  }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Creating...';
 
   try {
     const { error } = await supabaseClient.from("exams").insert({
-      title, subject_id, class_name, term_id, duration_minutes, teacher_id: currentTeacher.id,
+      title, subject_id, class_name, term_id, duration_minutes, cbt_max_score,
+      available_from, available_until, teacher_id: currentTeacher.id,
     });
     if (error) throw error;
     resultBox.innerHTML = `<div class="alert alert-success">Exam created — add questions below, then publish when ready.</div>`;
     document.getElementById("createExamForm").reset();
     document.getElementById("examDuration").value = 20;
+    document.getElementById("examObjectiveMax").value = 40;
     loadExams();
   } catch (err) {
     resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
@@ -897,7 +1049,166 @@ document.getElementById("createExamForm").addEventListener("submit", async (e) =
   }
 });
 
-function renderExams() {
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
+}
+
+function renderMath(container) {
+  if (window.renderMathInElement && container) {
+    renderMathInElement(container, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+}
+
+const imageUrlCache = {};
+async function resolveImageUrl(path) {
+  if (!path) return null;
+  if (imageUrlCache[path]) return imageUrlCache[path];
+  const { data } = await supabaseClient.storage.from("exam-images").createSignedUrl(path, 3600);
+  const url = data ? data.signedUrl : null;
+  if (url) imageUrlCache[path] = url;
+  return url;
+}
+
+function formatExamWindow(exam) {
+  if (!exam.available_from && !exam.available_until) return "available anytime once published";
+  const fromText = exam.available_from ? new Date(exam.available_from).toLocaleString() : "now";
+  const untilText = exam.available_until ? new Date(exam.available_until).toLocaleString() : "no set end";
+  return `open ${fromText} → ${untilText}`;
+}
+
+// Score distribution across 5 percentage bands, as a small inline bar
+// chart — gives a real shape to the class's performance instead of a
+// single average number.
+function buildScoreDistributionChart(attempts) {
+  const buckets = [
+    { label: "0–20", min: 0, max: 20 },
+    { label: "21–40", min: 21, max: 40 },
+    { label: "41–60", min: 41, max: 60 },
+    { label: "61–80", min: 61, max: 80 },
+    { label: "81–100", min: 81, max: 100 },
+  ];
+  const counts = buckets.map((b) => 0);
+  attempts.forEach((a) => {
+    const pct = (a.score / a.total_questions) * 100;
+    const idx = buckets.findIndex((b) => pct >= b.min && pct <= b.max);
+    counts[idx === -1 ? buckets.length - 1 : idx]++;
+  });
+
+  const max = Math.max(1, ...counts);
+  const w = 320, h = 110, padBottom = 24, padTop = 16;
+  const barW = w / buckets.length;
+
+  let bars = "";
+  counts.forEach((c, i) => {
+    const barH = c > 0 ? Math.max(4, (c / max) * (h - padBottom - padTop)) : 0;
+    const x = i * barW + barW * 0.22;
+    const bw = barW * 0.56;
+    const y = h - padBottom - barH;
+    bars += `
+      <rect class="score-bar-fill" x="${x}" y="${y}" width="${bw}" height="${barH}" rx="3"></rect>
+      ${c > 0 ? `<text class="score-bar-count" x="${x + bw / 2}" y="${y - 4}" text-anchor="middle">${c}</text>` : ""}
+      <text class="score-bar-label" x="${i * barW + barW / 2}" y="${h - 6}" text-anchor="middle">${buckets[i].label}</text>`;
+  });
+
+  return `<svg class="score-chart-svg" viewBox="0 0 ${w} ${h}">${bars}</svg>`;
+}
+
+function toLocalDatetimeValue(isoString) {
+  const d = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const MATH_SYMBOLS = [
+  { label: "÷", tex: "\\div" }, { label: "×", tex: "\\times" }, { label: "≠", tex: "\\neq" }, { label: "≡", tex: "\\equiv" },
+  { label: "x⁄y", tex: "\\frac{}{}" }, { label: "√x", tex: "\\sqrt{}" }, { label: "ⁿ√y", tex: "\\sqrt[n]{}" },
+  { label: "Aᴮ", tex: "^{}" }, { label: "A_B", tex: "_{}" }, { label: "±", tex: "\\pm" },
+  { label: "π", tex: "\\pi" }, { label: "α", tex: "\\alpha" }, { label: "β", tex: "\\beta" }, { label: "γ", tex: "\\gamma" },
+  { label: "θ", tex: "\\theta" }, { label: "Δ", tex: "\\Delta" }, { label: "φ", tex: "\\phi" }, { label: "∞", tex: "\\infty" },
+  { label: "X°", tex: "^\\circ"}, { label: "∩", tex: "\\cap" }, { label: "∪", tex: "\\cup" },
+  { label: "∫", tex: "\\int_{}^{}" }, { label: "∑", tex: "\\sum_{}^{}" }, { label: "≤", tex: "\\leq" }, { label: "≥", tex: "\\geq" },
+  { label: "matrix", tex: "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}" },
+];
+
+function mathPaletteHtml() {
+  return `
+    <button type="button" class="math-toolbar-toggle"><i class="bi bi-calculator"></i> Insert math symbol</button>
+    <div class="math-palette" style="display:none;">
+      <p class="math-palette-hint">Click into the Question or an Option field, then tap a symbol to insert it there.</p>
+      <p class="math-active-field-label">Inserting into: <strong class="active-field-name">Question</strong></p>
+      <div class="math-palette-grid">
+        ${MATH_SYMBOLS.map((s) => `<button type="button" class="math-symbol-btn" data-tex="${escapeHtml(s.tex)}">${s.label}</button>`).join("")}
+      </div>
+      <p class="math-palette-hint" style="margin-top:10px;margin-bottom:2px;">Live preview:</p>
+      <div class="math-preview shared-math-preview"></div>
+    </div>`;
+}
+
+function questionFormHtml(examId, question) {
+  const isEdit = !!question;
+  return `
+    <form class="question-form inline-form" data-exam="${examId}" ${isEdit ? `data-question-id="${question.id}"` : ""} style="margin-bottom:1rem;">
+      <div class="field">
+        <label>Question</label>
+        <textarea class="q-text math-field" data-field-label="Question" rows="2" required>${isEdit ? escapeHtml(question.question_text) : ""}</textarea>
+      </div>
+      <div class="field">
+        <label>Image <span style="font-weight:400;color:var(--muted);">— optional, for a diagram/graph that can't be typed</span></label>
+        <input type="file" class="q-image" accept="image/*" />
+        <div class="q-image-preview"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Option A</label><input type="text" class="q-a math-field" data-field-label="Option A" value="${isEdit ? escapeHtml(question.option_a) : ""}" required /></div>
+        <div class="field"><label>Option B</label><input type="text" class="q-b math-field" data-field-label="Option B" value="${isEdit ? escapeHtml(question.option_b) : ""}" required /></div>
+        <div class="field"><label>Option C</label><input type="text" class="q-c math-field" data-field-label="Option C" value="${isEdit ? escapeHtml(question.option_c) : ""}" required /></div>
+        <div class="field"><label>Option D</label><input type="text" class="q-d math-field" data-field-label="Option D" value="${isEdit ? escapeHtml(question.option_d) : ""}" required /></div>
+        <div class="field">
+          <label>Correct option</label>
+          <select class="q-correct">
+            ${["a", "b", "c", "d"].map((o) => `<option value="${o}" ${isEdit && question.correct_option === o ? "selected" : ""}>${o.toUpperCase()}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      ${mathPaletteHtml()}
+      <div class="row-actions">
+        <button type="submit" class="approve-btn">${isEdit ? "Save question" : "Add question"}</button>
+        ${isEdit ? `<button type="button" class="approve-btn cancel-question-btn">Cancel</button>` : ""}
+      </div>
+    </form>`;
+}
+
+function examEditFormHtml(exam) {
+  const subjectOptions = mySubjects.map((s) => `<option value="${s.id}" ${s.id === exam.subject_id ? "selected" : ""}>${escapeHtml(s.name)}</option>`).join("");
+  const classOptions = allClasses.map((c) => `<option value="${c.name}" ${c.name === exam.class_name ? "selected" : ""}>${escapeHtml(c.name)}</option>`).join("");
+  const termOptions = allTerms.map((t) => `<option value="${t.id}" ${t.id === exam.term_id ? "selected" : ""}>${escapeHtml(t.name)} · ${escapeHtml(t.session)}</option>`).join("");
+  return `
+    <form class="edit-exam-form inline-form" data-exam="${exam.id}" style="margin-bottom:1rem;">
+      <div class="form-row">
+        <div class="field"><label>Title</label><input type="text" class="ee-title" value="${escapeHtml(exam.title)}" required /></div>
+        <div class="field"><label>Subject</label><select class="ee-subject">${subjectOptions}</select></div>
+        <div class="field"><label>Class</label><select class="ee-class">${classOptions}</select></div>
+        <div class="field"><label>Term</label><select class="ee-term">${termOptions}</select></div>
+        <div class="field"><label>Duration (min)</label><input type="number" class="ee-duration" min="1" value="${exam.duration_minutes}" required /></div>
+        <div class="field"><label>CBT (out of)</label><input type="number" class="ee-objective-max" min="1" value="${exam.cbt_max_score}" required /></div>
+        <div class="field"><label>Opens</label><input type="datetime-local" class="ee-from" value="${exam.available_from ? toLocalDatetimeValue(exam.available_from) : ""}" /></div>
+        <div class="field"><label>Closes</label><input type="datetime-local" class="ee-until" value="${exam.available_until ? toLocalDatetimeValue(exam.available_until) : ""}" /></div>
+      </div>
+      <div class="row-actions">
+        <button type="submit" class="approve-btn">Save changes</button>
+        <button type="button" class="approve-btn cancel-exam-edit-btn">Cancel</button>
+      </div>
+    </form>`;
+}
+
+async function renderExams() {
   const container = document.getElementById("examsList");
   const emptyHint = document.getElementById("examsEmptyHint");
 
@@ -907,6 +1218,11 @@ function renderExams() {
     return;
   }
   emptyHint.style.display = "none";
+
+  // Only resolve signed image URLs for questions inside currently-expanded exams.
+  const openQuestions = allExamQuestions.filter((q) => openExams.has(q.exam_id) && q.image_url);
+  const resolvedUrls = {};
+  await Promise.all(openQuestions.map(async (q) => { resolvedUrls[q.id] = await resolveImageUrl(q.image_url); }));
 
   container.innerHTML = allExams.map((exam) => {
     const subject = mySubjects.find((s) => s.id === exam.subject_id);
@@ -919,64 +1235,82 @@ function renderExams() {
     const isOpen = openExams.has(exam.id);
 
     const questionsHtml = questions.length
-      ? questions.map((q, i) => `
-        <div class="widget-list-item">
+      ? questions.map((q, i) => {
+        if (editingQuestionId === q.id) return questionFormHtml(exam.id, q);
+        const imgUrl = resolvedUrls[q.id];
+        return `
+        <div class="widget-list-item" style="align-items:flex-start;">
           <div class="avatar-chip" style="border-radius:8px;">${i + 1}</div>
-          <div style="flex:1;">
-            <p class="widget-list-title">${q.question_text}</p>
-            <p class="widget-list-meta">A) ${q.option_a} &nbsp; B) ${q.option_b} &nbsp; C) ${q.option_c} &nbsp; D) ${q.option_d} — correct: ${q.correct_option.toUpperCase()}</p>
+          <div style="flex:1;min-width:0;">
+            <p class="widget-list-title katex-content">${escapeHtml(q.question_text)}</p>
+            ${imgUrl ? `<img src="${imgUrl}" style="max-width:260px;border-radius:10px;margin:6px 0;display:block;" />` : ""}
+            <p class="widget-list-meta katex-content">A) ${escapeHtml(q.option_a)} &nbsp; B) ${escapeHtml(q.option_b)} &nbsp; C) ${escapeHtml(q.option_c)} &nbsp; D) ${escapeHtml(q.option_d)} — correct: ${q.correct_option.toUpperCase()}</p>
           </div>
-          <button class="approve-btn delete-btn delete-question-btn" data-id="${q.id}">Delete</button>
-        </div>`).join("")
+          <div class="row-actions">
+            <button class="approve-btn edit-question-btn" data-id="${q.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
+            <button class="approve-btn delete-btn delete-question-btn" data-id="${q.id}"><i class="bi bi-trash-fill"></i> Delete</button>
+          </div>
+        </div>`;
+      }).join("")
       : '<p class="empty-hint">No questions added yet.</p>';
 
     const attemptsHtml = attempts.length
-      ? `<p class="empty-hint" style="padding:0.5rem 0;text-align:left;">Average score: ${avgScore}% across ${attempts.length} attempt${attempts.length === 1 ? "" : "s"}.</p>`
+      ? `
+        <div class="score-chart-wrap">
+          <div class="score-chart-header">
+            <div><span class="score-chart-avg">${avgScore}%</span><span class="score-chart-avg-label">average score</span></div>
+            <span class="empty-hint" style="padding:0;text-align:right;">${attempts.length} attempt${attempts.length === 1 ? "" : "s"}</span>
+          </div>
+          ${buildScoreDistributionChart(attempts)}
+          <p class="empty-hint" style="padding:0.4rem 0 0;text-align:left;">Editing questions now only affects students who haven't taken it yet — already-graded attempts keep their original score.</p>
+        </div>`
       : `<p class="empty-hint" style="padding:0.5rem 0;text-align:left;">No student has attempted this yet.</p>`;
+
+    const metaOrEditForm = editingExamId === exam.id
+      ? examEditFormHtml(exam)
+      : `<p class="empty-hint" style="text-align:left;padding:0 0 0.3rem;">${subject ? escapeHtml(subject.name) : "—"} · ${term ? escapeHtml(term.name) + " · " + escapeHtml(term.session) : "—"} · ${exam.duration_minutes} min · scored out of ${exam.cbt_max_score} (CBT)</p>
+         <p class="empty-hint" style="text-align:left;padding:0 0 0.6rem;"><i class="bi bi-clock-history"></i> ${formatExamWindow(exam)}</p>`;
 
     return `
       <div class="class-group">
         <button type="button" class="class-group-header exam-toggle-btn" data-id="${exam.id}">
-          <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${exam.title} — ${exam.class_name}</span>
+          <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${escapeHtml(exam.title)} — ${escapeHtml(exam.class_name)}</span>
           <span class="class-group-count">
             <span class="badge-pill badge-${exam.status === "published" ? "published" : "submitted"}">${exam.status}</span>
             &nbsp;${questions.length} question${questions.length === 1 ? "" : "s"}
           </span>
         </button>
         <div class="class-group-body${isOpen ? " open" : ""}">
-          <p class="empty-hint" style="text-align:left;padding:0 0 0.6rem;">${subject ? subject.name : "—"} · ${term ? term.name + " · " + term.session : "—"} · ${exam.duration_minutes} min</p>
+          ${metaOrEditForm}
           ${attemptsHtml}
           <div class="widget-list" style="margin-bottom:1rem;">${questionsHtml}</div>
 
-          <form class="add-question-form inline-form" data-exam="${exam.id}" style="margin-bottom:1rem;">
-            <div class="form-row">
-              <div class="field" style="grid-column:1/-1;">
-                <label>Question</label>
-                <input type="text" class="q-text" required />
-              </div>
-              <div class="field"><label>Option A</label><input type="text" class="q-a" required /></div>
-              <div class="field"><label>Option B</label><input type="text" class="q-b" required /></div>
-              <div class="field"><label>Option C</label><input type="text" class="q-c" required /></div>
-              <div class="field"><label>Option D</label><input type="text" class="q-d" required /></div>
-              <div class="field">
-                <label>Correct option</label>
-                <select class="q-correct">
-                  <option value="a">A</option><option value="b">B</option><option value="c">C</option><option value="d">D</option>
-                </select>
-              </div>
+          ${questionFormHtml(exam.id, null)}
+
+          <div style="background:rgba(255,255,255,0.35);padding:1rem;border-radius:12px;margin-bottom:1rem;">
+            <p class="empty-hint" style="text-align:left;padding:0 0 0.5rem;font-weight:600;color:var(--purple-ink);">Bulk add questions from a spreadsheet</p>
+            <a href="data:text/csv;charset=utf-8,question_text,option_a,option_b,option_c,option_d,correct_option%0AWhat is 2%2B2%3F,3,4,5,6,b%0A" download="rohi-exam-questions-template.csv" class="template-link">
+              <i class="bi bi-download"></i> Download CSV template
+            </a>
+            <div class="bulk-upload-row">
+              <input type="file" class="bulk-question-csv" accept=".csv" />
+              <button type="button" class="approve-btn bulk-upload-questions-btn" data-exam="${exam.id}">Upload questions</button>
             </div>
-            <button type="submit" class="approve-btn">Add question</button>
-          </form>
+            <div class="bulk-question-result"></div>
+          </div>
 
           <div class="row-actions">
+            <button type="button" class="approve-btn edit-exam-btn" data-id="${exam.id}"><i class="bi bi-pencil-fill"></i> Edit exam</button>
             ${exam.status === "draft"
               ? `<button type="button" class="primary-btn publish-exam-btn" data-id="${exam.id}" ${questions.length ? "" : "disabled"}><span class="btn-text">Publish</span></button>`
               : `<span class="badge-pill badge-published">Published</span>`}
-            <button type="button" class="approve-btn delete-btn delete-exam-btn" data-id="${exam.id}">Delete exam</button>
+            <button type="button" class="approve-btn delete-btn delete-exam-btn" data-id="${exam.id}"><i class="bi bi-trash-fill"></i> Delete exam</button>
           </div>
         </div>
       </div>`;
   }).join("");
+
+  container.querySelectorAll(".katex-content").forEach((el) => renderMath(el));
 
   container.querySelectorAll(".exam-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -986,27 +1320,21 @@ function renderExams() {
     });
   });
 
-  container.querySelectorAll(".add-question-form").forEach((form) => {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const examId = form.dataset.exam;
-      const question_text = form.querySelector(".q-text").value.trim();
-      const option_a = form.querySelector(".q-a").value.trim();
-      const option_b = form.querySelector(".q-b").value.trim();
-      const option_c = form.querySelector(".q-c").value.trim();
-      const option_d = form.querySelector(".q-d").value.trim();
-      const correct_option = form.querySelector(".q-correct").value;
-      const existingCount = allExamQuestions.filter((q) => q.exam_id === examId).length;
+  container.querySelectorAll(".question-form").forEach((form) => {
+    const examId = form.dataset.exam;
+    const questionId = form.dataset.questionId;
+    const question = questionId ? allExamQuestions.find((q) => q.id === questionId) : null;
+    wireQuestionForm(form, examId, question);
+  });
 
-      const { error } = await supabaseClient.from("exam_questions").insert({
-        exam_id: examId, question_text, option_a, option_b, option_c, option_d, correct_option, sort_order: existingCount,
-      });
-      if (!error) {
-        openExams.add(examId);
-        loadExams();
-      } else {
-        showToast(error.message);
-      }
+  container.querySelectorAll(".cancel-question-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingQuestionId = null; renderExams(); });
+  });
+
+  container.querySelectorAll(".edit-question-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingQuestionId = btn.dataset.id;
+      renderExams();
     });
   });
 
@@ -1018,9 +1346,104 @@ function renderExams() {
     });
   });
 
+  container.querySelectorAll(".bulk-upload-questions-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const examId = btn.dataset.exam;
+      const wrap = btn.closest(".class-group-body");
+      const fileInput = wrap.querySelector(".bulk-question-csv");
+      const resultBox = wrap.querySelector(".bulk-question-result");
+      const file = fileInput.files[0];
+      resultBox.innerHTML = "";
+
+      if (!file) { showToast("Choose a CSV file first."); return; }
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (parsed) => {
+          const rows = parsed.data.filter((r) => r.question_text && r.option_a && r.option_b && r.option_c && r.option_d && r.correct_option);
+          if (!rows.length) {
+            showToast("No valid rows found. Make sure your CSV has question_text, option_a-d, and correct_option columns filled in.");
+            return;
+          }
+          const invalid = rows.find((r) => !["a", "b", "c", "d"].includes(String(r.correct_option).trim().toLowerCase()));
+          if (invalid) {
+            showToast(`correct_option must be a, b, c, or d — found "${invalid.correct_option}".`);
+            return;
+          }
+
+          btn.disabled = true;
+          btn.textContent = "Uploading...";
+          const existingCount = allExamQuestions.filter((q) => q.exam_id === examId).length;
+          const payload = rows.map((r, i) => ({
+            exam_id: examId,
+            question_text: r.question_text.trim(),
+            option_a: r.option_a.trim(),
+            option_b: r.option_b.trim(),
+            option_c: r.option_c.trim(),
+            option_d: r.option_d.trim(),
+            correct_option: String(r.correct_option).trim().toLowerCase(),
+            sort_order: existingCount + i,
+          }));
+
+          const { error } = await supabaseClient.from("exam_questions").insert(payload);
+          btn.disabled = false;
+          btn.textContent = "Upload questions";
+          fileInput.value = "";
+
+          if (!error) {
+            resultBox.innerHTML = `<div class="alert alert-success">${payload.length} question(s) added.</div>`;
+            openExams.add(examId);
+            loadExams();
+          } else {
+            resultBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+          }
+        },
+      });
+    });
+  });
+
+  container.querySelectorAll(".edit-exam-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingExamId = btn.dataset.id; renderExams(); });
+  });
+
+  container.querySelectorAll(".cancel-exam-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => { editingExamId = null; renderExams(); });
+  });
+
+  container.querySelectorAll(".edit-exam-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const examId = form.dataset.exam;
+      const availableFromRaw = form.querySelector(".ee-from").value;
+      const availableUntilRaw = form.querySelector(".ee-until").value;
+      const available_from = availableFromRaw ? new Date(availableFromRaw).toISOString() : null;
+      const available_until = availableUntilRaw ? new Date(availableUntilRaw).toISOString() : null;
+      if (available_from && available_until && available_from >= available_until) {
+        showToast("The exam must close after it opens.");
+        return;
+      }
+      const { error } = await supabaseClient.from("exams").update({
+        title: form.querySelector(".ee-title").value.trim(),
+        subject_id: form.querySelector(".ee-subject").value,
+        class_name: form.querySelector(".ee-class").value,
+        term_id: form.querySelector(".ee-term").value,
+        duration_minutes: parseInt(form.querySelector(".ee-duration").value, 10) || 20,
+        cbt_max_score: parseFloat(form.querySelector(".ee-objective-max").value) || 40,
+        available_from, available_until,
+      }).eq("id", examId);
+      if (!error) {
+        editingExamId = null;
+        loadExams();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+
   container.querySelectorAll(".publish-exam-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!(await appConfirm("Publish this exam? Students in the class will be able to take it immediately, and you won't be able to add more questions afterward without them affecting fairness."))) return;
+      if (!(await appConfirm("Publish this exam? Students in the class will be able to take it immediately (subject to its open/close window), and you won't be able to add more questions afterward without them affecting fairness."))) return;
       btn.disabled = true;
       const { error } = await supabaseClient.from("exams").update({ status: "published" }).eq("id", btn.dataset.id);
       if (!error) {
@@ -1038,6 +1461,199 @@ function renderExams() {
       const { error } = await supabaseClient.from("exams").delete().eq("id", btn.dataset.id);
       if (!error) loadExams(); else showToast(error.message);
     });
+  });
+}
+
+function wireQuestionForm(form, examId, existingQuestion) {
+  let uploadedImagePath = existingQuestion ? existingQuestion.image_url : null;
+  const textArea = form.querySelector(".q-text");
+
+  // ---- Math symbol palette: works on whichever field was last focused ----
+  const sharedPreview = form.querySelector(".shared-math-preview");
+  const activeFieldLabel = form.querySelector(".active-field-name");
+  let activeField = textArea;
+
+  function refreshSharedPreview() {
+    sharedPreview.textContent = activeField.value;
+    renderMath(sharedPreview);
+  }
+
+  form.querySelectorAll(".math-field").forEach((field) => {
+    field.addEventListener("focus", () => {
+      activeField = field;
+      activeFieldLabel.textContent = field.dataset.fieldLabel;
+      refreshSharedPreview();
+    });
+    field.addEventListener("input", () => {
+      if (field === activeField) refreshSharedPreview();
+    });
+  });
+  refreshSharedPreview();
+
+  const toggleBtn = form.querySelector(".math-toolbar-toggle");
+  const palette = form.querySelector(".math-palette");
+  toggleBtn.addEventListener("click", () => {
+    const showing = palette.style.display !== "none";
+    palette.style.display = showing ? "none" : "block";
+    toggleBtn.innerHTML = showing ? '<i class="bi bi-calculator"></i> Insert math symbol' : '<i class="bi bi-x-lg"></i> Hide math symbols';
+  });
+
+  form.querySelectorAll(".math-symbol-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tex = btn.dataset.tex;
+      const wrapped = "$" + tex + "$";
+      const start = activeField.selectionStart ?? activeField.value.length;
+      const end = activeField.selectionEnd ?? activeField.value.length;
+      const value = activeField.value;
+      activeField.value = value.slice(0, start) + wrapped + value.slice(end);
+
+      const emptyBraceIndex = wrapped.indexOf("{}");
+      const cursorPos = emptyBraceIndex !== -1 ? start + emptyBraceIndex + 1 : start + wrapped.length;
+      activeField.focus();
+      activeField.setSelectionRange(cursorPos, cursorPos);
+      refreshSharedPreview();
+    });
+  });
+
+  if (existingQuestion && existingQuestion.image_url) {
+    resolveImageUrl(existingQuestion.image_url).then((url) => {
+      if (url) form.querySelector(".q-image-preview").innerHTML = `<img src="${url}" style="max-width:200px;border-radius:8px;margin-top:8px;display:block;" /><p class="widget-list-meta">Current image — choose a new file to replace it.</p>`;
+    });
+  }
+
+  form.querySelector(".q-image").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const previewBox = form.querySelector(".q-image-preview");
+    previewBox.innerHTML = '<p class="empty-hint" style="padding:4px 0;">Uploading...</p>';
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${examId}/${Date.now()}-${safeName}`;
+    const { error } = await supabaseClient.storage.from("exam-images").upload(path, file);
+    if (error) { showToast(error.message); previewBox.innerHTML = ""; return; }
+    uploadedImagePath = path;
+    const url = await resolveImageUrl(path);
+    previewBox.innerHTML = `<img src="${url}" style="max-width:200px;border-radius:8px;margin-top:8px;display:block;" />`;
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const question_text = textArea.value.trim();
+    const option_a = form.querySelector(".q-a").value.trim();
+    const option_b = form.querySelector(".q-b").value.trim();
+    const option_c = form.querySelector(".q-c").value.trim();
+    const option_d = form.querySelector(".q-d").value.trim();
+    const correct_option = form.querySelector(".q-correct").value;
+
+    if (existingQuestion) {
+      const { error } = await supabaseClient.from("exam_questions").update({
+        question_text, option_a, option_b, option_c, option_d, correct_option, image_url: uploadedImagePath,
+      }).eq("id", existingQuestion.id);
+      if (!error) { editingQuestionId = null; loadExams(); } else showToast(error.message);
+    } else {
+      const existingCount = allExamQuestions.filter((q) => q.exam_id === examId).length;
+      const { error } = await supabaseClient.from("exam_questions").insert({
+        exam_id: examId, question_text, option_a, option_b, option_c, option_d, correct_option,
+        image_url: uploadedImagePath, sort_order: existingCount,
+      });
+      if (!error) { openExams.add(examId); loadExams(); } else showToast(error.message);
+    }
+  });
+}
+
+// ---- Remarks (affective/psychomotor + comments) ----
+const AFFECTIVE_SKILLS = ["Punctuality", "Mental Alertness", "Behaviour", "Reliability", "Attentiveness", "Respect", "Neatness", "Politeness", "Honesty", "Relationship with Staff", "Relationship with Students", "Attitude to School", "Self Control", "Spirit of Teamwork", "Initiatives", "Organizational Ability"];
+const PSYCHOMOTOR_SKILLS = ["Handwriting", "Reading", "Verbal Fluency Diction", "Musical Skills", "Creative Arts", "Physical Education", "General Reasoning"];
+
+function ratingSelectHtml(cls, name, value) {
+  return `<select class="${cls}" data-skill="${name}" style="padding:6px 8px;font-size:0.82rem;">
+    ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}" ${value === n ? "selected" : ""}>${n}</option>`).join("")}
+  </select>`;
+}
+
+document.getElementById("remarksClass").addEventListener("change", async () => {
+  const className = document.getElementById("remarksClass").value;
+  const studentSelect = document.getElementById("remarksStudent");
+  if (!className) {
+    studentSelect.innerHTML = '<option value="">Select a class first</option>';
+    return;
+  }
+  const { data: students } = await supabaseClient.rpc("get_students_in_classes", { p_classes: [className] });
+  students?.sort((a, b) => a.full_name.localeCompare(b.full_name));
+  studentSelect.innerHTML = students && students.length
+    ? students.map((s) => `<option value="${s.id}">${s.full_name}</option>`).join("")
+    : '<option value="">No students in this class</option>';
+  loadRemarksWrap();
+});
+
+["remarksStudent", "remarksTerm"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", loadRemarksWrap);
+});
+
+async function loadRemarksWrap() {
+  const studentId = document.getElementById("remarksStudent").value;
+  const termId = document.getElementById("remarksTerm").value;
+  const wrap = document.getElementById("remarksWrap");
+
+  if (!studentId || !termId) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-clipboard2-pulse"></i><p>Choose a class, student, and term to enter their remarks.</p></div>';
+    return;
+  }
+
+  const { data: existing } = await supabaseClient.from("student_term_remarks").select("*")
+    .eq("student_id", studentId).eq("term_id", termId).maybeSingle();
+  const affective = (existing && existing.affective) || {};
+  const psychomotor = (existing && existing.psychomotor) || {};
+
+  wrap.innerHTML = `
+    <form id="remarksForm">
+      <p class="empty-hint" style="text-align:left;padding:0 0 0.5rem;font-weight:600;color:var(--purple-ink);">Affective skills (1 = needs work, 5 = excellent)</p>
+      <div class="form-row" style="margin-bottom:1rem;">
+        ${AFFECTIVE_SKILLS.map((skill) => `
+          <div class="field"><label style="font-weight:500;">${skill}</label>${ratingSelectHtml("affective-rating", skill, affective[skill] || 3)}</div>`).join("")}
+      </div>
+      <p class="empty-hint" style="text-align:left;padding:0 0 0.5rem;font-weight:600;color:var(--purple-ink);">Psychomotor skills</p>
+      <div class="form-row" style="margin-bottom:1rem;">
+        ${PSYCHOMOTOR_SKILLS.map((skill) => `
+          <div class="field"><label style="font-weight:500;">${skill}</label>${ratingSelectHtml("psychomotor-rating", skill, psychomotor[skill] || 3)}</div>`).join("")}
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label>Days present this term</label>
+        <input type="number" id="daysPresent" min="0" value="${existing && existing.days_present != null ? existing.days_present : ""}" />
+      </div>
+      <div class="field">
+        <label>Your comment (optional — leave blank to use an automatic performance-based comment)</label>
+        <textarea id="teacherComment" rows="2">${existing ? (existing.teacher_comment || "") : ""}</textarea>
+      </div>
+      <button type="submit" class="primary-btn" id="saveRemarksBtn"><span class="btn-text">Save remarks</span></button>
+      <div id="remarksResult"></div>
+    </form>`;
+
+  document.getElementById("remarksForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const affectiveOut = {};
+    document.querySelectorAll(".affective-rating").forEach((sel) => { affectiveOut[sel.dataset.skill] = parseInt(sel.value, 10); });
+    const psychomotorOut = {};
+    document.querySelectorAll(".psychomotor-rating").forEach((sel) => { psychomotorOut[sel.dataset.skill] = parseInt(sel.value, 10); });
+    const teacher_comment = document.getElementById("teacherComment").value.trim();
+    const daysPresentRaw = document.getElementById("daysPresent").value;
+    const days_present = daysPresentRaw === "" ? null : parseInt(daysPresentRaw, 10);
+    const btn = document.getElementById("saveRemarksBtn");
+    const resultBox = document.getElementById("remarksResult");
+    resultBox.innerHTML = "";
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Saving...';
+
+    const { error } = await supabaseClient.from("student_term_remarks").upsert({
+      student_id: studentId, term_id: termId, affective: affectiveOut, psychomotor: psychomotorOut, teacher_comment, days_present,
+    }, { onConflict: "student_id,term_id" });
+
+    if (!error) {
+      resultBox.innerHTML = `<div class="alert alert-success">Remarks saved.</div>`;
+    } else {
+      resultBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Save remarks</span>';
   });
 }
 

@@ -5,188 +5,207 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Student Results | Rohi Portal</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
-  <link rel="stylesheet" href="css/student-results.css" />
+  <link rel="stylesheet" href="css/student-results.css?v=4" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
   <div class="results-page">
-    <!-- Topbar -->
+    <!-- Topbar (screen only) -->
     <header class="results-topbar">
-      <div class="container-fluid px-3 px-lg-4">
-        <div class="topbar-wrap">
-          <div class="topbar-left">
-            <a href="student.html" class="back-link">
-              <i class="bi bi-arrow-left"></i>
-              <span>Back to Dashboard</span>
-            </a>
-            <div>
-              <h1 class="page-title mb-0">Student Result Sheet</h1>
-              <small class="page-subtitle">View and download academic result</small>
-            </div>
+      <div class="topbar-wrap">
+        <div class="topbar-left">
+          <a href="student.html" class="back-link">
+            <i class="bi bi-arrow-left"></i>
+            <span>Back to Dashboard</span>
+          </a>
+          <div>
+            <h1 class="page-title">Student Result Sheet</h1>
+            <small class="page-subtitle">View and download academic result</small>
           </div>
+        </div>
 
-          <div class="topbar-actions d-flex align-items-center gap-2">
-            <select id="termSelect" class="form-select form-select-sm" style="width:auto;"></select>
-            <button class="btn topbar-btn" onclick="window.print()">
-              <i class="bi bi-printer"></i>
-              Print / Download PDF
-            </button>
-          </div>
+        <div class="topbar-actions">
+          <select id="termSelect"></select>
+          <button class="topbar-btn" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print / Download PDF
+          </button>
         </div>
       </div>
     </header>
 
     <main class="results-main">
-      <div class="container-fluid px-3 px-lg-4">
-        <div id="noResultsWrap" class="text-center py-5" style="display:none;">
-          <i class="bi bi-clipboard-x" style="font-size:2.5rem;color:#cbd5e1;"></i>
-          <p class="mt-3 mb-0 text-muted" id="noResultsText">No published results for this term yet.</p>
+      <div id="noResultsWrap" class="no-results" style="display:none;">
+        <i class="bi bi-clipboard-x"></i>
+        <p id="noResultsText">No published results for this term yet.</p>
+        <p class="no-results-sub" id="noResultsSub"></p>
+      </div>
+
+      <div class="sheet" id="printArea" style="display:none;">
+
+        <!-- ── Letterhead ─────────────────────────────────────── -->
+        <header class="letterhead">
+          <div class="lh-crest">
+            <img src="img/rohilo.jpg" alt="Rohi Schools crest" />
+          </div>
+          <div class="lh-body">
+            <h2>ROHI SCHOOLS</h2>
+            <p>Address: B4/9 Federal Housing Estate, Olomore Abeokuta.</p>
+            <p class="lh-strong">Phone No: 07031362416</p>
+            <p>Email: adewunmianike062@gmail.com</p>
+          </div>
+          <div class="lh-photo">
+            <img id="studentPhoto" alt="Student passport photograph" style="display:none;" />
+            <div class="lh-photo-empty" id="studentPhotoPlaceholder">
+              <i class="bi bi-person-fill"></i><span>PHOTO</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="report-title" id="reportTitle">REPORT CARD</div>
+
+        <!-- ── Bio / summary block ────────────────────────────── -->
+        <table class="bio-table">
+          <tbody>
+            <tr>
+              <th>Session</th><td id="bioSession">—</td>
+              <th>Term</th><td id="bioTerm">—</td>
+              <th>Age</th><td id="bioAge">—</td>
+            </tr>
+            <tr>
+              <th>Name of student</th><td class="bio-name" id="bioName">—</td>
+              <th>Reg. No</th><td id="bioRegNo">—</td>
+              <th>Gender</th><td id="bioGender">—</td>
+            </tr>
+            <tr class="bio-band-end">
+              <th>Class</th><td id="bioClass">—</td>
+              <th>Next term begins</th><td id="bioNextTerm">—</td>
+              <th>Term ended</th><td id="bioTermEnded">—</td>
+            </tr>
+            <tr>
+              <th>Position in entire class</th><td id="bioPosEntire">—</td>
+              <th>No. of students in class</th><td id="bioCountEntire">—</td>
+              <th>No. of days school opened</th><td id="bioDaysOpened">—</td>
+            </tr>
+            <tr>
+              <th>Position in class section</th><td id="bioPosSection">—</td>
+              <th>No. of students in class section</th><td id="bioCountSection">—</td>
+              <th>No. of days present</th><td id="bioDaysPresent">—</td>
+            </tr>
+            <tr>
+              <th>Overall total score</th><td id="bioTotal">—</td>
+              <th>Class section average score</th><td id="bioClassAvg">—</td>
+              <th>No. of days absent</th><td id="bioDaysAbsent">—</td>
+            </tr>
+            <tr>
+              <th>Student's average score</th><td id="bioAverage">—</td>
+              <th>Lowest average in class section</th><td id="bioLowestAvg">—</td>
+              <th>Class teacher</th><td id="bioTeacher">—</td>
+            </tr>
+            <tr>
+              <th>Highest average in class section</th><td id="bioHighestAvg">—</td>
+              <th>Overall performance</th><td class="bio-strong" id="bioPerformance">—</td>
+              <th>Promotion status</th><td id="bioPromotion">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- ── Subject scores ─────────────────────────────────── -->
+        <table class="subject-table">
+          <thead>
+            <tr>
+              <th class="col-subject">SUBJECT</th>
+              <th>TEST 1<span>(15)</span></th>
+              <th>TEST 2<span>(15)</span></th>
+              <th>CBT<span>(40)</span></th>
+              <th>EXAM<span>(30)</span></th>
+              <th>TOTAL<span>(100)</span></th>
+              <th>GRADE</th>
+              <th>SUBJECT POSITION</th>
+              <th>CLASS AVERAGE</th>
+              <th>WEIGHTED SCORE</th>
+              <th>HIGHEST IN CLASS</th>
+              <th>LOWEST IN CLASS</th>
+              <th class="col-remark">REMARK</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody"></tbody>
+        </table>
+
+        <!-- ── Traits / keys ──────────────────────────────────── -->
+        <div class="bottom-grid">
+          <div class="bottom-col">
+            <table class="rating-table">
+              <thead><tr><th>AFFECTIVE TRAITS</th><th class="col-rating">RATING</th></tr></thead>
+              <tbody id="affectiveList"></tbody>
+            </table>
+          </div>
+
+          <div class="bottom-col">
+            <table class="rating-table">
+              <thead><tr><th>PSYCHOMOTOR SKILLS</th><th class="col-rating">RATING</th></tr></thead>
+              <tbody id="psychomotorList"></tbody>
+            </table>
+            <table class="rating-table key-table">
+              <thead><tr><th class="col-key">KEY</th><th>MEANING</th></tr></thead>
+              <tbody>
+                <tr><td class="k">5</td><td>Maintains an excellent degree of observation</td></tr>
+                <tr><td class="k">4</td><td>Maintains high level of observation trait</td></tr>
+                <tr><td class="k">3</td><td>Acceptable level of observation trait</td></tr>
+                <tr><td class="k">2</td><td>Shows minimal level of observation trait</td></tr>
+                <tr><td class="k">1</td><td>Has no regard for observation trait</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bottom-col">
+            <table class="rating-table grade-key-table">
+              <thead><tr><th>SCORE RANGE</th><th class="col-key">GRADE</th><th>MEANING</th></tr></thead>
+              <tbody>
+                <tr><td>&gt;=75% - 100%</td><td class="k">A1</td><td>Excellent</td></tr>
+                <tr><td>&gt;=70% - &lt;75%</td><td class="k">B2</td><td>Very good</td></tr>
+                <tr><td>&gt;=65% - &lt;70%</td><td class="k">B3</td><td>Good</td></tr>
+                <tr><td>&gt;=60% - &lt;65%</td><td class="k">C4</td><td>Credit</td></tr>
+                <tr><td>&gt;=55% - &lt;60%</td><td class="k">C5</td><td>Credit</td></tr>
+                <tr><td>&gt;=50% - &lt;55%</td><td class="k">C6</td><td>Credit</td></tr>
+                <tr><td>&gt;=45% - &lt;50%</td><td class="k">D7</td><td>Pass</td></tr>
+                <tr><td>&gt;=40% - &lt;45%</td><td class="k">E8</td><td>Pass</td></tr>
+                <tr><td>0% - &lt;40%</td><td class="k">F9</td><td>Fail</td></tr>
+              </tbody>
+            </table>
+            <div class="seal-slot">
+              <svg viewBox="0 0 120 120" class="seal" aria-label="School verification seal">
+                <defs>
+                  <path id="sealArcTop" d="M 60,60 m -46,0 a 46,46 0 1,1 92,0" fill="none" />
+                  <path id="sealArcBottom" d="M 60,60 m 46,0 a 46,46 0 1,1 -92,0" fill="none" />
+                </defs>
+                <circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="2.5" />
+                <circle cx="60" cy="60" r="45" fill="none" stroke="currentColor" stroke-width="1" />
+                <text font-size="9" font-weight="700" fill="currentColor" letter-spacing="1.4">
+                  <textPath href="#sealArcTop" startOffset="50%" text-anchor="middle">ROHI SCHOOLS</textPath>
+                </text>
+                <text font-size="7" font-weight="700" fill="currentColor" letter-spacing="1.2">
+                  <textPath href="#sealArcBottom" startOffset="50%" text-anchor="middle">OFFICIAL RESULT</textPath>
+                </text>
+                <text x="60" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">ROHI</text>
+                <text x="60" y="66" text-anchor="middle" font-size="6" fill="currentColor" letter-spacing="0.8">VERIFIED</text>
+                <polygon points="60,70 62.2,75.2 67.8,75.8 63.6,79.4 64.8,85 60,82.1 55.2,85 56.4,79.4 52.2,75.8 57.8,75.2"
+                         fill="currentColor" />
+              </svg>
+            </div>
+          </div>
         </div>
 
-        <div class="result-card" id="printArea" style="display:none;">
-          <!-- School Header -->
-          <div class="school-header">
-            <div class="school-logo-wrap">
-              <img src="img/rohilo.jpg" alt="Rohi Logo" class="school-logo" />
-            </div>
+        <!-- ── Comments ───────────────────────────────────────── -->
+        <table class="comments-table">
+          <tbody>
+            <tr><th>Class Teacher's Report</th><td id="teacherCommentText">—</td></tr>
+            <tr><th>Academics Head's Comment</th><td id="academicCommentText">—</td></tr>
+            <tr><th>Administrative Head's Comment</th><td id="adminCommentText">—</td></tr>
+          </tbody>
+        </table>
 
-            <div class="school-info text-center">
-              <h2>ROHI SCHOOLS</h2>
-              <p class="mb-1">Comprehensive Digital Academic Report</p>
-              <small>Raising principled leaders through sound education</small>
-            </div>
-
-            <div class="result-badge">
-              <span>Official Result</span>
-            </div>
-          </div>
-
-          <!-- Student Info -->
-          <div class="info-grid">
-            <div class="info-box">
-              <h6>Student Name</h6>
-              <p id="studentName">—</p>
-            </div>
-
-            <div class="info-box">
-              <h6>Portal Number</h6>
-              <p id="portalNumber">—</p>
-            </div>
-
-            <div class="info-box">
-              <h6>Class</h6>
-              <p id="studentClass">—</p>
-            </div>
-
-            <div class="info-box">
-              <h6>Term</h6>
-              <p id="termName">—</p>
-            </div>
-
-            <div class="info-box">
-              <h6>Session</h6>
-              <p id="termSession">—</p>
-            </div>
-
-            <div class="info-box">
-              <h6>Position</h6>
-              <p id="classPosition">—</p>
-            </div>
-          </div>
-
-          <!-- Result Table -->
-          <div class="table-card">
-            <div class="section-heading">
-              <h4>Academic Performance</h4>
-              <p class="mb-0">Breakdown of subject scores and grades</p>
-            </div>
-
-            <div class="table-responsive">
-              <table class="table result-table align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Subject</th>
-                    <th>CA</th>
-                    <th>Exam</th>
-                    <th>Total</th>
-                    <th>Grade</th>
-                    <th>Remark</th>
-                  </tr>
-                </thead>
-                <tbody id="resultsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Summary -->
-          <div class="summary-layout">
-            <div class="summary-card">
-              <div class="section-heading">
-                <h4>Performance Summary</h4>
-              </div>
-
-              <div class="summary-grid">
-                <div class="summary-box">
-                  <h3 id="sumTotal">—</h3>
-                  <p>Total Score</p>
-                </div>
-                <div class="summary-box">
-                  <h3 id="sumAverage">—</h3>
-                  <p>Average Score</p>
-                </div>
-                <div class="summary-box">
-                  <h3 id="sumSubjects">—</h3>
-                  <p>Subjects Offered</p>
-                </div>
-                <div class="summary-box">
-                  <h3 id="sumGrade">—</h3>
-                  <p>Overall Grade</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="summary-card">
-              <div class="section-heading">
-                <h4>Overview</h4>
-              </div>
-
-              <div class="remarks-box">
-                <p id="performanceSummaryText">—</p>
-                <p id="classAverageText" class="mb-0"></p>
-              </div>
-
-              <div class="signature-grid">
-                <div class="signature-box">
-                  <span class="sign-line"></span>
-                  <p>Class Teacher</p>
-                </div>
-                <div class="signature-box">
-                  <span class="sign-line"></span>
-                  <p>Principal</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Grading System -->
-          <div class="grading-card">
-            <div class="section-heading">
-              <h4>Grading System</h4>
-            </div>
-
-            <div class="grading-grid">
-              <div class="grading-item"><strong>A:</strong> 70 - 100</div>
-              <div class="grading-item"><strong>B:</strong> 60 - 69</div>
-              <div class="grading-item"><strong>C:</strong> 50 - 59</div>
-              <div class="grading-item"><strong>D:</strong> 45 - 49</div>
-              <div class="grading-item"><strong>E:</strong> 40 - 44</div>
-              <div class="grading-item"><strong>F:</strong> 0 - 39</div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
   </div>
@@ -196,22 +215,224 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const FEE_LABELS = { paid: "Paid", owing: "Owing", part_payment: "Part Payment" };
+
+    const AFFECTIVE_TRAITS = ["Punctuality", "Mental Alertness", "Behaviour", "Reliability", "Attentiveness", "Respect", "Neatness", "Politeness", "Honesty", "Relationship with Staff", "Relationship with Students", "Attitude to School", "Self Control", "Spirit of Teamwork", "Initiatives", "Organizational Ability"];
+    const PSYCHOMOTOR_SKILLS = ["Handwriting", "Reading", "Verbal Fluency Diction", "Musical Skills", "Creative Arts", "Physical Education", "General Reasoning"];
+
+    // ---- 9-point WAEC/NECO grading ----
     function gradeFor(total) {
-      if (total >= 70) return "A";
-      if (total >= 60) return "B";
-      if (total >= 50) return "C";
-      if (total >= 45) return "D";
-      if (total >= 40) return "E";
-      return "F";
+      if (total >= 75) return "A1";
+      if (total >= 70) return "B2";
+      if (total >= 65) return "B3";
+      if (total >= 60) return "C4";
+      if (total >= 55) return "C5";
+      if (total >= 50) return "C6";
+      if (total >= 45) return "D7";
+      if (total >= 40) return "E8";
+      return "F9";
     }
     function gradeClass(grade) {
-      if (grade === "A") return "grade-a";
-      if (grade === "B") return "grade-b";
-      if (grade === "C") return "grade-c";
-      return "grade-d";
+      if (grade === "A1") return "g-a";
+      if (grade === "B2" || grade === "B3") return "g-b";
+      if (grade === "C4" || grade === "C5" || grade === "C6") return "g-c";
+      if (grade === "D7" || grade === "E8") return "g-d";
+      return "g-f";
     }
     function remarkFor(grade) {
-      return { A: "Excellent", B: "Very Good", C: "Good", D: "Fair", E: "Pass", F: "Fail" }[grade] || "—";
+      return { A1: "Excellent", B2: "Very good", B3: "Good", C4: "Credit", C5: "Credit", C6: "Credit", D7: "Pass", E8: "Pass", F9: "Fail" }[grade] || "—";
+    }
+
+    // Trims trailing zeros so 28.50 shows as 28.5 and 28.00 as 28.
+    function fmt(n) {
+      if (n === null || n === undefined || n === "") return "—";
+      const num = Number(n);
+      if (!Number.isFinite(num)) return "—";
+      return String(Math.round(num * 100) / 100);
+    }
+    function num(n) {
+      const v = Number(n);
+      return Number.isFinite(v) ? v : 0;
+    }
+    function ordinal(n) {
+      const s = ["th", "st", "nd", "rd"];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+    function formatDate(dateStr) {
+      if (!dateStr) return "—";
+      return new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    }
+    function ageFromDob(dob, asOfDate) {
+      if (!dob) return null;
+      const birth = new Date(dob);
+      const asOf = asOfDate ? new Date(asOfDate) : new Date();
+      let age = asOf.getFullYear() - birth.getFullYear();
+      const m = asOf.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && asOf.getDate() < birth.getDate())) age--;
+      return age;
+    }
+
+    // ---- Performance tier + automatic remark bank ----
+    function performanceTier(average) {
+      if (average >= 75) return "outstanding";
+      if (average >= 70) return "very_good";
+      if (average >= 60) return "good";
+      if (average >= 50) return "credit";
+      if (average >= 40) return "pass";
+      return "fail";
+    }
+    const TIER_LABELS = {
+      outstanding: "Excellent",
+      very_good: "Very good",
+      good: "Good",
+      credit: "Credit",
+      pass: "Pass",
+      fail: "Needs improvement",
+    };
+
+    const COMMENT_BANK = {
+      teacher: {
+        outstanding: [
+          "Exceptional work this term — {name} is a true model student.",
+          "{name} has excelled remarkably, showing a strong grasp of every subject and consistent diligence in class.",
+          "A brilliant result. {name} continues to set the pace among peers through hard work and focus.",
+          "Outstanding performance. The dedication {name} shows in and out of class is clear in these results.",
+        ],
+        very_good: [
+          "A very good term. {name} shows strong understanding and steady effort — keep pushing for the top.",
+          "{name} has done very well and shows real commitment to academic work.",
+          "Very good result overall. {name} is encouraged to maintain this effort and aim for excellence.",
+          "A solid, very good showing from {name}. Continued hard work will bring even better results.",
+        ],
+        good: [
+          "A good term. {name} is doing well and can achieve more with greater consistency.",
+          "{name} has put in good work this term. More attention to weaker subjects will lift the overall result.",
+          "A good result. {name} should build steadier study habits to move further up.",
+          "{name} shows good potential — with more dedication, better results are well within reach.",
+        ],
+        credit: [
+          "An average term. {name} needs to put in more effort and pay closer attention in class.",
+          "{name}'s result is fair but there is clear room for improvement with more commitment.",
+          "A moderate result. {name} should dedicate more time to study and ask for help where needed.",
+          "{name} can do better than this. Consistent effort and focus will lift these results.",
+        ],
+        pass: [
+          "{name} managed a pass, but there is a real need for improved effort and consistency.",
+          "This is a below-average result. {name} should take studies more seriously and seek extra support.",
+          "{name}'s performance is a cause for concern. More discipline and effort are needed.",
+          "A weak result. {name} is encouraged to attend extra lessons and improve study habits.",
+        ],
+        fail: [
+          "{name}'s performance this term is unsatisfactory. Serious commitment to studies is required.",
+          "A poor result. {name} needs urgent extra support and a real change in study habits.",
+          "{name} must put in far more effort next term. Please see the class teacher to discuss a support plan.",
+          "A very disappointing result. {name} requires close monitoring and additional academic support.",
+        ],
+      },
+      academic: {
+        outstanding: [
+          "Truly exceptional performance — you're a credit to our school.",
+          "{name}'s record this term reflects outstanding mastery of the curriculum. Sustain this standard.",
+          "A commendable academic showing. The consistency across subjects reflects strong study habits.",
+          "{name} has demonstrated excellent academic capability. We look forward to more of the same.",
+        ],
+        very_good: [
+          "{name}'s academic performance is very good. Consistent revision will push it higher still.",
+          "A very good academic term. A little more consistency will reach the top grades.",
+          "{name} shows strong academic ability — an excellent result is well within reach.",
+          "A very good outcome. {name} should keep building on this solid foundation.",
+        ],
+        good: [
+          "A good academic term, with clear room to improve through more consistent study.",
+          "A good showing. {name} is encouraged to pay closer attention to areas of weakness.",
+          "{name} has performed well. More focus and revision will raise these results further.",
+          "A good outcome. {name} should aim for steadier study habits going forward.",
+        ],
+        credit: [
+          "An average academic result. Extra study time and focused revision are recommended.",
+          "{name} has potential that isn't yet fully realised — more consistent effort is needed.",
+          "{name} is encouraged to seek extra help in weaker subjects to improve academic standing.",
+          "An average outcome. {name} should work with teachers to identify and close learning gaps.",
+        ],
+        pass: [
+          "{name}'s academic performance is below expectation. Remedial attention is recommended.",
+          "This result indicates {name} needs closer academic support and steadier revision.",
+          "{name} is strongly encouraged to seek extra tutoring in weak subject areas.",
+          "A concerning outcome. We recommend {name} receives additional support going forward.",
+        ],
+        fail: [
+          "{name}'s performance is well below expectation and requires urgent intervention.",
+          "This result is a serious concern. We strongly recommend extra classes and closer supervision for {name}.",
+          "{name} needs immediate remedial support to address significant learning gaps.",
+          "An unsatisfactory outcome. A structured support plan is recommended for {name}.",
+        ],
+      },
+      admin: {
+        outstanding: [
+          "Exceptional achievement — a shining example of academic excellence.",
+          "Well done, {name}. These outstanding results reflect great credit on you and the school.",
+          "The administration is proud of {name}'s outstanding achievement. Continue in this direction.",
+          "An excellent term. The administration encourages {name} to keep up this admirable standard.",
+        ],
+        very_good: [
+          "Well done, {name}, on a very good term. Keep pushing for excellence.",
+          "The administration is pleased with {name}'s very good performance this term.",
+          "A commendable result. {name} should keep working toward the top of the class.",
+          "The administration notes {name}'s very good progress and encourages further improvement.",
+        ],
+        good: [
+          "The administration acknowledges {name}'s good performance and encourages more effort.",
+          "A good result, {name}. We believe even better is possible with more commitment.",
+          "The administration is satisfied with {name}'s progress and urges continued effort.",
+          "Good work this term, {name}. Keep pushing to reach your full potential.",
+        ],
+        credit: [
+          "The administration encourages {name} to put in more effort next term.",
+          "{name}'s results call for greater commitment to studies. We believe improvement is possible.",
+          "The administration urges {name} to take academic work more seriously going forward.",
+          "An average result. The administration encourages {name} to work harder for better outcomes.",
+        ],
+        pass: [
+          "The administration is concerned about {name}'s performance and urges immediate improvement.",
+          "{name} needs to significantly improve effort and attitude toward academic work.",
+          "This result falls below the school's expectation. Parents and school should work together on improvement.",
+          "The administration calls for urgent improvement in {name}'s academic commitment.",
+        ],
+        fail: [
+          "The administration is deeply concerned and requests a meeting with parents/guardians.",
+          "This result requires urgent attention from {name}, parents, and teachers alike.",
+          "The administration calls for immediate corrective action regarding {name}'s academic commitment.",
+          "Urgent improvement is required. The administration encourages {name}'s parents to work closely with the school.",
+        ],
+      },
+    };
+
+    function hashString(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = (h << 5) - h + str.charCodeAt(i);
+        h |= 0;
+      }
+      return Math.abs(h);
+    }
+    function pickComment(role, tier, seed, firstName) {
+      const templates = COMMENT_BANK[role][tier];
+      return templates[hashString(seed) % templates.length].replace(/\{name\}/g, firstName);
+    }
+
+    function promotionStatus(term, average) {
+      if (!term || term.name !== "Third Term") return "To be determined at session end";
+      return average >= 40 ? "Promoted to next class" : "Not promoted — repeat class";
+    }
+
+    // "First Term" + "JSS2 Red" + "2025/2026" -> "1ST TERM REPORT CARD JSS2 2025/2026 (RED)"
+    function reportTitleFor(term, className) {
+      const ord = { "First Term": "1ST", "Second Term": "2ND", "Third Term": "3RD" }[term.name] || term.name.toUpperCase();
+      const parts = String(className || "").trim().split(/\s+/).filter(Boolean);
+      const arm = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+      const base = parts.length > 1 ? parts.slice(0, -1).join(" ") : (className || "");
+      return `${ord} TERM REPORT CARD ${base} ${term.session}${arm ? ` (${arm})` : ""}`.replace(/\s+/g, " ").trim();
     }
 
     let currentProfile = null;
@@ -220,22 +441,12 @@
 
     async function guardAndInit() {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-        window.location.href = "portal.html";
-        return;
-      }
+      if (!session) { window.location.href = "portal.html"; return; }
+
       const { data: profile } = await supabaseClient
         .from("profiles").select("*").eq("id", session.user.id).single();
-
-      if (!profile || profile.role !== "student") {
-        window.location.href = "portal.html";
-        return;
-      }
+      if (!profile || profile.role !== "student") { window.location.href = "portal.html"; return; }
       currentProfile = profile;
-
-      document.getElementById("studentName").textContent = profile.full_name || "—";
-      document.getElementById("portalNumber").textContent = profile.portal_number || "—";
-      document.getElementById("studentClass").textContent = profile.class || "—";
 
       const [{ data: terms }, { data: subjects }] = await Promise.all([
         supabaseClient.from("terms").select("*").order("created_at", { ascending: false }),
@@ -247,7 +458,7 @@
       const termSelect = document.getElementById("termSelect");
       if (!allTerms.length) {
         termSelect.innerHTML = '<option value="">No terms available</option>';
-        showNoResults("No academic term has been set up yet.");
+        showNoResults("No academic term has been set up yet.", "");
         return;
       }
       termSelect.innerHTML = allTerms.map((t) => `<option value="${t.id}">${t.name} · ${t.session}</option>`).join("");
@@ -258,73 +469,177 @@
       loadResultsForTerm(current.id);
     }
 
-    function showNoResults(text) {
+    function showNoResults(text, sub) {
       document.getElementById("printArea").style.display = "none";
       document.getElementById("noResultsWrap").style.display = "block";
       document.getElementById("noResultsText").textContent = text;
+      document.getElementById("noResultsSub").textContent = sub || "";
     }
 
     async function loadResultsForTerm(termId) {
       const term = allTerms.find((t) => t.id === termId);
       if (!term) return;
 
-      const { data: results } = await supabaseClient
+      const { data: results, error: resultsError } = await supabaseClient
         .from("results").select("*")
         .eq("student_id", currentProfile.id).eq("term_id", termId).eq("status", "published")
         .order("subject_id");
 
+      if (resultsError) {
+        showNoResults("Could not load your results.", resultsError.message);
+        return;
+      }
       if (!results || !results.length) {
-        showNoResults(`No published results for ${term.name} · ${term.session} yet.`);
+        showNoResults(
+          `Results for ${term.name} · ${term.session} have not been published yet.`,
+          "Once your teachers submit your scores and the school publishes them, your report card will appear here."
+        );
+        return;
+      }
+
+      // A published row whose four components are all zero means the scores
+      // were never actually entered — publishing an empty row shouldn't
+      // produce a report card full of F9s and a meaningless class position.
+      const hasRealScores = results.some((r) =>
+        num(r.test1_score) + num(r.test2_score) + num(r.cbt_score) + num(r.exam_score) > 0);
+      if (!hasRealScores) {
+        showNoResults(
+          `Scores for ${term.name} · ${term.session} have not been entered yet.`,
+          `${results.length} subject${results.length === 1 ? " has" : "s have"} been published for this term but every score is still blank. Please check with your class teacher — your report card will appear here once the marks are entered.`
+        );
         return;
       }
 
       document.getElementById("noResultsWrap").style.display = "none";
       document.getElementById("printArea").style.display = "block";
 
-      document.getElementById("termName").textContent = term.name;
-      document.getElementById("termSession").textContent = term.session;
+      const [rankRes, statsRes, feeRes, remarksRes, classRes] = await Promise.all([
+        supabaseClient.rpc("get_class_rank", { p_term_id: termId }),
+        supabaseClient.rpc("get_my_subject_stats", { p_term_id: termId }),
+        supabaseClient.from("fee_status").select("*").eq("student_id", currentProfile.id).eq("term_id", termId).maybeSingle(),
+        supabaseClient.from("student_term_remarks").select("*").eq("student_id", currentProfile.id).eq("term_id", termId).maybeSingle(),
+        supabaseClient.from("classes").select("*").eq("name", currentProfile.class).maybeSingle(),
+      ]);
 
-      const tbody = document.getElementById("resultsTableBody");
+      // These RPCs feed real columns on the sheet — if one fails, say so in
+      // the console rather than silently rendering a row of dashes.
+      if (rankRes.error) console.error("get_class_rank failed:", rankRes.error.message);
+      if (statsRes.error) console.error("get_my_subject_stats failed:", statsRes.error.message);
+
+      const rank = rankRes.data && rankRes.data[0];
+      const remarksRow = remarksRes.data;
+      const classRow = classRes.data;
+
+      const statsBySubject = {};
+      (statsRes.data || []).forEach((s) => { statsBySubject[s.subject_id] = s; });
+
+      // ---- Header ----
+      document.getElementById("reportTitle").textContent = reportTitleFor(term, currentProfile.class);
+
+      if (currentProfile.photo_path) {
+        const { data: signed } = await supabaseClient.storage
+          .from("student-photos").createSignedUrl(currentProfile.photo_path, 3600);
+        if (signed && signed.signedUrl) {
+          const img = document.getElementById("studentPhoto");
+          img.src = signed.signedUrl;
+          img.style.display = "block";
+          document.getElementById("studentPhotoPlaceholder").style.display = "none";
+        }
+      }
+
+      // ---- Teacher names ----
+      const teacherIds = [...new Set([
+        ...results.map((r) => r.teacher_id),
+        classRow ? classRow.class_teacher_id : null,
+      ].filter(Boolean))];
+      const { data: teacherRows } = teacherIds.length
+        ? await supabaseClient.rpc("get_teacher_names", { p_teacher_ids: teacherIds })
+        : { data: [] };
+      const teacherNameById = {};
+      (teacherRows || []).forEach((t) => { teacherNameById[t.id] = t.full_name; });
+
+      // ---- Subject rows ----
       let totalSum = 0;
-      tbody.innerHTML = results.map((r) => {
+      document.getElementById("resultsTableBody").innerHTML = results.map((r) => {
         const subject = allSubjects.find((s) => s.id === r.subject_id);
-        const total = r.ca_score + r.exam_score;
+        const total = num(r.test1_score) + num(r.test2_score) + num(r.cbt_score) + num(r.exam_score);
         totalSum += total;
         const grade = gradeFor(total);
+        const stat = statsBySubject[r.subject_id];
+        // "Weighted score in class" on the school's existing report card is
+        // the midpoint of the class range for that subject — verified against
+        // every row of the reference card.
+        const weighted = stat ? fmt((num(stat.highest_in_class) + num(stat.lowest_in_class)) / 2) : "—";
         return `<tr>
-          <td>${subject ? subject.name : "—"}</td>
-          <td>${r.ca_score}</td>
-          <td>${r.exam_score}</td>
-          <td>${total}</td>
-          <td><span class="grade ${gradeClass(grade)}">${grade}</span></td>
-          <td>${remarkFor(grade)}</td>
+          <td class="col-subject">${subject ? subject.name : "—"}</td>
+          <td>${fmt(r.test1_score)}</td>
+          <td>${fmt(r.test2_score)}</td>
+          <td>${fmt(r.cbt_score)}</td>
+          <td>${fmt(r.exam_score)}</td>
+          <td class="cell-total">${fmt(total)}</td>
+          <td class="cell-grade ${gradeClass(grade)}">${grade}</td>
+          <td>—</td>
+          <td>${stat ? fmt(stat.class_average) : "—"}</td>
+          <td>${weighted}</td>
+          <td>${stat ? fmt(stat.highest_in_class) : "—"}</td>
+          <td>${stat ? fmt(stat.lowest_in_class) : "—"}</td>
+          <td class="col-remark ${gradeClass(grade)}">${remarkFor(grade)}</td>
         </tr>`;
       }).join("");
 
-      const average = totalSum / results.length;
-      const overallGrade = gradeFor(average);
-      document.getElementById("sumTotal").textContent = totalSum;
-      document.getElementById("sumAverage").textContent = `${average.toFixed(1)}%`;
-      document.getElementById("sumSubjects").textContent = results.length;
-      document.getElementById("sumGrade").textContent = overallGrade;
-      document.getElementById("performanceSummaryText").textContent =
-        `Average score of ${average.toFixed(1)}% across ${results.length} subject${results.length === 1 ? "" : "s"} — overall grade ${overallGrade}.`;
+      // ---- Bio block ----
+      const average = rank && rank.my_average != null ? Number(rank.my_average) : totalSum / results.length;
+      const tier = performanceTier(average);
+      const age = ageFromDob(currentProfile.date_of_birth, term.term_ended);
+      const daysOpened = term.days_opened;
+      const daysPresent = remarksRow ? remarksRow.days_present : null;
 
-      const { data: rankRows } = await supabaseClient.rpc("get_class_rank", { p_term_id: termId });
-      const rank = rankRows && rankRows[0];
-      if (rank && rank.my_rank) {
-        document.getElementById("classPosition").textContent = ordinal(rank.my_rank) + ` of ${rank.class_size}`;
-        document.getElementById("classAverageText").textContent = `Class average this term: ${rank.class_average}.`;
-      } else {
-        document.getElementById("classPosition").textContent = "—";
-        document.getElementById("classAverageText").textContent = "";
-      }
+      const set = (id, value) => { document.getElementById(id).textContent = value; };
+      set("bioSession", term.session);
+      set("bioTerm", term.name);
+      set("bioAge", age != null ? `${age} yrs` : "—");
+      set("bioName", `${currentProfile.full_name || ""} ${currentProfile.surname || ""}`.trim().toUpperCase() || "—");
+      set("bioRegNo", currentProfile.portal_number || "—");
+      set("bioGender", currentProfile.gender === "M" ? "M" : currentProfile.gender === "F" ? "F" : "—");
+      set("bioClass", currentProfile.class || "—");
+      set("bioNextTerm", formatDate(term.next_term_begins));
+      set("bioTermEnded", formatDate(term.term_ended));
+
+      set("bioPosEntire", rank && rank.position_entire ? ordinal(rank.position_entire) : "—");
+      set("bioCountEntire", rank && rank.class_size_entire != null ? rank.class_size_entire : "—");
+      set("bioDaysOpened", daysOpened != null ? daysOpened : "—");
+      set("bioPosSection", rank && rank.my_rank ? ordinal(rank.my_rank) : "—");
+      set("bioCountSection", rank && rank.class_size != null ? rank.class_size : "—");
+      set("bioDaysPresent", daysPresent != null ? daysPresent : "—");
+      set("bioTotal", rank && rank.my_total != null ? fmt(rank.my_total) : fmt(totalSum));
+      set("bioClassAvg", rank && rank.class_average != null ? fmt(rank.class_average) : "—");
+      set("bioDaysAbsent", (daysOpened != null && daysPresent != null) ? Math.max(daysOpened - daysPresent, 0) : "—");
+      set("bioAverage", fmt(average));
+      set("bioLowestAvg", rank && rank.lowest_average != null ? fmt(rank.lowest_average) : "—");
+      set("bioTeacher", classRow && classRow.class_teacher_id && teacherNameById[classRow.class_teacher_id]
+        ? teacherNameById[classRow.class_teacher_id] : "—");
+      set("bioHighestAvg", rank && rank.highest_average != null ? fmt(rank.highest_average) : "—");
+      set("bioPerformance", TIER_LABELS[tier]);
+      set("bioPromotion", promotionStatus(term, average));
+
+      // ---- Traits ----
+      renderRatings("affectiveList", AFFECTIVE_TRAITS, remarksRow ? remarksRow.affective : null);
+      renderRatings("psychomotorList", PSYCHOMOTOR_SKILLS, remarksRow ? remarksRow.psychomotor : null);
+
+      // ---- Comments (manual entry wins; otherwise auto by performance) ----
+      const firstName = (currentProfile.full_name || "the student").split(" ")[0];
+      const manualTeacher = remarksRow && remarksRow.teacher_comment && remarksRow.teacher_comment.trim();
+      const manualAdmin = remarksRow && remarksRow.principal_comment && remarksRow.principal_comment.trim();
+      set("teacherCommentText", manualTeacher || pickComment("teacher", tier, currentProfile.id + termId + "teacher", firstName));
+      set("academicCommentText", pickComment("academic", tier, currentProfile.id + termId + "academic", firstName));
+      set("adminCommentText", manualAdmin || pickComment("admin", tier, currentProfile.id + termId + "admin", firstName));
     }
 
-    function ordinal(n) {
-      const s = ["th", "st", "nd", "rd"];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    function renderRatings(containerId, traitList, ratingsObj) {
+      document.getElementById(containerId).innerHTML = traitList.map((trait) => {
+        const score = ratingsObj && ratingsObj[trait] != null ? ratingsObj[trait] : "—";
+        return `<tr><td>${trait}</td><td class="col-rating">${score}</td></tr>`;
+      }).join("");
     }
 
     guardAndInit();

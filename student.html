@@ -509,19 +509,33 @@
       const attemptByExam = {};
       myAttempts.forEach((a) => { attemptByExam[a.exam_id] = a; });
 
+      const now = new Date();
       list.innerHTML = exams.map((exam) => {
         const subject = allSubjects.find((s) => s.id === exam.subject_id);
         const attempt = attemptByExam[exam.id];
-        const rightSide = attempt
-          ? `<span class="badge-pill badge-published" style="align-self:center;">Score: ${attempt.score}/${attempt.total_questions}</span>`
-          : `<a href="take-exam.html?exam=${exam.id}" class="action-link" style="align-self:center;white-space:nowrap;">Start Exam <i class="bi bi-arrow-right"></i></a>`;
+        const notYetOpen = exam.available_from && now < new Date(exam.available_from);
+        const closed = exam.available_until && now > new Date(exam.available_until);
+
+        let rightSide;
+        let metaLine = `${subject ? subject.name : "Subject"} · ${exam.duration_minutes} min`;
+        if (attempt) {
+          rightSide = `<span class="badge-pill badge-published" style="align-self:center;">Completed</span>`;
+        } else if (notYetOpen) {
+          rightSide = `<span class="badge-pill badge-submitted" style="align-self:center;">Opens ${new Date(exam.available_from).toLocaleString()}</span>`;
+        } else if (closed) {
+          rightSide = `<span class="badge-pill badge-class" style="align-self:center;">Closed</span>`;
+        } else {
+          rightSide = `<a href="take-exam.html?exam=${exam.id}" class="action-link" style="align-self:center;white-space:nowrap;">Start Exam <i class="bi bi-arrow-right"></i></a>`;
+          if (exam.available_until) metaLine += ` · closes ${new Date(exam.available_until).toLocaleString()}`;
+        }
+
         return `
           <div class="activity-item" style="justify-content:space-between;">
             <div class="d-flex gap-3">
               <div class="activity-icon"><i class="bi bi-pencil-square"></i></div>
               <div>
                 <h6>${exam.title}</h6>
-                <p>${subject ? subject.name : "Subject"} · ${exam.duration_minutes} min</p>
+                <p>${metaLine}</p>
               </div>
             </div>
             ${rightSide}
