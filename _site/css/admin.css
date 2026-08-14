@@ -433,20 +433,22 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-btn span {
 
 .class-group-count { font-size: 0.78rem; font-weight: 500; color: var(--muted); }
 
+/* display none/block rather than a max-height transition: a class of 30+
+   students rendered as stacked cards on a phone is far taller than any fixed
+   max-height, and the old 3000px cap silently clipped the bottom of the list. */
 .class-group-body {
   background: rgba(255,255,255,0.5);
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  display: none;
   padding: 0 1rem;
 }
 
 .class-group-body.open {
-  max-height: 3000px;
-  opacity: 1;
+  display: block;
   padding: 0.75rem 1rem 1rem;
+  animation: groupFade 0.2s ease;
 }
+
+@keyframes groupFade { from { opacity: 0; } to { opacity: 1; } }
 
 .class-group-body .data-table { font-size: 0.83rem; }
 
@@ -1064,3 +1066,127 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-btn span {
 .profile-history-field { font-size: 0.72rem; font-weight: 700; color: var(--purple-ink, var(--ink)); }
 .profile-history-change { font-size: 0.75rem; color: var(--ink); }
 .profile-history-meta { font-size: 0.68rem; color: var(--muted); }
+
+/* =========================================================
+   Bulk fee entry
+   ========================================================= */
+.bulk-fee-row {
+  background: rgba(89, 6, 148, 0.04);
+  border: 1px dashed rgba(89, 6, 148, 0.25);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.9rem;
+}
+.bulk-fee-row > label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.bulk-fee-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.bulk-fee-input {
+  flex: 1 1 150px;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--border-c);
+  border-radius: 9px;
+  font-size: 0.9rem;
+}
+.bulk-fee-hint { margin: 0.5rem 0 0; font-size: 0.74rem; color: var(--muted); line-height: 1.45; }
+
+/* Collapsed individual result rows — the completion view reports progress,
+   it is not a place to scroll every result in the school. */
+.result-rows-details { margin-top: 0.3rem; }
+.result-rows-details > summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--purple-deep);
+  padding: 0.5rem 0;
+  list-style: none;
+}
+.result-rows-details > summary::-webkit-details-marker { display: none; }
+.result-rows-details > summary::before { content: "▸ "; }
+.result-rows-details[open] > summary::before { content: "▾ "; }
+
+/* =========================================================
+   Mobile — most of this school will open the portal on a phone
+   ========================================================= */
+
+/* Never let a wide table push the whole page sideways. */
+html, body { max-width: 100%; overflow-x: hidden; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 780px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .stat-card { padding: 0.85rem 0.9rem; }
+  .stat-value { font-size: 1.25rem; }
+
+  .filter-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .filter-row > * { width: 100%; max-width: none; }
+  .form-row { grid-template-columns: 1fr; }
+
+  .panel { padding: 1rem 0.9rem; border-radius: 14px; }
+  .panel-header-flex { gap: 0.6rem; }
+  .panel-header-icon { display: none; }
+
+  /* Comfortable thumb targets. */
+  .approve-btn, .primary-btn, .topbar-btn { min-height: 42px; padding: 10px 14px; }
+  .row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .row-actions .approve-btn { flex: 1 1 auto; justify-content: center; }
+
+  /* iOS zooms the page whenever a focused input is under 16px. */
+  input, select, textarea { font-size: 16px !important; }
+
+  .revenue-chart-grid { grid-template-columns: 1fr; }
+}
+
+/* Stacked table cards: on a phone a 7-column grid is unreadable, so each row
+   becomes a small card with its column name beside each value. Only applied
+   to tables opted in via .stacked-on-mobile, which carry data-label on cells. */
+@media (max-width: 680px) {
+  table.stacked-on-mobile,
+  table.stacked-on-mobile tbody,
+  table.stacked-on-mobile tr,
+  table.stacked-on-mobile td { display: block; width: 100%; }
+
+  table.stacked-on-mobile thead { display: none; }
+
+  table.stacked-on-mobile tr {
+    border: 1px solid var(--border-c);
+    border-radius: 12px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.7rem;
+    background: #fff;
+  }
+
+  table.stacked-on-mobile td {
+    border: none;
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: right;
+  }
+
+  table.stacked-on-mobile td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    text-align: left;
+    flex: 0 0 auto;
+  }
+  /* Cells with no label (action buttons) go full width. */
+  table.stacked-on-mobile td[data-label=""]::before { content: none; }
+  table.stacked-on-mobile td[data-label=""] { justify-content: stretch; padding-top: 8px; }
+
+  table.stacked-on-mobile td input.score-input { width: 110px; text-align: right; }
+
+  .class-group-header { flex-wrap: wrap; gap: 4px; }
+  .class-group-count { font-size: 0.72rem; }
+}

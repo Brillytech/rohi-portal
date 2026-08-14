@@ -297,3 +297,21 @@ body {
   /* force the greys/colours to actually print */
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
+
+/* ---------- Mobile: the report card on a phone ----------
+   The sheet is a fixed-geometry A4 document, so rather than reflow it into
+   something that no longer matches the printed page, let it keep its shape
+   and scroll horizontally inside its own container. Print output is
+   unaffected — the @media print block owns that. */
+@media screen and (max-width: 820px) {
+  .results-main { padding: 0.75rem 0.5rem 2rem; }
+  .sheet-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Keep the sheet at document width and let it scroll, rather than crushing
+     a 13-column table into a phone and making it unreadable. */
+  .sheet-scroll .sheet { min-width: 900px; }
+  .topbar-wrap { padding: 0.6rem 0.75rem; }
+  .topbar-actions { width: 100%; }
+  .topbar-actions #termSelect { flex: 1; min-width: 0; }
+  #termSelect, .topbar-btn { font-size: 16px; min-height: 42px; }
+  .no-results { padding: 2.5rem 1rem; }
+}

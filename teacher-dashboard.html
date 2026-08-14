@@ -525,9 +525,9 @@ async function loadClasses() {
     const r = classSortRank(a.level_key || a.name) - classSortRank(b.level_key || b.name);
     return r !== 0 ? r : (a.arm || "").localeCompare(b.arm || "") || a.name.localeCompare(b.name);
   });
-  const options = allClasses.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
-  document.getElementById("entryClass").innerHTML = '<option value="">Select a class</option>' + options;
-  document.getElementById("examClass").innerHTML = '<option value="">Select a class</option>' + options;
+  // entryClass / examClass are filled by refreshClassAndSubjectPairs() once
+  // the teacher's subjects are known, so they can be narrowed to classes that
+  // actually study those subjects.
 
   const myClassOptions = allClasses
     .filter((c) => c.class_teacher_id === currentTeacher.id)
@@ -573,11 +573,69 @@ async function loadMySubjects() {
 
   renderMySubjects();
 
-  const subjectOptions = '<option value="">Select a subject</option>' +
-    mySubjects.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
-  document.getElementById("entrySubject").innerHTML = subjectOptions;
-  document.getElementById("examSubject").innerHTML = subjectOptions;
+  refreshClassAndSubjectPairs();
 }
+
+// Mirrors public.subject_categories_for_level in SQL. A class only studies
+// subjects in its own curriculum band, and a teacher should only be offered
+// classes their subjects are actually taught in — so these two filter each
+// other rather than every dropdown listing everything.
+function categoryMatcherForClass(className) {
+  const cls = allClasses.find((c) => c.name === className);
+  const level = (cls && cls.level_key) || className || "";
+  if (/^nursery/i.test(level)) return (c) => c === "Nursery";
+  if (/^(kindergarten|kg)/i.test(level)) return (c) => c === "Kindergarten";
+  if (/^primary/i.test(level)) return (c) => c === "Primary";
+  if (/^jss/i.test(level)) return (c) => c === "Junior Secondary";
+  if (/^ss/i.test(level)) return (c) => (c || "").startsWith("Senior Secondary");
+  return null;
+}
+
+function subjectsForClass(className, pool) {
+  if (!className) return pool;
+  const matches = categoryMatcherForClass(className);
+  if (!matches) return pool;
+  const filtered = pool.filter((s) => matches(s.category));
+  // Never hand back an empty dropdown.
+  return filtered.length ? filtered : pool;
+}
+
+// Classes whose curriculum includes at least one subject this teacher teaches.
+function classesForMySubjects() {
+  if (!mySubjects.length) return allClasses;
+  const usable = allClasses.filter((c) => {
+    const matches = categoryMatcherForClass(c.name);
+    return !matches || mySubjects.some((s) => matches(s.category));
+  });
+  return usable.length ? usable : allClasses;
+}
+
+function classOptionsHtml(list, selected) {
+  return '<option value="">Select a class</option>' +
+    list.map((c) => `<option value="${c.name}"${c.name === selected ? " selected" : ""}>${c.name}</option>`).join("");
+}
+
+function refreshSubjectOptionsFor(classSelectId, subjectSelectId) {
+  const className = document.getElementById(classSelectId).value;
+  const select = document.getElementById(subjectSelectId);
+  const previous = select.value;
+  const options = subjectsForClass(className, mySubjects);
+  select.innerHTML = '<option value="">Select a subject</option>' +
+    options.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
+  if (previous && options.some((s) => s.id === previous)) select.value = previous;
+}
+
+function refreshClassAndSubjectPairs() {
+  const usable = classesForMySubjects();
+  ["entryClass", "examClass"].forEach((id) => {
+    const el = document.getElementById(id);
+    const keep = el.value;
+    el.innerHTML = classOptionsHtml(usable, keep);
+  });
+  refreshSubjectOptionsFor("entryClass", "entrySubject");
+  refreshSubjectOptionsFor("examClass", "examSubject");
+}
+
 
 function renderMySubjects() {
   const tbody = document.querySelector("#subjectsTable tbody");
@@ -686,16 +744,16 @@ async function loadResultEntry() {
     const isPublished = r && r.published;
     const total = r ? (r.test1_score + r.test2_score + r.cbt_score + r.exam_score) : 0;
     return `<tr data-student="${s.id}">
-      <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
-      <td><input type="number" class="score-input entry-test1" min="0" max="15" step="0.5" value="${r ? r.test1_score : 0}" ${isPublished ? "disabled" : ""} /></td>
-      <td><input type="number" class="score-input entry-test2" min="0" max="15" step="0.5" value="${r ? r.test2_score : 0}" ${isPublished ? "disabled" : ""} /></td>
-      <td>
+      <td data-label="Student"><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+      <td data-label="Test 1 (15)"><input type="number" class="score-input entry-test1" min="0" max="15" step="0.5" value="${r ? r.test1_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td data-label="Test 2 (15)"><input type="number" class="score-input entry-test2" min="0" max="15" step="0.5" value="${r ? r.test2_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td data-label="CBT (40)">
         <input type="number" class="score-input entry-cbt" min="0" max="40" step="0.5" value="${r ? r.cbt_score : 0}" ${isPublished ? "disabled" : ""} />
         ${r && r.cbt_score > 0 ? '<div class="widget-list-meta" style="margin-top:2px;">from CBT</div>' : ""}
       </td>
-      <td><input type="number" class="score-input entry-exam" min="0" max="30" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
-      <td class="entry-total">${total}</td>
-      <td>${r
+      <td data-label="Exam (30)"><input type="number" class="score-input entry-exam" min="0" max="30" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td data-label="Total" class="entry-total">${total}</td>
+      <td data-label="Status">${r
         ? `<span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span>`
         : '<span class="empty-hint" style="padding:0;">Not entered</span>'}</td>
     </tr>`;
@@ -703,7 +761,7 @@ async function loadResultEntry() {
 
   wrap.innerHTML = `
     <div class="table-wrap">
-      <table class="data-table">
+      <table class="data-table stacked-on-mobile">
         <thead><tr><th>Student</th><th>Test1 (15)</th><th>Test2 (15)</th><th>CBT (40)</th><th>Exam (30)</th><th>Total</th><th>Status</th></tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
@@ -791,6 +849,13 @@ async function loadResultEntry() {
 
 ["entrySubject", "entryClass", "entryTerm"].forEach((id) => {
   document.getElementById(id).addEventListener("change", loadResultEntry);
+});
+
+document.getElementById("entryClass").addEventListener("change", () => {
+  refreshSubjectOptionsFor("entryClass", "entrySubject");
+});
+document.getElementById("examClass").addEventListener("change", () => {
+  refreshSubjectOptionsFor("examClass", "examSubject");
 });
 
 // ---- My students (classes I'm the class teacher of) ----

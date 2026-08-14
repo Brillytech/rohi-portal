@@ -6,7 +6,7 @@
   <title>Student Results | Rohi Portal</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
-  <link rel="stylesheet" href="css/student-results.css?v=4" />
+  <link rel="stylesheet" href="css/student-results.css?v=5" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -42,7 +42,8 @@
         <p class="no-results-sub" id="noResultsSub"></p>
       </div>
 
-      <div class="sheet" id="printArea" style="display:none;">
+      <div class="sheet-scroll">
+        <div class="sheet" id="printArea" style="display:none;">
 
         <!-- ── Letterhead ─────────────────────────────────────── -->
         <header class="letterhead">
@@ -206,6 +207,7 @@
           </tbody>
         </table>
 
+        </div>
       </div>
     </main>
   </div>

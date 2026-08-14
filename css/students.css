@@ -464,3 +464,18 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .welcome-label { font-family: 'Sora', san
 }
 .profile-photo-empty i { font-size: 2rem; }
 .profile-photo-empty span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; }
+
+/* =========================================================
+   Mobile — students overwhelmingly open this on a phone
+   ========================================================= */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+@media (max-width: 780px) {
+  .portal-card, .section-card { padding: 1rem 0.9rem; border-radius: 14px; }
+  .summary-box { padding: 0.8rem 0.9rem; }
+  /* iOS zooms whenever a focused input is under 16px. */
+  input, select, textarea, .form-control, .form-select { font-size: 16px !important; }
+  .btn { min-height: 42px; }
+  .activity-item { flex-wrap: wrap; gap: 8px; }
+  .activity-item .action-link, .activity-item .badge-pill { align-self: flex-start !important; }
+}

@@ -952,6 +952,59 @@ navItems.forEach((n) => n.addEventListener("click", () => {
 // ---- Auth guard ----
 let currentAdmin = null;
 
+// Supabase keeps the session in localStorage, which every tab on this origin
+// shares. Logging in as a student or teacher in a second tab therefore
+// replaces the admin session underneath this page — reads already on screen
+// still look fine, but the next write goes out as that other user and the
+// database rejects it with a bare "row-level security" error. Rather than
+// surface that as-is, find out who the browser is actually signed in as and
+// say so.
+async function describeSessionProblem() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    return "You are signed out — your session expired or you logged out in another tab. Please log in again as an admin.";
+  }
+  const { data: who } = await supabaseClient
+    .from("profiles").select("full_name, role").eq("id", session.user.id).maybeSingle();
+
+  if (who && who.role !== "admin") {
+    return `This browser is now signed in as ${who.full_name || "another user"} (${who.role}), not an admin. `
+      + `Logging in as a student or teacher in another tab replaces the admin login, because the session is shared across tabs. `
+      + `Please log in again as an admin in this tab.`;
+  }
+  if (!who) {
+    return "This browser is signed in as a user with no portal profile. Please log in again as an admin.";
+  }
+  return null; // still a valid admin — the failure was something else
+}
+
+// Wrap any Supabase error so a permission failure explains itself.
+async function reportDbError(error, whatFailed) {
+  const isPermission = error && (error.code === "42501" || /row-level security|permission denied/i.test(error.message || ""));
+  if (isPermission) {
+    const explanation = await describeSessionProblem();
+    if (explanation) {
+      showToast(explanation);
+      return;
+    }
+  }
+  showToast(`${whatFailed}: ${error.message}`);
+}
+
+// Catch the swap as soon as the tab is looked at again, instead of waiting
+// for the user to lose a form's worth of typing to a failed save.
+let sessionWarningShown = false;
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || !currentAdmin) return;
+  const problem = await describeSessionProblem();
+  if (problem && !sessionWarningShown) {
+    sessionWarningShown = true;
+    showToast(problem);
+  } else if (!problem) {
+    sessionWarningShown = false;
+  }
+});
+
 async function guardAndInit() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
@@ -1488,9 +1541,8 @@ async function loadSubjects() {
   allSubjects = subjects || [];
   allAssignments = assignments || [];
 
-  const resultSubjectSelect = document.getElementById("resultSubject");
-  resultSubjectSelect.innerHTML = '<option value="">Select a subject</option>' +
-    allSubjects.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
+  // Narrowed to the selected class's curriculum (see subjectsForClass).
+  refreshResultSubjectOptions();
 
   const teacherSubjectsGrid = document.getElementById("teacherSubjectsGrid");
   teacherSubjectsGrid.innerHTML = allSubjects.length
@@ -2596,6 +2648,38 @@ document.getElementById("addTermForm").addEventListener("submit", async (e) => {
 let openResultGroups = new Set();
 let editingResultId = null;
 
+// Mirrors public.subject_categories_for_level in SQL: a class only studies
+// the subjects in its own curriculum band, so once a class is chosen the
+// subject list must narrow to match. Showing Nursery rhymes and SS3 Physics
+// side by side after picking JSS2 is just wrong.
+function subjectsForClass(className, pool) {
+  if (!className) return pool;
+  const cls = allClasses.find((c) => c.name === className);
+  const level = (cls && cls.level_key) || className || "";
+  let matches;
+  if (/^nursery/i.test(level)) matches = (c) => c === "Nursery";
+  else if (/^(kindergarten|kg)/i.test(level)) matches = (c) => c === "Kindergarten";
+  else if (/^primary/i.test(level)) matches = (c) => c === "Primary";
+  else if (/^jss/i.test(level)) matches = (c) => c === "Junior Secondary";
+  else if (/^ss/i.test(level)) matches = (c) => (c || "").startsWith("Senior Secondary");
+  else return pool;
+
+  const filtered = pool.filter((s) => matches(s.category));
+  // Never hand back an empty dropdown — if the curriculum mapping doesn't
+  // recognise this class, showing everything beats showing nothing.
+  return filtered.length ? filtered : pool;
+}
+
+function refreshResultSubjectOptions() {
+  const className = document.getElementById("resultClass").value;
+  const select = document.getElementById("resultSubject");
+  const previous = select.value;
+  const options = subjectsForClass(className, allSubjects);
+  select.innerHTML = '<option value="">Select a subject</option>' +
+    options.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
+  if (previous && options.some((s) => s.id === previous)) select.value = previous;
+}
+
 document.getElementById("resultClass").addEventListener("change", () => {
   const className = document.getElementById("resultClass").value;
   const studentSelect = document.getElementById("resultStudent");
@@ -2603,6 +2687,7 @@ document.getElementById("resultClass").addEventListener("change", () => {
   studentSelect.innerHTML = studentsInClass.length
     ? studentsInClass.map((s) => `<option value="${s.id}">${s.full_name} (${s.portal_number})</option>`).join("")
     : '<option value="">No students in this class</option>';
+  refreshResultSubjectOptions();
 });
 
 // Standard WAEC/NECO 9-point scale, matching the school's actual report card.
@@ -2703,6 +2788,9 @@ document.getElementById("addResultForm").addEventListener("submit", async (e) =>
 // straight in the table; this view reports how complete the marking is and
 // publishes a whole class/term in one action.
 let completionData = [];
+// Remembers which classes had their individual result rows expanded, so a
+// re-render after an edit does not collapse what the admin was looking at.
+const showAllResults = new Set();
 let completionResults = [];
 
 async function loadCompletion() {
@@ -2752,15 +2840,15 @@ function renderCompletion() {
 
       if (editingResultId === r.id) {
         return `<tr>
-          <td>${student ? student.full_name : "—"}</td>
-          <td>${subject ? subject.name : "—"}</td>
-          <td><input type="number" min="0" step="0.5" class="score-input edit-result-test1" value="${r.test1_score}" /></td>
-          <td><input type="number" min="0" step="0.5" class="score-input edit-result-test2" value="${r.test2_score}" /></td>
-          <td><input type="number" min="0" step="0.5" class="score-input edit-result-cbt" value="${r.cbt_score}" /></td>
-          <td><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
-          <td>—</td>
-          <td>${r.published ? "published" : "saved"}</td>
-          <td class="row-actions">
+          <td data-label="Student">${student ? student.full_name : "—"}</td>
+          <td data-label="Subject">${subject ? subject.name : "—"}</td>
+          <td data-label="Test 1"><input type="number" min="0" step="0.5" class="score-input edit-result-test1" value="${r.test1_score}" /></td>
+          <td data-label="Test 2"><input type="number" min="0" step="0.5" class="score-input edit-result-test2" value="${r.test2_score}" /></td>
+          <td data-label="CBT"><input type="number" min="0" step="0.5" class="score-input edit-result-cbt" value="${r.cbt_score}" /></td>
+          <td data-label="Exam"><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
+          <td data-label="Total">—</td>
+          <td data-label="Status">${r.published ? "published" : "saved"}</td>
+          <td data-label="" class="row-actions">
             <button class="approve-btn save-result-btn" data-id="${r.id}">Save</button>
             <button class="approve-btn cancel-result-btn">Cancel</button>
           </td>
@@ -2768,15 +2856,15 @@ function renderCompletion() {
       }
 
       return `<tr>
-        <td>${student ? student.full_name : "—"}</td>
-        <td>${subject ? subject.name : "—"}</td>
-        <td>${r.test1_score}</td>
-        <td>${r.test2_score}</td>
-        <td>${r.cbt_score}</td>
-        <td>${r.exam_score}</td>
-        <td>${total} (${gradeFor(total)})</td>
-        <td><span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span></td>
-        <td class="row-actions">
+        <td data-label="Student">${student ? student.full_name : "—"}</td>
+        <td data-label="Subject">${subject ? subject.name : "—"}</td>
+        <td data-label="Test 1">${r.test1_score}</td>
+        <td data-label="Test 2">${r.test2_score}</td>
+        <td data-label="CBT">${r.cbt_score}</td>
+        <td data-label="Exam">${r.exam_score}</td>
+        <td data-label="Total">${total} (${gradeFor(total)})</td>
+        <td data-label="Status"><span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span></td>
+        <td data-label="" class="row-actions">
           <button class="approve-btn edit-result-btn" data-id="${r.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
           <button class="approve-btn delete-btn delete-result-btn" data-id="${r.id}"><i class="bi bi-trash-fill"></i> Delete</button>
         </td>
@@ -2809,10 +2897,17 @@ function renderCompletion() {
           ${unpublished > 0 ? `<button type="button" class="approve-btn publish-class-btn" data-group="${groupName}">Publish all results for ${groupName}</button>` : ""}
           ${published > 0 ? `<button type="button" class="approve-btn delete-btn unpublish-class-btn" data-group="${groupName}">Unpublish ${groupName}</button>` : ""}
         </div>
-        ${rows.length ? `<table class="data-table">
-          <thead><tr><th>Student</th><th>Subject</th><th>Test1</th><th>Test2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>` : '<p class="empty-hint" style="text-align:left;padding:0;">No results entered for this class yet.</p>'}
+        ${rows.length ? `
+          <details class="result-rows-details"${showAllResults.has(groupName) ? " open" : ""}>
+            <summary>Show the ${rows.length} individual result row${rows.length === 1 ? "" : "s"} for ${groupName}</summary>
+            <div class="table-wrap">
+              <table class="data-table stacked-on-mobile">
+                <thead><tr><th>Student</th><th>Subject</th><th>Test1</th><th>Test2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
+            </div>
+          </details>`
+        : '<p class="empty-hint" style="text-align:left;padding:0;">No results entered for this class yet.</p>'}
       </div>`;
     container.appendChild(groupEl);
   });
@@ -2823,6 +2918,13 @@ function renderCompletion() {
       if (openResultGroups.has(group)) openResultGroups.delete(group);
       else openResultGroups.add(group);
       renderCompletion();
+    });
+  });
+
+  container.querySelectorAll(".result-rows-details").forEach((d) => {
+    const group = d.closest(".class-group").querySelector(".class-group-header").dataset.group;
+    d.addEventListener("toggle", () => {
+      if (d.open) showAllResults.add(group); else showAllResults.delete(group);
     });
   });
 
@@ -2920,6 +3022,7 @@ function renderCompletion() {
 const PAYMENT_STATUS_LABELS = { paid: "Paid", partial: "Partial", owing: "Owing" };
 
 let paymentRows = [];
+let openPaymentGroups = new Set();
 
 function naira(n) {
   const v = Number(n) || 0;
@@ -2935,7 +3038,7 @@ async function loadPayments() {
     return;
   }
   const { data, error } = await supabaseClient.from("payments").select("*").eq("term_id", termId);
-  if (error) { showToast(error.message); return; }
+  if (error) { await reportDbError(error, "Could not load payments"); return; }
   paymentRows = data || [];
   renderPayments();
 }
@@ -2960,17 +3063,14 @@ function renderPayments() {
     (s.surname || "").toLowerCase().includes(q) ||
     (s.portal_number || "").toLowerCase().includes(q));
   if (statusFilter) students = students.filter((s) => (byStudent[s.id]?.status || "owing") === statusFilter);
-  students.sort((a, b) => (a.class || "").localeCompare(b.class || "") || a.full_name.localeCompare(b.full_name));
 
   const totals = students.reduce((acc, s) => {
     const p = byStudent[s.id];
     acc.expected += Number(p?.amount_expected || 0);
     acc.paid += Number(p?.amount_paid || 0);
-    const st = p?.status || "owing";
-    acc[st] = (acc[st] || 0) + 1;
     if (p?.override_allowed) acc.overrides++;
     return acc;
-  }, { expected: 0, paid: 0, paid_n: 0, overrides: 0 });
+  }, { expected: 0, paid: 0, overrides: 0 });
 
   document.getElementById("paymentSummary").innerHTML = `
     <div class="stat-card"><div class="stat-icon-chip chip-purple"><i class="bi bi-people-fill"></i></div><div class="stat-card-body"><span class="stat-label">Students</span><span class="stat-value">${students.length}</span></div></div>
@@ -2983,41 +3083,130 @@ function renderPayments() {
     return;
   }
 
-  wrap.innerHTML = `
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead><tr>
-          <th>Student</th><th>Class</th><th>Expected</th><th>Paid</th><th>Balance</th>
-          <th>Status</th><th>Can view results</th><th></th>
-        </tr></thead>
-        <tbody>
-          ${students.map((s) => {
-            const p = byStudent[s.id];
-            const expected = Number(p?.amount_expected || 0);
-            const paid = Number(p?.amount_paid || 0);
-            const balance = Math.max(expected - paid, 0);
-            const status = p?.status || "owing";
-            const override = !!p?.override_allowed;
-            const canView = status === "paid" || override;
-            return `<tr data-student="${s.id}">
-              <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name} ${s.surname || ""}</td>
-              <td>${s.class || "—"}</td>
-              <td><input type="number" min="0" step="0.01" class="score-input pay-expected" style="width:96px;" value="${expected}" /></td>
-              <td><input type="number" min="0" step="0.01" class="score-input pay-paid" style="width:96px;" value="${paid}" /></td>
-              <td>${naira(balance)}</td>
-              <td><span class="badge-pill badge-pay-${status}">${PAYMENT_STATUS_LABELS[status]}</span></td>
-              <td>
-                <label class="override-toggle" title="Let this student view results despite not being paid in full">
-                  <input type="checkbox" class="pay-override" ${override ? "checked" : ""} ${status === "paid" ? "disabled" : ""} />
-                  <span>${canView ? "Yes" : "No"}</span>
-                </label>
-              </td>
-              <td class="row-actions"><button class="approve-btn save-payment-btn">Save</button></td>
-            </tr>`;
-          }).join("")}
-        </tbody>
-      </table>
-    </div>`;
+  // Grouped by class and collapsed by default — a flat list of every student
+  // in the school is unusable, especially on a phone.
+  const groupNames = [...new Set(students.map((s) => s.class || "Unassigned"))]
+    .sort((a, b) => classSortRank(a) - classSortRank(b));
+
+  wrap.innerHTML = groupNames.map((groupName) => {
+    const inClass = students.filter((s) => (s.class || "Unassigned") === groupName)
+      .sort((a, b) => a.full_name.localeCompare(b.full_name));
+    const isOpen = openPaymentGroups.has(groupName);
+
+    const cTotals = inClass.reduce((acc, s) => {
+      const p = byStudent[s.id];
+      acc.expected += Number(p?.amount_expected || 0);
+      acc.paid += Number(p?.amount_paid || 0);
+      const st = p?.status || "owing";
+      if (st === "paid" || p?.override_allowed) acc.cleared++;
+      return acc;
+    }, { expected: 0, paid: 0, cleared: 0 });
+
+    const rows = inClass.map((s) => {
+      const p = byStudent[s.id];
+      const expected = Number(p?.amount_expected || 0);
+      const paid = Number(p?.amount_paid || 0);
+      const balance = Math.max(expected - paid, 0);
+      const status = p?.status || "owing";
+      const override = !!p?.override_allowed;
+      const canView = status === "paid" || override;
+      return `<tr data-student="${s.id}">
+        <td data-label="Student"><span class="avatar-chip" style="width:26px;height:26px;font-size:0.6rem;margin-right:7px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name} ${s.surname || ""}</td>
+        <td data-label="Expected"><input type="number" min="0" step="0.01" class="score-input pay-expected" value="${expected}" /></td>
+        <td data-label="Paid"><input type="number" min="0" step="0.01" class="score-input pay-paid" value="${paid}" /></td>
+        <td data-label="Balance">${naira(balance)}</td>
+        <td data-label="Status"><span class="badge-pill badge-pay-${status}">${PAYMENT_STATUS_LABELS[status]}</span></td>
+        <td data-label="Can view results">
+          <label class="override-toggle" title="Let this student view results despite not being paid in full">
+            <input type="checkbox" class="pay-override" ${override ? "checked" : ""} ${status === "paid" ? "disabled" : ""} />
+            <span class="override-label">${canView ? "Yes" : "No"}</span>
+          </label>
+        </td>
+        <td data-label="" class="row-actions"><button class="approve-btn save-payment-btn">Save</button></td>
+      </tr>`;
+    }).join("");
+
+    return `
+      <div class="class-group">
+        <button type="button" class="class-group-header payment-group-header" data-group="${groupName}">
+          <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${groupName}</span>
+          <span class="class-group-count">${cTotals.cleared}/${inClass.length} cleared · ${naira(cTotals.paid)} of ${naira(cTotals.expected)}</span>
+        </button>
+        <div class="class-group-body${isOpen ? " open" : ""}">
+          <div class="bulk-fee-row">
+            <label for="bulk-${groupName.replace(/\W/g, "")}">Set expected fee for all ${inClass.length} student${inClass.length === 1 ? "" : "s"} in ${groupName}</label>
+            <div class="bulk-fee-controls">
+              <input type="number" min="0" step="0.01" class="bulk-fee-input" id="bulk-${groupName.replace(/\W/g, "")}" placeholder="e.g. 50000" />
+              <button type="button" class="approve-btn bulk-fee-btn" data-group="${groupName}">Apply to class</button>
+            </div>
+            <p class="bulk-fee-hint">Sets the expected amount for everyone in this class. Amounts already paid are left alone, and you can still edit any student individually below.</p>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table stacked-on-mobile">
+              <thead><tr>
+                <th>Student</th><th>Expected</th><th>Paid</th><th>Balance</th>
+                <th>Status</th><th>Can view results</th><th></th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+
+  wrap.querySelectorAll(".payment-group-header").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const g = btn.dataset.group;
+      if (openPaymentGroups.has(g)) openPaymentGroups.delete(g);
+      else openPaymentGroups.add(g);
+      renderPayments();
+    });
+  });
+
+  // Keep the Yes/No label honest the moment the box is ticked, rather than
+  // only after a save-and-rerender.
+  wrap.querySelectorAll(".pay-override").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const row = cb.closest("tr");
+      const status = row.querySelector(".badge-pill").textContent.trim().toLowerCase();
+      row.querySelector(".override-label").textContent = (cb.checked || status === "paid") ? "Yes" : "No";
+    });
+  });
+
+  wrap.querySelectorAll(".bulk-fee-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const group = btn.dataset.group;
+      const input = btn.parentElement.querySelector(".bulk-fee-input");
+      const amount = parseFloat(input.value);
+      if (!Number.isFinite(amount) || amount < 0) { showToast("Enter the expected fee amount first."); return; }
+
+      const inClass = allStudents.filter((s) => (s.class || "Unassigned") === group);
+      if (!(await appConfirm(`Set the expected fee to ${naira(amount)} for all ${inClass.length} student(s) in ${group}? Amounts already paid are not changed.`))) return;
+
+      btn.disabled = true;
+      btn.textContent = "Applying...";
+      const payload = inClass.map((s) => ({
+        student_id: s.id,
+        term_id: termId,
+        class_at_payment: s.class,
+        amount_expected: amount,
+        // Preserve what each student has already paid / been granted.
+        amount_paid: Number(byStudent[s.id]?.amount_paid || 0),
+        override_allowed: !!byStudent[s.id]?.override_allowed,
+        updated_by: currentAdmin.id,
+      }));
+      const { error } = await supabaseClient.from("payments").upsert(payload, { onConflict: "student_id,term_id" });
+      if (!error) {
+        logActivity(`Set expected fee for <strong>${group}</strong>`);
+        showToast(`Expected fee set for ${inClass.length} student(s) in ${group}.`, "success");
+        loadPayments();
+      } else {
+        await reportDbError(error, "Could not set class fee");
+        btn.disabled = false;
+        btn.textContent = "Apply to class";
+      }
+    });
+  });
 
   wrap.querySelectorAll(".save-payment-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -3043,7 +3232,7 @@ function renderPayments() {
         showToast("Payment saved.", "success");
         loadPayments();
       } else {
-        showToast(error.message);
+        await reportDbError(error, "Could not save payment");
         btn.disabled = false;
         btn.textContent = "Save";
       }
