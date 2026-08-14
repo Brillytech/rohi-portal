@@ -34,6 +34,8 @@
       <button class="nav-item" data-view="students"><i class="bi bi-mortarboard-fill"></i> Students</button>
       <button class="nav-item" data-view="teachers"><i class="bi bi-person-workspace"></i> Teachers</button>
       <button class="nav-item" data-view="results"><i class="bi bi-clipboard-check-fill"></i> Results</button>
+      <button class="nav-item" data-view="payments"><i class="bi bi-cash-coin"></i> Payments</button>
+      <button class="nav-item" data-view="revenue"><i class="bi bi-graph-up-arrow"></i> Revenue</button>
       <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
     </nav>
 
@@ -532,39 +534,85 @@
         <div class="panel">
           <div class="panel-header-flex">
             <div class="panel-header">
-              <h2>Review & publish</h2>
-              <p>Publishing makes a result visible to that student. Grouped by class, for the term selected below.</p>
+              <h2>Submission progress &amp; publishing</h2>
+              <p>How much marking is in for each class this term. Publishing releases every saved result for that class at once.</p>
             </div>
             <div class="panel-header-icon"><i class="bi bi-clipboard-check-fill"></i></div>
           </div>
           <div class="filter-row" style="margin-bottom:1.1rem;">
             <select id="reviewTermFilter" class="search-input filter-select"></select>
           </div>
-          <div id="resultsReviewGroups"></div>
-          <div class="empty-state" id="resultsReviewEmptyHint"><i class="bi bi-clipboard-x"></i><p>No results submitted for this term yet.</p></div>
+          <div id="completionGroups"></div>
+          <div class="empty-state" id="completionEmptyHint"><i class="bi bi-clipboard-x"></i><p>No results entered for this term yet.</p></div>
         </div>
 
         <div class="panel">
           <div class="panel-header-flex">
             <div class="panel-header">
-              <h2>Fees</h2>
-              <p>Set each student's fee status for a term — a simple status only, not payment processing.</p>
+              <h2>Principal's comments</h2>
+              <p>Optional. Anything left blank uses the automatic performance-based comment on the report card.</p>
             </div>
-            <div class="panel-header-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="panel-header-icon"><i class="bi bi-chat-left-text-fill"></i></div>
           </div>
           <div class="form-row" style="margin-bottom:1.25rem;">
             <div class="field">
-              <label for="feesClass">Class</label>
-              <select id="feesClass"><option value="">Select a class</option></select>
+              <label for="commentClass">Class</label>
+              <select id="commentClass"><option value="">Select a class</option></select>
             </div>
             <div class="field">
-              <label for="feesTerm">Term</label>
-              <select id="feesTerm"><option value="">Select a term</option></select>
+              <label for="commentTerm">Term</label>
+              <select id="commentTerm"><option value="">Select a term</option></select>
             </div>
           </div>
-          <div id="feesWrap">
-            <div class="empty-state"><i class="bi bi-cash-coin"></i><p>Choose a class and term to load students.</p></div>
+          <div id="commentsWrap">
+            <div class="empty-state"><i class="bi bi-chat-left-text"></i><p>Choose a class and term to load students.</p></div>
           </div>
+        </div>
+      </section>
+
+      <!-- PAYMENTS -->
+      <section class="view" id="view-payments">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Payments</h2>
+              <p>Fees per student per term. A student can only view their results once they are paid in full — or you grant an override here.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-cash-coin"></i></div>
+          </div>
+          <div class="filter-row" style="margin-bottom:1rem;">
+            <input type="text" id="paymentSearch" class="search-input" placeholder="Search student or portal number..." />
+            <select id="paymentClassFilter" class="search-input filter-select"></select>
+            <select id="paymentTermFilter" class="search-input filter-select"></select>
+            <select id="paymentStatusFilter" class="search-input filter-select">
+              <option value="">All statuses</option>
+              <option value="paid">Paid</option>
+              <option value="partial">Partial</option>
+              <option value="owing">Owing</option>
+            </select>
+          </div>
+          <div class="stat-grid" id="paymentSummary" style="margin-bottom:1.1rem;"></div>
+          <div id="paymentsWrap">
+            <div class="empty-state"><i class="bi bi-cash-coin"></i><p>Choose a term to load students.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REVENUE -->
+      <section class="view" id="view-revenue">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Revenue</h2>
+              <p>Collected against expected, straight from the payment records — nothing is entered twice.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          </div>
+          <div class="filter-row" style="margin-bottom:1.1rem;">
+            <select id="revenueSessionFilter" class="search-input filter-select"></select>
+          </div>
+          <div class="stat-grid" id="revenueSummary" style="margin-bottom:1.25rem;"></div>
+          <div id="revenueCharts"></div>
         </div>
       </section>
 
@@ -658,6 +706,12 @@
         <label for="studentProfileDob">Date of birth</label>
         <input type="date" id="studentProfileDob" />
       </div>
+      <div>
+        <label style="font-size:0.78rem;color:var(--muted);font-weight:600;">Change history</label>
+        <div id="studentProfileHistory" class="profile-history">
+          <p class="empty-hint" style="padding:0;text-align:left;">Loading…</p>
+        </div>
+      </div>
     </div>
     <div class="app-modal-actions" style="margin-top:1.25rem;">
       <button type="button" class="app-modal-cancel" id="studentProfileCancelBtn">Cancel</button>
@@ -743,6 +797,44 @@ async function openStudentProfileModal(student) {
   }
 
   document.getElementById("studentProfileModalBackdrop").classList.add("show");
+  loadProfileHistory(student.id);
+}
+
+// Students can edit their own age/gender/photo, so admin needs to be able to
+// see what changed and who changed it. The log is written by a trigger, so it
+// covers both the student's own edits and admin overrides.
+async function loadProfileHistory(studentId) {
+  const box = document.getElementById("studentProfileHistory");
+  const { data, error } = await supabaseClient
+    .from("profile_change_log").select("*")
+    .eq("student_id", studentId).order("changed_at", { ascending: false }).limit(30);
+
+  if (error) {
+    box.innerHTML = `<p class="empty-hint" style="padding:0;text-align:left;">Could not load history: ${error.message}</p>`;
+    return;
+  }
+  if (!data || !data.length) {
+    box.innerHTML = '<p class="empty-hint" style="padding:0;text-align:left;">No changes recorded yet.</p>';
+    return;
+  }
+
+  const FIELD_LABELS = { gender: "Gender", date_of_birth: "Date of birth", photo_path: "Photo" };
+  box.innerHTML = data.map((row) => {
+    const who = row.changed_by === studentId
+      ? "the student"
+      : (allTeachers.find((t) => t.id === row.changed_by)?.full_name
+         || (row.changed_by ? "an admin" : "system"));
+    const shown = (v) => {
+      if (v === null || v === "") return "empty";
+      if (row.field === "photo_path") return "a photo";
+      return v;
+    };
+    return `<div class="profile-history-row">
+      <span class="profile-history-field">${FIELD_LABELS[row.field] || row.field}</span>
+      <span class="profile-history-change">${shown(row.old_value)} → <strong>${shown(row.new_value)}</strong></span>
+      <span class="profile-history-meta">${who} · ${timeAgo(row.changed_at)}</span>
+    </div>`;
+  }).join("");
 }
 
 function closeStudentProfileModal() {
@@ -1152,7 +1244,8 @@ async function loadClasses() {
   document.getElementById("studentClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
   document.getElementById("studentClassFilter").innerHTML = '<option value="">All classes</option>' + classOptions + '<option value="Graduated">Graduated</option><option value="Left School">Left School</option>';
   document.getElementById("resultClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
-  document.getElementById("feesClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
+  document.getElementById("commentClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
+  document.getElementById("paymentClassFilter").innerHTML = '<option value="">All classes</option>' + classOptions;
 
   const audienceSelect = document.getElementById("announcementAudience");
   audienceSelect.querySelector("optgroup")?.remove();
@@ -2452,11 +2545,22 @@ function populateTermSelects() {
   const reviewFilter = document.getElementById("reviewTermFilter");
   reviewFilter.innerHTML = options || '<option value="">No terms yet</option>';
   if (currentTermId) reviewFilter.value = currentTermId;
-  loadResultsReview();
+  loadCompletion();
 
-  const feesTermSelect = document.getElementById("feesTerm");
-  feesTermSelect.innerHTML = '<option value="">Select a term</option>' + options;
-  if (currentTermId) feesTermSelect.value = currentTermId;
+  const commentTermSelect = document.getElementById("commentTerm");
+  commentTermSelect.innerHTML = '<option value="">Select a term</option>' + options;
+  if (currentTermId) commentTermSelect.value = currentTermId;
+
+  const paymentTermFilter = document.getElementById("paymentTermFilter");
+  paymentTermFilter.innerHTML = options || '<option value="">No terms yet</option>';
+  if (currentTermId) paymentTermFilter.value = currentTermId;
+  loadPayments();
+
+  const sessions = [...new Set(allTerms.map((t) => t.session))].sort().reverse();
+  const revenueFilter = document.getElementById("revenueSessionFilter");
+  revenueFilter.innerHTML = '<option value="">All sessions</option>' +
+    sessions.map((s) => `<option value="${s}">${s}</option>`).join("");
+  loadRevenue();
 }
 
 document.getElementById("addTermForm").addEventListener("submit", async (e) => {
@@ -2489,7 +2593,6 @@ document.getElementById("addTermForm").addEventListener("submit", async (e) => {
 });
 
 // ---- Results ----
-let reviewResultsData = [];
 let openResultGroups = new Set();
 let editingResultId = null;
 
@@ -2579,14 +2682,14 @@ document.getElementById("addResultForm").addEventListener("submit", async (e) =>
       test2_score: test2,
       cbt_score: cbt,
       exam_score: exam,
-      status: "submitted",
+      published: false,
     }, { onConflict: "student_id,subject_id,term_id" });
     if (error) throw error;
     resultBox.innerHTML = `<div class="alert alert-success">Result saved.</div>`;
     logActivity(`Entered a result for <strong>${student ? student.full_name : "a student"}</strong>`);
     document.getElementById("addResultForm").reset();
     document.getElementById("resultTerm").value = currentTermId || "";
-    loadResultsReview();
+    loadCompletion();
   } catch (err) {
     resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
   } finally {
@@ -2595,35 +2698,53 @@ document.getElementById("addResultForm").addEventListener("submit", async (e) =>
   }
 });
 
-async function loadResultsReview() {
+// ---- Submission progress & publishing ----
+// Replaces the old per-result approval queue. Teachers' saved results land
+// straight in the table; this view reports how complete the marking is and
+// publishes a whole class/term in one action.
+let completionData = [];
+let completionResults = [];
+
+async function loadCompletion() {
   const termId = document.getElementById("reviewTermFilter").value || currentTermId;
-  if (!termId) { reviewResultsData = []; renderResultsReview(); return; }
-  const { data } = await supabaseClient.from("results").select("*").eq("term_id", termId);
-  reviewResultsData = data || [];
-  renderResultsReview();
+  if (!termId) { completionData = []; completionResults = []; renderCompletion(); return; }
+
+  const [{ data: completion, error: compErr }, { data: results }] = await Promise.all([
+    supabaseClient.rpc("get_results_completion", { p_term_id: termId }),
+    supabaseClient.from("results").select("*").eq("term_id", termId),
+  ]);
+  if (compErr) showToast(compErr.message);
+  completionData = completion || [];
+  completionResults = results || [];
+  renderCompletion();
 }
 
-document.getElementById("reviewTermFilter").addEventListener("change", loadResultsReview);
+document.getElementById("reviewTermFilter").addEventListener("change", loadCompletion);
 
-function renderResultsReview() {
-  const container = document.getElementById("resultsReviewGroups");
-  const emptyHint = document.getElementById("resultsReviewEmptyHint");
+function renderCompletion() {
+  const container = document.getElementById("completionGroups");
+  const emptyHint = document.getElementById("completionEmptyHint");
   container.innerHTML = "";
 
-  if (!reviewResultsData.length) {
+  // Only show classes that have something going on this term.
+  const active = completionData.filter((c) => Number(c.results_total) > 0 || Number(c.students_total) > 0);
+  if (!active.length) {
     emptyHint.style.display = "block";
     return;
   }
   emptyHint.style.display = "none";
 
-  const groupNames = [...new Set(reviewResultsData.map((r) => r.class_at_entry || "Unassigned"))]
-    .sort((a, b) => classSortRank(a) - classSortRank(b));
-
-  groupNames.forEach((groupName) => {
-    const rows = reviewResultsData.filter((r) => (r.class_at_entry || "Unassigned") === groupName);
+  active.forEach((c) => {
+    const groupName = c.class_name;
     const isOpen = openResultGroups.has(groupName);
-    const submittedCount = rows.filter((r) => r.status === "submitted").length;
+    const expected = Number(c.subjects_expected);
+    const entered = Number(c.subjects_entered);
+    const published = Number(c.subjects_published);
+    const unpublished = Number(c.results_unpublished);
+    const gated = Number(c.students_gated);
+    const pct = expected > 0 ? Math.min(100, Math.round((entered / expected) * 100)) : 0;
 
+    const rows = completionResults.filter((r) => (r.class_at_entry || "Unassigned") === groupName);
     const rowsHtml = rows.map((r) => {
       const student = allStudents.find((s) => s.id === r.student_id);
       const subject = allSubjects.find((s) => s.id === r.subject_id);
@@ -2638,7 +2759,7 @@ function renderResultsReview() {
           <td><input type="number" min="0" step="0.5" class="score-input edit-result-cbt" value="${r.cbt_score}" /></td>
           <td><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
           <td>—</td>
-          <td>${r.status}</td>
+          <td>${r.published ? "published" : "saved"}</td>
           <td class="row-actions">
             <button class="approve-btn save-result-btn" data-id="${r.id}">Save</button>
             <button class="approve-btn cancel-result-btn">Cancel</button>
@@ -2654,9 +2775,8 @@ function renderResultsReview() {
         <td>${r.cbt_score}</td>
         <td>${r.exam_score}</td>
         <td>${total} (${gradeFor(total)})</td>
-        <td><span class="badge-pill badge-${r.status}">${r.status}</span></td>
+        <td><span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span></td>
         <td class="row-actions">
-          ${r.status === "submitted" ? `<button class="approve-btn publish-result-btn" data-id="${r.id}">Publish</button>` : ""}
           <button class="approve-btn edit-result-btn" data-id="${r.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
           <button class="approve-btn delete-btn delete-result-btn" data-id="${r.id}"><i class="bi bi-trash-fill"></i> Delete</button>
         </td>
@@ -2668,14 +2788,31 @@ function renderResultsReview() {
     groupEl.innerHTML = `
       <button type="button" class="class-group-header" data-group="${groupName}">
         <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${groupName}</span>
-        <span class="class-group-count">${rows.length} result${rows.length === 1 ? "" : "s"}${submittedCount ? ` · ${submittedCount} awaiting publish` : ""}</span>
+        <span class="class-group-count">${entered} of ${expected} subject${expected === 1 ? "" : "s"} entered · ${published} published</span>
       </button>
       <div class="class-group-body${isOpen ? " open" : ""}">
-        ${submittedCount ? `<button type="button" class="approve-btn publish-group-btn" data-group="${groupName}" style="margin-bottom:0.75rem;">Publish all submitted in ${groupName}</button>` : ""}
-        <table class="data-table">
+        <div class="completion-bar" title="${pct}% of this class's curriculum subjects have results entered">
+          <span style="width:${pct}%"></span>
+        </div>
+        <p class="empty-hint" style="text-align:left;padding:0.4rem 0 0.6rem;">
+          ${entered} of ${expected} curriculum subject${expected === 1 ? "" : "s"} entered ·
+          ${rows.length} result row${rows.length === 1 ? "" : "s"} ·
+          ${unpublished} not yet published
+        </p>
+        ${gated > 0 ? `<div class="alert alert-danger" style="margin-bottom:0.75rem;">
+          <i class="bi bi-lock-fill"></i> ${gated} of ${c.students_total} student${gated === 1 ? "" : "s"} in this class
+          ${gated === 1 ? "has" : "have"} not paid in full for this term, so ${gated === 1 ? "they" : "they"} will not be able to
+          open ${gated === 1 ? "their" : "their"} result even after publishing. Settle or override in
+          <a href="#" class="goto-payments-link">Payments</a>.
+        </div>` : ""}
+        <div class="row-actions" style="margin-bottom:0.75rem;">
+          ${unpublished > 0 ? `<button type="button" class="approve-btn publish-class-btn" data-group="${groupName}">Publish all results for ${groupName}</button>` : ""}
+          ${published > 0 ? `<button type="button" class="approve-btn delete-btn unpublish-class-btn" data-group="${groupName}">Unpublish ${groupName}</button>` : ""}
+        </div>
+        ${rows.length ? `<table class="data-table">
           <thead><tr><th>Student</th><th>Subject</th><th>Test1</th><th>Test2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
           <tbody>${rowsHtml}</tbody>
-        </table>
+        </table>` : '<p class="empty-hint" style="text-align:left;padding:0;">No results entered for this class yet.</p>'}
       </div>`;
     container.appendChild(groupEl);
   });
@@ -2685,23 +2822,30 @@ function renderResultsReview() {
       const group = btn.dataset.group;
       if (openResultGroups.has(group)) openResultGroups.delete(group);
       else openResultGroups.add(group);
-      renderResultsReview();
+      renderCompletion();
     });
   });
 
-  container.querySelectorAll(".publish-group-btn").forEach((btn) => {
+  container.querySelectorAll(".goto-payments-link").forEach((a) => {
+    a.addEventListener("click", (e) => { e.preventDefault(); switchView("payments"); });
+  });
+
+  container.querySelectorAll(".publish-class-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const group = btn.dataset.group;
-      const ids = reviewResultsData
-        .filter((r) => (r.class_at_entry || "Unassigned") === group && r.status === "submitted")
-        .map((r) => r.id);
-      if (!ids.length) return;
-      if (!(await appConfirm(`Publish ${ids.length} result(s) for ${group}? Students will be able to see them.`))) return;
+      const termId = document.getElementById("reviewTermFilter").value || currentTermId;
+      const row = completionData.find((c) => c.class_name === group);
+      const gated = row ? Number(row.students_gated) : 0;
+      const warning = gated > 0
+        ? `\n\nNote: ${gated} student(s) in this class have not paid in full, so they still won't be able to open their result until that is settled or overridden.`
+        : "";
+      if (!(await appConfirm(`Publish all results for ${group}? Students who have paid will be able to see them immediately.${warning}`))) return;
       btn.disabled = true;
-      const { error } = await supabaseClient.from("results").update({ status: "published" }).in("id", ids);
+      const { data, error } = await supabaseClient.rpc("publish_results_for_class", { p_term_id: termId, p_class_name: group });
       if (!error) {
-        logActivity(`Published ${ids.length} results for <strong>${group}</strong>`);
-        loadResultsReview();
+        logActivity(`Published results for <strong>${group}</strong>`);
+        showToast(`${data} result(s) published for ${group}.`, "success");
+        loadCompletion();
       } else {
         showToast(error.message);
         btn.disabled = false;
@@ -2709,13 +2853,17 @@ function renderResultsReview() {
     });
   });
 
-  container.querySelectorAll(".publish-result-btn").forEach((btn) => {
+  container.querySelectorAll(".unpublish-class-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      const group = btn.dataset.group;
+      const termId = document.getElementById("reviewTermFilter").value || currentTermId;
+      if (!(await appConfirm(`Hide all published results for ${group} again? Students will immediately lose access.`))) return;
       btn.disabled = true;
-      const { error } = await supabaseClient.from("results").update({ status: "published" }).eq("id", btn.dataset.id);
+      const { data, error } = await supabaseClient.rpc("unpublish_results_for_class", { p_term_id: termId, p_class_name: group });
       if (!error) {
-        logActivity(`Published a result`);
-        loadResultsReview();
+        logActivity(`Unpublished results for <strong>${group}</strong>`);
+        showToast(`${data} result(s) hidden for ${group}.`, "success");
+        loadCompletion();
       } else {
         showToast(error.message);
         btn.disabled = false;
@@ -2724,17 +2872,11 @@ function renderResultsReview() {
   });
 
   container.querySelectorAll(".edit-result-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      editingResultId = btn.dataset.id;
-      renderResultsReview();
-    });
+    btn.addEventListener("click", () => { editingResultId = btn.dataset.id; renderCompletion(); });
   });
 
   container.querySelectorAll(".cancel-result-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      editingResultId = null;
-      renderResultsReview();
-    });
+    btn.addEventListener("click", () => { editingResultId = null; renderCompletion(); });
   });
 
   container.querySelectorAll(".save-result-btn").forEach((btn) => {
@@ -2751,7 +2893,7 @@ function renderResultsReview() {
       if (!error) {
         logActivity(`Updated a result`);
         editingResultId = null;
-        loadResultsReview();
+        loadCompletion();
       } else {
         showToast(error.message);
         btn.disabled = false;
@@ -2766,7 +2908,7 @@ function renderResultsReview() {
       const { error } = await supabaseClient.from("results").delete().eq("id", btn.dataset.id);
       if (!error) {
         logActivity(`Deleted a result`);
-        loadResultsReview();
+        loadCompletion();
       } else {
         showToast(error.message);
       }
@@ -2774,16 +2916,259 @@ function renderResultsReview() {
   });
 }
 
-// ---- Fees ----
-const FEE_STATUS_LABELS = { paid: "Paid", owing: "Owing", part_payment: "Part payment" };
+// ---- Payments ----
+const PAYMENT_STATUS_LABELS = { paid: "Paid", partial: "Partial", owing: "Owing" };
 
-async function loadFeesWrap() {
-  const className = document.getElementById("feesClass").value;
-  const termId = document.getElementById("feesTerm").value;
-  const wrap = document.getElementById("feesWrap");
+let paymentRows = [];
+
+function naira(n) {
+  const v = Number(n) || 0;
+  return "₦" + v.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+async function loadPayments() {
+  const termId = document.getElementById("paymentTermFilter").value;
+  const wrap = document.getElementById("paymentsWrap");
+  if (!termId) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-cash-coin"></i><p>Choose a term to load students.</p></div>';
+    document.getElementById("paymentSummary").innerHTML = "";
+    return;
+  }
+  const { data, error } = await supabaseClient.from("payments").select("*").eq("term_id", termId);
+  if (error) { showToast(error.message); return; }
+  paymentRows = data || [];
+  renderPayments();
+}
+
+function renderPayments() {
+  const termId = document.getElementById("paymentTermFilter").value;
+  const classFilter = document.getElementById("paymentClassFilter").value;
+  const statusFilter = document.getElementById("paymentStatusFilter").value;
+  const q = document.getElementById("paymentSearch").value.trim().toLowerCase();
+  const wrap = document.getElementById("paymentsWrap");
+  if (!termId) return;
+
+  const byStudent = {};
+  paymentRows.forEach((p) => { byStudent[p.student_id] = p; });
+
+  // Every student gets a row whether or not a payment record exists yet —
+  // a missing record is exactly the case an admin needs to see and fix.
+  let students = allStudents.filter((s) => s.class !== "Graduated" && s.class !== "Left School");
+  if (classFilter) students = students.filter((s) => s.class === classFilter);
+  if (q) students = students.filter((s) =>
+    (s.full_name || "").toLowerCase().includes(q) ||
+    (s.surname || "").toLowerCase().includes(q) ||
+    (s.portal_number || "").toLowerCase().includes(q));
+  if (statusFilter) students = students.filter((s) => (byStudent[s.id]?.status || "owing") === statusFilter);
+  students.sort((a, b) => (a.class || "").localeCompare(b.class || "") || a.full_name.localeCompare(b.full_name));
+
+  const totals = students.reduce((acc, s) => {
+    const p = byStudent[s.id];
+    acc.expected += Number(p?.amount_expected || 0);
+    acc.paid += Number(p?.amount_paid || 0);
+    const st = p?.status || "owing";
+    acc[st] = (acc[st] || 0) + 1;
+    if (p?.override_allowed) acc.overrides++;
+    return acc;
+  }, { expected: 0, paid: 0, paid_n: 0, overrides: 0 });
+
+  document.getElementById("paymentSummary").innerHTML = `
+    <div class="stat-card"><div class="stat-icon-chip chip-purple"><i class="bi bi-people-fill"></i></div><div class="stat-card-body"><span class="stat-label">Students</span><span class="stat-value">${students.length}</span></div></div>
+    <div class="stat-card"><div class="stat-icon-chip chip-green"><i class="bi bi-check-circle-fill"></i></div><div class="stat-card-body"><span class="stat-label">Collected</span><span class="stat-value">${naira(totals.paid)}</span></div></div>
+    <div class="stat-card"><div class="stat-icon-chip chip-orange"><i class="bi bi-hourglass-split"></i></div><div class="stat-card-body"><span class="stat-label">Outstanding</span><span class="stat-value">${naira(Math.max(totals.expected - totals.paid, 0))}</span></div></div>
+    <div class="stat-card"><div class="stat-icon-chip chip-sky"><i class="bi bi-unlock-fill"></i></div><div class="stat-card-body"><span class="stat-label">Overrides</span><span class="stat-value">${totals.overrides}</span></div></div>`;
+
+  if (!students.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-search"></i><p>No students match these filters.</p></div>';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>Student</th><th>Class</th><th>Expected</th><th>Paid</th><th>Balance</th>
+          <th>Status</th><th>Can view results</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${students.map((s) => {
+            const p = byStudent[s.id];
+            const expected = Number(p?.amount_expected || 0);
+            const paid = Number(p?.amount_paid || 0);
+            const balance = Math.max(expected - paid, 0);
+            const status = p?.status || "owing";
+            const override = !!p?.override_allowed;
+            const canView = status === "paid" || override;
+            return `<tr data-student="${s.id}">
+              <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name} ${s.surname || ""}</td>
+              <td>${s.class || "—"}</td>
+              <td><input type="number" min="0" step="0.01" class="score-input pay-expected" style="width:96px;" value="${expected}" /></td>
+              <td><input type="number" min="0" step="0.01" class="score-input pay-paid" style="width:96px;" value="${paid}" /></td>
+              <td>${naira(balance)}</td>
+              <td><span class="badge-pill badge-pay-${status}">${PAYMENT_STATUS_LABELS[status]}</span></td>
+              <td>
+                <label class="override-toggle" title="Let this student view results despite not being paid in full">
+                  <input type="checkbox" class="pay-override" ${override ? "checked" : ""} ${status === "paid" ? "disabled" : ""} />
+                  <span>${canView ? "Yes" : "No"}</span>
+                </label>
+              </td>
+              <td class="row-actions"><button class="approve-btn save-payment-btn">Save</button></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>`;
+
+  wrap.querySelectorAll(".save-payment-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const studentId = row.dataset.student;
+      const student = allStudents.find((s) => s.id === studentId);
+      const amount_expected = parseFloat(row.querySelector(".pay-expected").value) || 0;
+      const amount_paid = parseFloat(row.querySelector(".pay-paid").value) || 0;
+      const override_allowed = row.querySelector(".pay-override").checked;
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const { error } = await supabaseClient.from("payments").upsert({
+        student_id: studentId,
+        term_id: termId,
+        class_at_payment: student ? student.class : null,
+        amount_expected,
+        amount_paid,
+        override_allowed,
+        updated_by: currentAdmin.id,
+      }, { onConflict: "student_id,term_id" });
+      if (!error) {
+        logActivity(`Updated payment for <strong>${student ? student.full_name : "a student"}</strong>`);
+        showToast("Payment saved.", "success");
+        loadPayments();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
+    });
+  });
+}
+
+["paymentClassFilter", "paymentStatusFilter"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", renderPayments);
+});
+document.getElementById("paymentSearch").addEventListener("input", renderPayments);
+document.getElementById("paymentTermFilter").addEventListener("change", loadPayments);
+
+// ---- Revenue ----
+async function loadRevenue() {
+  const { data, error } = await supabaseClient.from("payments").select("*");
+  if (error) { showToast(error.message); return; }
+  window.__allPayments = data || [];
+  renderRevenue();
+}
+
+document.getElementById("revenueSessionFilter").addEventListener("change", renderRevenue);
+
+function renderRevenue() {
+  const payments = window.__allPayments || [];
+  const sessionFilter = document.getElementById("revenueSessionFilter").value;
+  const termById = {};
+  allTerms.forEach((t) => { termById[t.id] = t; });
+
+  const scoped = payments.filter((p) => {
+    const t = termById[p.term_id];
+    return t && (!sessionFilter || t.session === sessionFilter);
+  });
+
+  const collected = scoped.reduce((a, p) => a + Number(p.amount_paid || 0), 0);
+  const expected = scoped.reduce((a, p) => a + Number(p.amount_expected || 0), 0);
+  const outstanding = Math.max(expected - collected, 0);
+  const rate = expected > 0 ? Math.round((collected / expected) * 100) : 0;
+
+  document.getElementById("revenueSummary").innerHTML = `
+    <div class="stat-card"><div class="stat-icon-chip chip-green"><i class="bi bi-cash-stack"></i></div><div class="stat-card-body"><span class="stat-label">Collected</span><span class="stat-value">${naira(collected)}</span></div></div>
+    <div class="stat-card"><div class="stat-icon-chip chip-orange"><i class="bi bi-exclamation-circle-fill"></i></div><div class="stat-card-body"><span class="stat-label">Outstanding</span><span class="stat-value">${naira(outstanding)}</span></div></div>
+    <div class="stat-card"><div class="stat-icon-chip chip-purple"><i class="bi bi-receipt"></i></div><div class="stat-card-body"><span class="stat-label">Expected</span><span class="stat-value">${naira(expected)}</span></div></div>
+    <div class="stat-card"><div class="stat-icon-chip chip-sky"><i class="bi bi-percent"></i></div><div class="stat-card-body"><span class="stat-label">Collection rate</span><span class="stat-value">${rate}%</span></div></div>`;
+
+  if (!scoped.length) {
+    document.getElementById("revenueCharts").innerHTML =
+      '<div class="empty-state"><i class="bi bi-graph-up"></i><p>No payment records yet. Enter fees on the Payments page and they will show up here.</p></div>';
+    return;
+  }
+
+  // By term, ordered oldest-first so it reads as a trend over time.
+  const byTerm = {};
+  scoped.forEach((p) => {
+    const t = termById[p.term_id];
+    const key = `${t.session} · ${t.name}`;
+    byTerm[key] = byTerm[key] || { collected: 0, expected: 0, created: t.created_at };
+    byTerm[key].collected += Number(p.amount_paid || 0);
+    byTerm[key].expected += Number(p.amount_expected || 0);
+  });
+  const termSeries = Object.entries(byTerm)
+    .sort((a, b) => new Date(a[1].created) - new Date(b[1].created));
+
+  const byClass = {};
+  scoped.forEach((p) => {
+    const key = p.class_at_payment || "Unassigned";
+    byClass[key] = byClass[key] || { collected: 0, expected: 0 };
+    byClass[key].collected += Number(p.amount_paid || 0);
+    byClass[key].expected += Number(p.amount_expected || 0);
+  });
+  const classSeries = Object.entries(byClass)
+    .sort((a, b) => classSortRank(a[0]) - classSortRank(b[0]));
+
+  document.getElementById("revenueCharts").innerHTML = `
+    <div class="revenue-chart-grid">
+      <div class="revenue-chart-card">
+        <h3>Collected by term</h3>
+        <p class="revenue-chart-sub">Collected against expected, oldest term first</p>
+        ${groupedBarChart(termSeries)}
+      </div>
+      <div class="revenue-chart-card">
+        <h3>Collected by class</h3>
+        <p class="revenue-chart-sub">Uses the class recorded at payment time, so past terms don't shift when students are promoted</p>
+        ${groupedBarChart(classSeries)}
+      </div>
+    </div>`;
+}
+
+// Two bars per category (collected vs expected). Deliberately one shared
+// y-scale — never a second axis.
+function groupedBarChart(series) {
+  if (!series.length) return '<p class="empty-hint" style="text-align:left;">Nothing to show yet.</p>';
+  const max = Math.max(1, ...series.map(([, v]) => Math.max(v.collected, v.expected)));
+  const rowH = 34;
+  const h = series.length * rowH + 10;
+  const labelW = 130, barMaxW = 380, w = labelW + barMaxW + 90;
+
+  const rows = series.map(([label, v], i) => {
+    const y = i * rowH + 6;
+    const cw = (v.collected / max) * barMaxW;
+    const ew = (v.expected / max) * barMaxW;
+    const shortLabel = label.length > 20 ? label.slice(0, 19) + "…" : label;
+    return `
+      <text class="rev-label" x="0" y="${y + 13}">${shortLabel}</text>
+      <rect class="rev-bar-expected" x="${labelW}" y="${y + 2}" width="${Math.max(ew, 1)}" height="9" rx="4"></rect>
+      <rect class="rev-bar-collected" x="${labelW}" y="${y + 14}" width="${Math.max(cw, 1)}" height="9" rx="4"></rect>
+      <text class="rev-value" x="${labelW + Math.max(ew, cw) + 8}" y="${y + 17}">${naira(v.collected)}</text>`;
+  }).join("");
+
+  return `
+    <svg class="revenue-chart-svg" viewBox="0 0 ${w} ${h}" role="img">${rows}</svg>
+    <div class="rev-legend">
+      <span><i class="rev-swatch rev-swatch-collected"></i>Collected</span>
+      <span><i class="rev-swatch rev-swatch-expected"></i>Expected</span>
+    </div>`;
+}
+
+// ---- Principal's comments (kept from the old Fees panel) ----
+async function loadPrincipalComments() {
+  const className = document.getElementById("commentClass").value;
+  const termId = document.getElementById("commentTerm").value;
+  const wrap = document.getElementById("commentsWrap");
 
   if (!className || !termId) {
-    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-cash-coin"></i><p>Choose a class and term to load students.</p></div>';
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-chat-left-text"></i><p>Choose a class and term to load students.</p></div>';
     return;
   }
 
@@ -2793,52 +3178,25 @@ async function loadFeesWrap() {
     return;
   }
 
-  const [{ data: existingFees }, { data: existingRemarks }] = await Promise.all([
-    supabaseClient.from("fee_status").select("*").eq("term_id", termId).in("student_id", students.map((s) => s.id)),
-    supabaseClient.from("student_term_remarks").select("student_id, principal_comment").eq("term_id", termId).in("student_id", students.map((s) => s.id)),
-  ]);
-  const feeByStudent = {};
-  (existingFees || []).forEach((f) => { feeByStudent[f.student_id] = f.status; });
+  const { data: existingRemarks } = await supabaseClient
+    .from("student_term_remarks").select("student_id, principal_comment")
+    .eq("term_id", termId).in("student_id", students.map((s) => s.id));
   const commentByStudent = {};
   (existingRemarks || []).forEach((r) => { commentByStudent[r.student_id] = r.principal_comment || ""; });
 
   wrap.innerHTML = `
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Student</th><th>Status</th><th>Principal's comment</th></tr></thead>
+        <thead><tr><th>Student</th><th>Principal's comment (leave blank for the automatic one)</th></tr></thead>
         <tbody>
           ${students.map((s) => `
-            <tr data-student="${s.id}">
+            <tr>
               <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
-              <td>
-                <select class="fee-status-select" data-student="${s.id}">
-                  <option value="owing" ${(feeByStudent[s.id] || "owing") === "owing" ? "selected" : ""}>Owing</option>
-                  <option value="part_payment" ${feeByStudent[s.id] === "part_payment" ? "selected" : ""}>Part payment</option>
-                  <option value="paid" ${feeByStudent[s.id] === "paid" ? "selected" : ""}>Paid</option>
-                </select>
-              </td>
-              <td>
-                <input type="text" class="principal-comment-input" data-student="${s.id}" value="${commentByStudent[s.id] || ""}" placeholder="e.g. Keep up the good work" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;" />
-              </td>
+              <td><input type="text" class="principal-comment-input" data-student="${s.id}" value="${commentByStudent[s.id] || ""}" placeholder="Leave blank to use the automatic comment" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;" /></td>
             </tr>`).join("")}
         </tbody>
       </table>
     </div>`;
-
-  wrap.querySelectorAll(".fee-status-select").forEach((select) => {
-    select.addEventListener("change", async () => {
-      select.disabled = true;
-      const { error } = await supabaseClient.from("fee_status").upsert({
-        student_id: select.dataset.student, term_id: termId, status: select.value,
-      }, { onConflict: "student_id,term_id" });
-      select.disabled = false;
-      if (!error) {
-        showToast(`Fee status updated.`, "success");
-      } else {
-        showToast(error.message);
-      }
-    });
-  });
 
   wrap.querySelectorAll(".principal-comment-input").forEach((input) => {
     input.addEventListener("change", async () => {
@@ -2847,18 +3205,16 @@ async function loadFeesWrap() {
         student_id: input.dataset.student, term_id: termId, principal_comment: input.value.trim(),
       }, { onConflict: "student_id,term_id" });
       input.disabled = false;
-      if (!error) {
-        showToast(`Principal's comment saved.`, "success");
-      } else {
-        showToast(error.message);
-      }
+      if (!error) showToast(`Principal's comment saved.`, "success");
+      else showToast(error.message);
     });
   });
 }
 
-["feesClass", "feesTerm"].forEach((id) => {
-  document.getElementById(id).addEventListener("change", loadFeesWrap);
+["commentClass", "commentTerm"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", loadPrincipalComments);
 });
+
 
 guardAndInit();
 </script>

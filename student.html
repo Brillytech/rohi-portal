@@ -308,6 +308,46 @@
             </div>
           </div>
         </div>
+
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">My details</h5>
+              <p class="mb-0">You can update these yourself — they appear on your report card. Changes save immediately.</p>
+            </div>
+
+            <div class="profile-edit-grid">
+              <div class="profile-photo-col">
+                <div class="profile-photo-box" id="myPhotoBox">
+                  <img id="myPhoto" alt="Your photo" style="display:none;" />
+                  <div class="profile-photo-empty" id="myPhotoEmpty"><i class="bi bi-person-fill"></i><span>No photo</span></div>
+                </div>
+                <input type="file" id="myPhotoInput" accept="image/*" class="form-control form-control-sm mt-2" />
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2 w-100" id="myPhotoRemoveBtn">Remove photo</button>
+              </div>
+
+              <div class="profile-fields-col">
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label" for="myGender">Gender</label>
+                    <select id="myGender" class="form-select">
+                      <option value="">— Not set —</option>
+                      <option value="M">Male</option>
+                      <option value="F">Female</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="myDob">Date of birth</label>
+                    <input type="date" id="myDob" class="form-control" />
+                    <small class="text-muted" id="myAgeHint"></small>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-primary mt-3" id="saveMyProfileBtn">Save my details</button>
+                <div id="myProfileResult" class="mt-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
     </div>
@@ -417,11 +457,12 @@
       document.getElementById("profileSurname").textContent = profile.surname || "—";
       document.getElementById("profilePortalNumber").textContent = profile.portal_number || "—";
       document.getElementById("profileClassBox").textContent = profile.class || "—";
+      initMyProfileEditor(profile);
 
       const [{ data: terms }, { data: subjects }, { data: results }, { data: announcements }, { data: exams }, { data: myAttempts }] = await Promise.all([
         supabaseClient.from("terms").select("*").order("created_at", { ascending: false }),
         supabaseClient.from("subjects").select("*").order("name"),
-        supabaseClient.from("results").select("*").eq("student_id", profile.id).eq("status", "published").order("updated_at", { ascending: false }),
+        supabaseClient.from("results").select("*").eq("student_id", profile.id).eq("published", true).order("updated_at", { ascending: false }),
         supabaseClient.from("announcements").select("*").order("created_at", { ascending: false }),
         supabaseClient.from("exams").select("*").eq("status", "published").eq("class_name", profile.class).order("created_at", { ascending: false }),
         supabaseClient.from("exam_attempts").select("*").eq("student_id", profile.id),
@@ -542,6 +583,121 @@
           </div>`;
       }).join("");
     }
+
+    // ---- My details (student self-service) ----
+    // Writes go through the update_my_profile RPC, never a direct table
+    // update: RLS is row-level, so a self-update policy on profiles would
+    // also let a student change their own role/class/portal number.
+    let myProfile = null;
+    let myPhotoPendingFile = null;
+    let myPhotoRemoveRequested = false;
+
+    function ageFrom(dob) {
+      if (!dob) return null;
+      const b = new Date(dob), now = new Date();
+      let age = now.getFullYear() - b.getFullYear();
+      const m = now.getMonth() - b.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+      return age;
+    }
+
+    function refreshAgeHint() {
+      const dob = document.getElementById("myDob").value;
+      const age = ageFrom(dob);
+      document.getElementById("myAgeHint").textContent = age != null ? `Age: ${age}` : "";
+    }
+
+    async function initMyProfileEditor(profile) {
+      myProfile = profile;
+      myPhotoPendingFile = null;
+      myPhotoRemoveRequested = false;
+
+      document.getElementById("myGender").value = profile.gender || "";
+      document.getElementById("myDob").value = profile.date_of_birth || "";
+      refreshAgeHint();
+
+      if (profile.photo_path) {
+        const { data } = await supabaseClient.storage
+          .from("student-photos").createSignedUrl(profile.photo_path, 3600);
+        if (data && data.signedUrl) showMyPhoto(data.signedUrl);
+      }
+    }
+
+    function showMyPhoto(src) {
+      const img = document.getElementById("myPhoto");
+      img.src = src;
+      img.style.display = "block";
+      document.getElementById("myPhotoEmpty").style.display = "none";
+    }
+    function clearMyPhotoPreview() {
+      document.getElementById("myPhoto").style.display = "none";
+      document.getElementById("myPhotoEmpty").style.display = "flex";
+    }
+
+    document.getElementById("myDob").addEventListener("change", refreshAgeHint);
+
+    document.getElementById("myPhotoInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      myPhotoPendingFile = file;
+      myPhotoRemoveRequested = false;
+      const reader = new FileReader();
+      reader.onload = () => showMyPhoto(reader.result);
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("myPhotoRemoveBtn").addEventListener("click", () => {
+      myPhotoRemoveRequested = true;
+      myPhotoPendingFile = null;
+      document.getElementById("myPhotoInput").value = "";
+      clearMyPhotoPreview();
+    });
+
+    document.getElementById("saveMyProfileBtn").addEventListener("click", async () => {
+      if (!myProfile) return;
+      const btn = document.getElementById("saveMyProfileBtn");
+      const box = document.getElementById("myProfileResult");
+      box.innerHTML = "";
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+
+      try {
+        const changes = {
+          gender: document.getElementById("myGender").value || null,
+          date_of_birth: document.getElementById("myDob").value || null,
+        };
+
+        if (myPhotoRemoveRequested && myProfile.photo_path) {
+          await supabaseClient.storage.from("student-photos").remove([myProfile.photo_path]);
+          changes.photo_path = null;
+        }
+
+        if (myPhotoPendingFile) {
+          const ext = (myPhotoPendingFile.name.split(".").pop() || "jpg").toLowerCase();
+          // Path must start with the student's own id — the storage policy
+          // reads the owner straight out of the first path segment.
+          const path = `${myProfile.id}/photo.${ext}`;
+          const { error: upErr } = await supabaseClient.storage
+            .from("student-photos").upload(path, myPhotoPendingFile, { upsert: true });
+          if (upErr) throw upErr;
+          changes.photo_path = path;
+        }
+
+        const { error } = await supabaseClient.rpc("update_my_profile", { p_changes: changes });
+        if (error) throw error;
+
+        myProfile = { ...myProfile, ...changes };
+        myPhotoPendingFile = null;
+        myPhotoRemoveRequested = false;
+        document.getElementById("myPhotoInput").value = "";
+        box.innerHTML = '<div class="alert alert-success py-2 mb-0">Saved. Your report card will use these details.</div>';
+      } catch (err) {
+        box.innerHTML = `<div class="alert alert-danger py-2 mb-0">${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save my details";
+      }
+    });
 
     guardAndInit();
   </script>

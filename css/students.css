@@ -430,3 +430,37 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .welcome-label { font-family: 'Sora', san
 .dashboard-card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: all 0.3s ease; }
 .dashboard-card:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,0.08); }
 .nav-link:focus { outline: none !important; box-shadow: none !important; }
+
+/* ---------- Student self-service profile ---------- */
+.profile-edit-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 575px) {
+  .profile-edit-grid { grid-template-columns: 1fr; }
+  .profile-photo-col { max-width: 220px; }
+}
+
+.profile-photo-box {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--border-c, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f7f9;
+}
+.profile-photo-box img { width: 100%; height: 100%; object-fit: cover; }
+.profile-photo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #94a3b8;
+}
+.profile-photo-empty i { font-size: 2rem; }
+.profile-photo-empty span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; }

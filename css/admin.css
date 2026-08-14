@@ -975,3 +975,92 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-btn span {
   .topbar-search { display: none; }
 }
 
+
+/* ---------- Submission completion ---------- */
+.completion-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(89, 6, 148, 0.1);
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.completion-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--purple-deep), var(--sky));
+  transition: width 0.3s ease;
+}
+
+/* ---------- Payments ---------- */
+.badge-pill.badge-pay-paid { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
+.badge-pill.badge-pay-partial { background: rgba(255, 140, 0, 0.16); color: #b45309; }
+.badge-pill.badge-pay-owing { background: rgba(220, 38, 38, 0.12); color: #b91c1c; }
+
+.override-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  user-select: none;
+}
+.override-toggle input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--purple-deep); }
+.override-toggle input:disabled { cursor: not-allowed; }
+.override-toggle input:disabled + span { color: #1e7e3e; font-weight: 600; }
+
+/* ---------- Revenue charts ---------- */
+.revenue-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.1rem;
+}
+.revenue-chart-card {
+  border: 1px solid var(--border-c);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.6);
+}
+.revenue-chart-card h3 { margin: 0 0 2px; font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+.revenue-chart-sub { margin: 0 0 0.9rem; font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+
+.revenue-chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.revenue-chart-svg .rev-label { font-size: 11px; fill: var(--muted); }
+.revenue-chart-svg .rev-value { font-size: 10px; fill: var(--ink); font-weight: 600; }
+/* One shared x-scale for both bars — never a second axis. */
+.revenue-chart-svg .rev-bar-collected { fill: var(--purple-deep); }
+.revenue-chart-svg .rev-bar-expected { fill: rgba(89, 6, 148, 0.18); }
+
+.rev-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.7rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.rev-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.rev-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.rev-swatch-collected { background: var(--purple-deep); }
+.rev-swatch-expected { background: rgba(89, 6, 148, 0.18); }
+
+/* ---------- Profile change history ---------- */
+.profile-history {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--border-c);
+  border-radius: 9px;
+  padding: 6px 8px;
+  background: #fff;
+  margin-top: 4px;
+}
+.profile-history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--border-c);
+}
+.profile-history-row:last-child { border-bottom: none; }
+.profile-history-field { font-size: 0.72rem; font-weight: 700; color: var(--purple-ink, var(--ink)); }
+.profile-history-change { font-size: 0.75rem; color: var(--ink); }
+.profile-history-meta { font-size: 0.68rem; color: var(--muted); }

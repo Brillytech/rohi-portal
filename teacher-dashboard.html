@@ -78,7 +78,7 @@
           <div class="stat-card highlight">
             <div class="stat-icon-chip chip-orange"><i class="bi bi-hourglass-split"></i></div>
             <div class="stat-card-body">
-              <span class="stat-label">Results awaiting publish</span>
+              <span class="stat-label">Results saved, not yet published</span>
               <span class="stat-value" id="statSubmitted">—</span>
             </div>
           </div>
@@ -155,7 +155,7 @@
           <div class="panel-header-flex">
             <div class="panel-header">
               <h2>Enter results</h2>
-              <p>Pick one of your subjects, a class, and a term — score every student in that class, then submit for admin review.</p>
+              <p>Pick one of your subjects, a class, and a term — score every student, then save. Saved scores stay hidden from students until an admin publishes that class's results.</p>
             </div>
             <div class="panel-header-icon"><i class="bi bi-pencil-square"></i></div>
           </div>
@@ -613,10 +613,10 @@ async function loadOverview() {
 
   const { count: submittedCount } = await supabaseClient
     .from("results").select("*", { count: "exact", head: true })
-    .eq("teacher_id", currentTeacher.id).eq("status", "submitted");
+    .eq("teacher_id", currentTeacher.id).eq("published", false);
   const { count: publishedCount } = await supabaseClient
     .from("results").select("*", { count: "exact", head: true })
-    .eq("teacher_id", currentTeacher.id).eq("status", "published");
+    .eq("teacher_id", currentTeacher.id).eq("published", true);
 
   document.getElementById("statSubmitted").textContent = submittedCount ?? 0;
   document.getElementById("statPublished").textContent = publishedCount ?? 0;
@@ -683,7 +683,7 @@ async function loadResultEntry() {
 
   const rowsHtml = students.map((s) => {
     const r = existingByStudent[s.id];
-    const isPublished = r && r.status === "published";
+    const isPublished = r && r.published;
     const total = r ? (r.test1_score + r.test2_score + r.cbt_score + r.exam_score) : 0;
     return `<tr data-student="${s.id}">
       <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
@@ -695,7 +695,9 @@ async function loadResultEntry() {
       </td>
       <td><input type="number" class="score-input entry-exam" min="0" max="30" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
       <td class="entry-total">${total}</td>
-      <td>${r ? `<span class="badge-pill badge-${r.status}">${r.status}</span>` : '<span class="empty-hint" style="padding:0;">Not entered</span>'}</td>
+      <td>${r
+        ? `<span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span>`
+        : '<span class="empty-hint" style="padding:0;">Not entered</span>'}</td>
     </tr>`;
   }).join("");
 
@@ -707,7 +709,7 @@ async function loadResultEntry() {
       </table>
     </div>
     <button type="button" class="primary-btn" id="submitResultsBtn" style="margin-top:1rem;">
-      <span class="btn-text">Submit for review</span>
+      <span class="btn-text">Save results</span>
     </button>`;
 
   wrap.querySelectorAll("tr[data-student]").forEach((row) => {
@@ -746,7 +748,7 @@ async function loadResultEntry() {
         teacher_id: currentTeacher.id,
         class_at_entry: classNameNow,
         test1_score, test2_score, cbt_score, exam_score,
-        status: "submitted",
+        published: false,
       };
     });
 
@@ -775,14 +777,14 @@ async function loadResultEntry() {
     const { error } = await supabaseClient.from("results").upsert(payload, { onConflict: "student_id,subject_id,term_id" });
 
     if (!error) {
-      resultBox.innerHTML = `<div class="alert alert-success">${payload.length} result(s) submitted for review.</div>`;
-      showToast(`${payload.length} result(s) submitted.`, "success");
+      resultBox.innerHTML = `<div class="alert alert-success">${payload.length} result(s) saved. They stay hidden from students until an admin publishes this class’s results.</div>`;
+      showToast(`${payload.length} result(s) saved.`, "success");
       loadResultEntry();
       loadOverview();
     } else {
       resultBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
       btn.disabled = false;
-      btn.innerHTML = '<span class="btn-text">Submit for review</span>';
+      btn.innerHTML = '<span class="btn-text">Save results</span>';
     }
   });
 }

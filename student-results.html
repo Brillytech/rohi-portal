@@ -215,7 +215,6 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const FEE_LABELS = { paid: "Paid", owing: "Owing", part_payment: "Part Payment" };
 
     const AFFECTIVE_TRAITS = ["Punctuality", "Mental Alertness", "Behaviour", "Reliability", "Attentiveness", "Respect", "Neatness", "Politeness", "Honesty", "Relationship with Staff", "Relationship with Students", "Attitude to School", "Self Control", "Spirit of Teamwork", "Initiatives", "Organizational Ability"];
     const PSYCHOMOTOR_SKILLS = ["Handwriting", "Reading", "Verbal Fluency Diction", "Musical Skills", "Creative Arts", "Physical Education", "General Reasoning"];
@@ -480,19 +479,44 @@
       const term = allTerms.find((t) => t.id === termId);
       if (!term) return;
 
-      const { data: results, error: resultsError } = await supabaseClient
-        .from("results").select("*")
-        .eq("student_id", currentProfile.id).eq("term_id", termId).eq("status", "published")
-        .order("subject_id");
+      // Fetch the payment record alongside the results. The payment gate is
+      // enforced in RLS, so an unsettled student simply gets zero rows back —
+      // which is indistinguishable from "not published yet" unless we check
+      // the payment separately and say which it actually is.
+      const [{ data: results, error: resultsError }, { data: payment }] = await Promise.all([
+        supabaseClient.from("results").select("*")
+          .eq("student_id", currentProfile.id).eq("term_id", termId).eq("published", true)
+          .order("subject_id"),
+        supabaseClient.from("payments").select("*")
+          .eq("student_id", currentProfile.id).eq("term_id", termId).maybeSingle(),
+      ]);
 
       if (resultsError) {
         showNoResults("Could not load your results.", resultsError.message);
         return;
       }
+
+      const settled = !!payment && (payment.status === "paid" || payment.override_allowed);
+
       if (!results || !results.length) {
+        if (!settled) {
+          const balance = payment
+            ? Math.max(Number(payment.amount_expected || 0) - Number(payment.amount_paid || 0), 0)
+            : 0;
+          const detail = payment
+            ? (balance > 0
+                ? `Our records show an outstanding balance of ₦${balance.toLocaleString("en-NG")} for this term.`
+                : "Our records show your fees for this term are not marked as fully settled.")
+            : "There is no payment record for this term yet.";
+          showNoResults(
+            `Your result for ${term.name} · ${term.session} is locked.`,
+            `${detail} Once your fees are cleared — or the school grants an exception — your report card will appear here automatically. Please contact the school office if you believe this is a mistake.`
+          );
+          return;
+        }
         showNoResults(
           `Results for ${term.name} · ${term.session} have not been published yet.`,
-          "Once your teachers submit your scores and the school publishes them, your report card will appear here."
+          "Once your teachers have entered your scores and the school publishes them, your report card will appear here."
         );
         return;
       }
@@ -513,10 +537,9 @@
       document.getElementById("noResultsWrap").style.display = "none";
       document.getElementById("printArea").style.display = "block";
 
-      const [rankRes, statsRes, feeRes, remarksRes, classRes] = await Promise.all([
+      const [rankRes, statsRes, remarksRes, classRes] = await Promise.all([
         supabaseClient.rpc("get_class_rank", { p_term_id: termId }),
         supabaseClient.rpc("get_my_subject_stats", { p_term_id: termId }),
-        supabaseClient.from("fee_status").select("*").eq("student_id", currentProfile.id).eq("term_id", termId).maybeSingle(),
         supabaseClient.from("student_term_remarks").select("*").eq("student_id", currentProfile.id).eq("term_id", termId).maybeSingle(),
         supabaseClient.from("classes").select("*").eq("name", currentProfile.class).maybeSingle(),
       ]);
