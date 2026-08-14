@@ -1,105 +1,1047 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teacher Dashboard - Rohi Portal</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="css/teacher-dashboard.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Teacher Dashboard — Rohi Schools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/teacher-dashboard.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div class="d-flex" id="wrapper">
-  <!-- Sidebar -->
-  <nav id="sidebar" class="bg-dark text-white p-3">
-    <h4 class="text-center mb-4">Teacher Panel</h4>
-    <ul class="nav flex-column">
-      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-book"></i> My Subjects</a></li>
-      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-upload"></i> Upload Questions</a></li>
-      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-card-checklist"></i> Manage Results</a></li>
-      <li class="nav-item"><a href="#" class="nav-link text-white"><i class="bi bi-people"></i> Students</a></li>
-      <li class="nav-item mt-3"><a href="portal.html" class="btn btn-outline-light w-100">Logout</a></li>
-    </ul>
-  </nav>
+<div class="admin-shell">
 
-  <!-- Page Content -->
-  <div id="page-content" class="flex-grow-1">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-      <div class="container-fluid">
-        <!-- Hamburger button -->
-        <button class="btn btn-dark d-lg-none" id="menu-toggle"><i class="bi bi-list"></i></button>
-        <span class="navbar-brand mb-0 h1">Welcome, Teacher</span>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="img/rohilo.jpg" alt="Rohi" class="sidebar-logo" />
+      <div>
+        <strong>Rohi Schools</strong>
+        <span>Teacher panel</span>
       </div>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="overview"><i class="bi bi-grid-1x2-fill"></i> Dashboard</button>
+      <button class="nav-item" data-view="subjects"><i class="bi bi-journal-bookmark-fill"></i> My Subjects</button>
+      <button class="nav-item" data-view="results"><i class="bi bi-clipboard-check-fill"></i> Manage Results</button>
+      <button class="nav-item" data-view="exams"><i class="bi bi-pencil-square"></i> Exams</button>
+      <button class="nav-item" data-view="students"><i class="bi bi-people-fill"></i> Students</button>
+      <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
     </nav>
 
-    <div class="container-fluid mt-4">
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-book"></i> My Subjects</h5>
-              <p class="card-text">View and manage assigned subjects.</p>
-              <a href="#" class="btn btn-primary btn-sm">Go</a>
-            </div>
-          </div>
-        </div>
+    <button class="logout-btn" id="logoutBtn"><i class="bi bi-box-arrow-left"></i> Log out</button>
+  </aside>
 
-        <div class="col-md-4">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-upload"></i> Upload Questions</h5>
-              <p class="card-text">Upload exam/test questions for CBT.</p>
-              <a href="#" class="btn btn-primary btn-sm">Upload</a>
-            </div>
-          </div>
-        </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-        <div class="col-md-4">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-card-checklist"></i> Results</h5>
-              <p class="card-text">Enter or review students’ results.</p>
-              <a href="#" class="btn btn-primary btn-sm">Manage</a>
-            </div>
-          </div>
-        </div>
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
+      <h1 id="viewTitle">Dashboard</h1>
+      <div class="topbar-right">
+        <span class="admin-name" id="teacherName">Teacher</span>
+        <div class="admin-avatar"><i class="bi bi-person-fill"></i></div>
       </div>
+    </header>
 
-      <div class="row g-4 mt-2">
-        <div class="col-md-6">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-people"></i> Students</h5>
-              <p class="card-text">View students in your classes.</p>
-              <a href="#" class="btn btn-primary btn-sm">View</a>
+    <div class="view-body">
+
+      <!-- OVERVIEW -->
+      <section class="view active" id="view-overview">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-icon-chip chip-purple"><i class="bi bi-journal-bookmark-fill"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Subjects assigned</span>
+              <span class="stat-value" id="statSubjects">—</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-chip chip-sky"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Class teacher of</span>
+              <span class="stat-value" id="statClasses">—</span>
+            </div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-icon-chip chip-orange"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Results awaiting publish</span>
+              <span class="stat-value" id="statSubmitted">—</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-chip chip-green"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Results published</span>
+              <span class="stat-value" id="statPublished">—</span>
             </div>
           </div>
         </div>
-        <div class="col-md-6">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-chat-left-text"></i> Announcements</h5>
-              <p class="card-text">Post announcements to your classes.</p>
-              <a href="#" class="btn btn-primary btn-sm">Post</a>
+
+        <div class="qa-chip-row">
+          <button class="qa-chip" data-view="results">
+            <i class="bi bi-pencil-square"></i><span>Enter results</span>
+          </button>
+          <button class="qa-chip" data-view="subjects">
+            <i class="bi bi-journal-bookmark"></i><span>My subjects</span>
+          </button>
+          <button class="qa-chip" data-view="students">
+            <i class="bi bi-people"></i><span>My students</span>
+          </button>
+          <button class="qa-chip" data-view="announcements">
+            <i class="bi bi-megaphone"></i><span>Announcements</span>
+          </button>
+        </div>
+
+        <div class="panel-row">
+          <div class="panel">
+            <div class="panel-header-flex">
+              <div class="panel-header"><h2>My subjects</h2></div>
+              <div class="panel-header-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
+            </div>
+            <div class="widget-list" id="overviewSubjectsList">
+              <div class="empty-state"><i class="bi bi-journal-x"></i><p>No subjects assigned yet — ask an admin to assign you one.</p></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header-flex">
+              <div class="panel-header"><h2>Recent announcements</h2></div>
+              <div class="panel-header-icon"><i class="bi bi-megaphone-fill"></i></div>
+            </div>
+            <div class="widget-list" id="overviewAnnouncementsList">
+              <div class="empty-state"><i class="bi bi-megaphone"></i><p>No announcements yet.</p></div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- MY SUBJECTS -->
+      <section class="view" id="view-subjects">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>My subjects</h2>
+              <p>Subjects an admin has assigned to you. Contact the school office if something's missing.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="subjectsTable">
+              <thead><tr><th>Subject</th><th>Level / track</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="empty-state" id="subjectsEmptyHint"><i class="bi bi-journal-x"></i><p>No subjects assigned yet.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MANAGE RESULTS -->
+      <section class="view" id="view-results">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Enter results</h2>
+              <p>Pick one of your subjects, a class, and a term — score every student in that class, then submit for admin review.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-pencil-square"></i></div>
+          </div>
+          <div class="form-row" style="margin-bottom:1.25rem;">
+            <div class="field">
+              <label for="entrySubject">Subject</label>
+              <select id="entrySubject"><option value="">Select a subject</option></select>
+            </div>
+            <div class="field">
+              <label for="entryClass">Class</label>
+              <select id="entryClass"><option value="">Select a class</option></select>
+            </div>
+            <div class="field">
+              <label for="entryTerm">Term</label>
+              <select id="entryTerm"><option value="">Select a term</option></select>
+            </div>
+          </div>
+          <div id="resultEntryWrap">
+            <div class="empty-state"><i class="bi bi-clipboard-data"></i><p>Choose a subject, class, and term to load the student list.</p></div>
+          </div>
+          <div id="resultEntryResult"></div>
+        </div>
+      </section>
+
+      <!-- EXAMS -->
+      <section class="view" id="view-exams">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Create an exam</h2>
+              <p>Pick one of your subjects, a class, and a term, then add multiple-choice questions before publishing.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-pencil-square"></i></div>
+          </div>
+          <form id="createExamForm" class="inline-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="examTitle">Title</label>
+                <input type="text" id="examTitle" placeholder="e.g. Mid-term Test" required />
+              </div>
+              <div class="field">
+                <label for="examSubject">Subject</label>
+                <select id="examSubject" required></select>
+              </div>
+              <div class="field">
+                <label for="examClass">Class</label>
+                <select id="examClass" required></select>
+              </div>
+              <div class="field">
+                <label for="examTerm">Term</label>
+                <select id="examTerm" required></select>
+              </div>
+              <div class="field">
+                <label for="examDuration">Duration (minutes)</label>
+                <input type="number" id="examDuration" min="1" value="20" required />
+              </div>
+            </div>
+            <button type="submit" class="primary-btn" id="createExamBtn">
+              <span class="btn-text">Create exam</span>
+            </button>
+            <div id="createExamResult"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>My exams</h2>
+              <p>Add questions, then publish when ready — students in the class see it as soon as it's published.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-clipboard-check-fill"></i></div>
+          </div>
+          <div id="examsList"></div>
+          <div class="empty-state" id="examsEmptyHint"><i class="bi bi-pencil-square"></i><p>No exams created yet.</p></div>
+        </div>
+      </section>
+
+      <!-- STUDENTS -->
+      <section class="view" id="view-students">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>My students</h2>
+              <p>Students in the class(es) you're the class teacher of.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-people-fill"></i></div>
+          </div>
+          <div id="myStudentsGroups"></div>
+          <div class="empty-state" id="myStudentsEmptyHint"><i class="bi bi-people"></i><p>You're not set as class teacher for any class yet.</p></div>
+        </div>
+      </section>
+
+      <!-- ANNOUNCEMENTS -->
+      <section class="view" id="view-announcements">
+        <div class="panel" id="postToClassPanel" style="display:none;">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Post to my class</h2>
+              <p>Only students (and admin) in the class you're class teacher of will see this.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-megaphone-fill"></i></div>
+          </div>
+          <form id="postClassAnnouncementForm" class="inline-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="classAnnouncementTitle">Title</label>
+                <input type="text" id="classAnnouncementTitle" required />
+              </div>
+              <div class="field">
+                <label for="classAnnouncementClass">Class</label>
+                <select id="classAnnouncementClass" required></select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="classAnnouncementBody">Message</label>
+              <textarea id="classAnnouncementBody" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="primary-btn" id="postClassAnnouncementBtn">
+              <span class="btn-text">Post to class</span>
+            </button>
+            <div id="postClassAnnouncementResult"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Announcements</h2>
+              <p>School-wide, staff-wide, or for a class you teach.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-megaphone-fill"></i></div>
+          </div>
+          <div id="announcementsList"></div>
+          <div class="empty-state" id="announcementsEmptyHint"><i class="bi bi-megaphone"></i><p>No announcements yet.</p></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Custom confirm modal (replaces browser confirm()) -->
+<div class="app-modal-backdrop" id="appModalBackdrop">
+  <div class="app-modal">
+    <p class="app-modal-message" id="appModalMessage"></p>
+    <div class="app-modal-actions">
+      <button type="button" class="app-modal-cancel" id="appModalCancel">Cancel</button>
+      <button type="button" class="app-modal-confirm" id="appModalConfirm">Confirm</button>
     </div>
   </div>
 </div>
 
-<!-- JS for sidebar toggle -->
+<!-- Toast container (replaces browser alert()) -->
+<div class="toast-stack" id="toastStack"></div>
+
 <script>
-  const toggleBtn = document.getElementById("menu-toggle");
-  const sidebar = document.getElementById("sidebar");
+const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  toggleBtn.addEventListener("click", () => {
-    sidebar.classList.toggle("active");
+// ---- Custom modal (replaces window.confirm) ----
+function appConfirm(message) {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById("appModalBackdrop");
+    const msgEl = document.getElementById("appModalMessage");
+    const confirmBtn = document.getElementById("appModalConfirm");
+    const cancelBtn = document.getElementById("appModalCancel");
+
+    msgEl.textContent = message;
+    backdrop.classList.add("show");
+
+    function cleanup(result) {
+      backdrop.classList.remove("show");
+      confirmBtn.removeEventListener("click", onConfirm);
+      cancelBtn.removeEventListener("click", onCancel);
+      resolve(result);
+    }
+    function onConfirm() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+
+    confirmBtn.addEventListener("click", onConfirm);
+    cancelBtn.addEventListener("click", onCancel);
   });
-</script>
+}
 
+// ---- Custom toast (replaces window.alert) ----
+function showToast(message, type = "error") {
+  const stack = document.getElementById("toastStack");
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<i class="bi ${type === "error" ? "bi-exclamation-circle-fill" : "bi-check-circle-fill"}"></i><span>${message}</span>`;
+  stack.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 10);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 4500);
+}
+
+function initials(name) {
+  return (name || "").trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+}
+
+function timeAgo(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function audienceLabel(audience) {
+  if (audience === "all") return "Everyone";
+  if (audience === "teachers") return "All teachers";
+  if (audience === "students") return "All students";
+  return audience;
+}
+
+function audienceBadgeClass(audience) {
+  if (audience === "all") return "badge-all";
+  if (audience === "teachers") return "badge-teachers";
+  if (audience === "students") return "badge-students";
+  return "badge-class";
+}
+
+// Sorts classes in natural school order, same convention as admin-dashboard.html
+function classSortRank(name) {
+  const n = (name || "").toUpperCase().trim();
+  let m;
+  if (/^CRECHE/.test(n)) return 0;
+  if (/^PRE-?NURSERY/.test(n)) return 1;
+  if ((m = n.match(/^NURSERY\s*(\d+)?/))) return 2 + (parseInt(m[1]) || 0) * 0.1;
+  if ((m = n.match(/^(KG|KINDERGARTEN)\s*(\d+)?/))) return 10 + (parseInt(m[2]) || 0) * 0.1;
+  if ((m = n.match(/^PRIMARY\s*(\d+)?/))) return 20 + (parseInt(m[1]) || 0) * 0.1;
+  if ((m = n.match(/^JSS\s*(\d+)?/))) return 40 + (parseInt(m[1]) || 0) * 0.1;
+  if ((m = n.match(/^SSS\s*(\d+)?/))) return 50 + (parseInt(m[1]) || 0) * 0.1;
+  return 100;
+}
+
+// ---- View switching ----
+const navItems = document.querySelectorAll(".nav-item");
+const views = document.querySelectorAll(".view");
+const viewTitle = document.getElementById("viewTitle");
+
+function switchView(name) {
+  navItems.forEach((n) => n.classList.toggle("active", n.dataset.view === name));
+  views.forEach((v) => v.classList.toggle("active", v.id === "view-" + name));
+  const activeNav = [...navItems].find((n) => n.dataset.view === name);
+  if (activeNav) viewTitle.textContent = activeNav.textContent.trim();
+}
+
+navItems.forEach((n) => n.addEventListener("click", () => switchView(n.dataset.view)));
+document.querySelectorAll(".qa-chip[data-view]").forEach((btn) => {
+  btn.addEventListener("click", () => switchView(btn.dataset.view));
+});
+
+document.getElementById("menuToggle").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("sidebarBackdrop").classList.toggle("show");
+});
+document.getElementById("sidebarClose").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebarBackdrop").classList.remove("show");
+});
+document.getElementById("sidebarBackdrop").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebarBackdrop").classList.remove("show");
+});
+navItems.forEach((n) => n.addEventListener("click", () => {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebarBackdrop").classList.remove("show");
+}));
+
+// ---- Auth guard ----
+let currentTeacher = null;
+
+async function guardAndInit() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    window.location.href = "portal.html";
+    return;
+  }
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+  if (!profile || profile.role !== "teacher" || !profile.approved) {
+    window.location.href = "portal.html";
+    return;
+  }
+
+  currentTeacher = profile;
+  document.getElementById("teacherName").textContent = profile.full_name || "Teacher";
+
+  await loadClasses();
+  setupClassAnnouncementPanel();
+  await loadMySubjects();
+  await loadTerms();
+  await loadAnnouncements();
+  loadOverview();
+  loadMyStudents();
+  loadExams();
+}
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await supabaseClient.auth.signOut();
+  window.location.href = "portal.html";
+});
+
+// ---- Classes & terms (shared lookups) ----
+let allClasses = [];
+let allTerms = [];
+let currentTermId = null;
+
+async function loadClasses() {
+  const { data } = await supabaseClient.from("classes").select("*");
+  allClasses = [...(data || [])].sort((a, b) => {
+    const r = classSortRank(a.level_key || a.name) - classSortRank(b.level_key || b.name);
+    return r !== 0 ? r : (a.arm || "").localeCompare(b.arm || "") || a.name.localeCompare(b.name);
+  });
+  const options = allClasses.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
+  document.getElementById("entryClass").innerHTML = '<option value="">Select a class</option>' + options;
+  document.getElementById("examClass").innerHTML = '<option value="">Select a class</option>' + options;
+}
+
+async function loadTerms() {
+  const { data } = await supabaseClient.from("terms").select("*").order("created_at", { ascending: false });
+  allTerms = data || [];
+  const current = allTerms.find((t) => t.is_current);
+  currentTermId = current ? current.id : (allTerms[0] ? allTerms[0].id : null);
+  const options = allTerms.map((t) => `<option value="${t.id}">${t.name} · ${t.session}</option>`).join("");
+  const select = document.getElementById("entryTerm");
+  select.innerHTML = options || '<option value="">No terms yet</option>';
+  if (currentTermId) select.value = currentTermId;
+
+  const examTermSelect = document.getElementById("examTerm");
+  examTermSelect.innerHTML = options || '<option value="">No terms yet</option>';
+  if (currentTermId) examTermSelect.value = currentTermId;
+}
+
+// ---- My subjects ----
+let mySubjects = [];
+
+async function loadMySubjects() {
+  const { data: assignments } = await supabaseClient
+    .from("subject_teachers")
+    .select("subject_id")
+    .eq("teacher_id", currentTeacher.id);
+  const subjectIds = (assignments || []).map((a) => a.subject_id);
+
+  if (!subjectIds.length) {
+    mySubjects = [];
+  } else {
+    const { data: subjects } = await supabaseClient.from("subjects").select("*").in("id", subjectIds).order("name");
+    mySubjects = subjects || [];
+  }
+
+  renderMySubjects();
+
+  const subjectOptions = '<option value="">Select a subject</option>' +
+    mySubjects.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
+  document.getElementById("entrySubject").innerHTML = subjectOptions;
+  document.getElementById("examSubject").innerHTML = subjectOptions;
+}
+
+function renderMySubjects() {
+  const tbody = document.querySelector("#subjectsTable tbody");
+  const emptyHint = document.getElementById("subjectsEmptyHint");
+  const overviewList = document.getElementById("overviewSubjectsList");
+
+  if (!mySubjects.length) {
+    tbody.innerHTML = "";
+    emptyHint.style.display = "block";
+    overviewList.innerHTML = '<div class="empty-state"><i class="bi bi-journal-x"></i><p>No subjects assigned yet — ask an admin to assign you one.</p></div>';
+    return;
+  }
+  emptyHint.style.display = "none";
+
+  tbody.innerHTML = mySubjects.map((s) => `<tr><td>${s.name}</td><td>${s.category || "General"}</td></tr>`).join("");
+
+  overviewList.innerHTML = mySubjects.slice(0, 5).map((s) => `
+    <div class="widget-list-item">
+      <div class="avatar-chip"><i class="bi bi-journal-bookmark-fill"></i></div>
+      <div>
+        <p class="widget-list-title">${s.name}</p>
+        <p class="widget-list-meta">${s.category || "General"}</p>
+      </div>
+    </div>`).join("");
+}
+
+// ---- Overview stats ----
+async function loadOverview() {
+  document.getElementById("statSubjects").textContent = mySubjects.length;
+
+  const myClassesTaught = allClasses.filter((c) => c.class_teacher_id === currentTeacher.id);
+  document.getElementById("statClasses").textContent = myClassesTaught.length;
+
+  const { count: submittedCount } = await supabaseClient
+    .from("results").select("*", { count: "exact", head: true })
+    .eq("teacher_id", currentTeacher.id).eq("status", "submitted");
+  const { count: publishedCount } = await supabaseClient
+    .from("results").select("*", { count: "exact", head: true })
+    .eq("teacher_id", currentTeacher.id).eq("status", "published");
+
+  document.getElementById("statSubmitted").textContent = submittedCount ?? 0;
+  document.getElementById("statPublished").textContent = publishedCount ?? 0;
+
+  renderOverviewAnnouncements();
+}
+
+function renderOverviewAnnouncements() {
+  const list = document.getElementById("overviewAnnouncementsList");
+  const recent = allAnnouncements.slice(0, 3);
+  if (!recent.length) {
+    list.innerHTML = '<div class="empty-state"><i class="bi bi-megaphone"></i><p>No announcements yet.</p></div>';
+    return;
+  }
+  list.innerHTML = recent.map((a) => `
+    <div class="widget-list-item">
+      <div class="avatar-chip"><i class="bi bi-megaphone-fill"></i></div>
+      <div>
+        <p class="widget-list-title">${a.title}</p>
+        <p class="widget-list-meta">${audienceLabel(a.audience)}</p>
+      </div>
+      <span class="widget-list-time">${timeAgo(a.created_at)}</span>
+    </div>`).join("");
+}
+
+// ---- Result entry ----
+function gradeFor(total) {
+  if (total >= 70) return "A";
+  if (total >= 60) return "B";
+  if (total >= 50) return "C";
+  if (total >= 45) return "D";
+  if (total >= 40) return "E";
+  return "F";
+}
+
+async function loadResultEntry() {
+  const subjectId = document.getElementById("entrySubject").value;
+  const className = document.getElementById("entryClass").value;
+  const termId = document.getElementById("entryTerm").value;
+  const wrap = document.getElementById("resultEntryWrap");
+
+  if (!subjectId || !className || !termId) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-clipboard-data"></i><p>Choose a subject, class, and term to load the student list.</p></div>';
+    return;
+  }
+
+  const { data: students } = await supabaseClient
+    .rpc("get_students_in_classes", { p_classes: [className] });
+  students?.sort((a, b) => a.full_name.localeCompare(b.full_name));
+
+  if (!students || !students.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-people"></i><p>No students in this class yet.</p></div>';
+    return;
+  }
+
+  const studentIds = students.map((s) => s.id);
+  const { data: existing } = await supabaseClient
+    .from("results").select("*").eq("subject_id", subjectId).eq("term_id", termId).in("student_id", studentIds);
+  const existingByStudent = {};
+  (existing || []).forEach((r) => { existingByStudent[r.student_id] = r; });
+
+  const rowsHtml = students.map((s) => {
+    const r = existingByStudent[s.id];
+    const isPublished = r && r.status === "published";
+    return `<tr data-student="${s.id}">
+      <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+      <td><input type="number" class="score-input entry-ca" min="0" step="0.5" value="${r ? r.ca_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td><input type="number" class="score-input entry-exam" min="0" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td>${r ? `<span class="badge-pill badge-${r.status}">${r.status}</span>` : '<span class="empty-hint" style="padding:0;">Not entered</span>'}</td>
+    </tr>`;
+  }).join("");
+
+  wrap.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>CA score</th><th>Exam score</th><th>Status</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    <button type="button" class="primary-btn" id="submitResultsBtn" style="margin-top:1rem;">
+      <span class="btn-text">Submit for review</span>
+    </button>`;
+
+  document.getElementById("submitResultsBtn").addEventListener("click", async () => {
+    const subjectIdNow = document.getElementById("entrySubject").value;
+    const classNameNow = document.getElementById("entryClass").value;
+    const termIdNow = document.getElementById("entryTerm").value;
+    const resultBox = document.getElementById("resultEntryResult");
+    resultBox.innerHTML = "";
+
+    const rows = [...wrap.querySelectorAll("tr[data-student]")].filter((row) => !row.querySelector(".entry-ca").disabled);
+    if (!rows.length) {
+      showToast("Nothing to submit — every result here is already published.");
+      return;
+    }
+
+    const payload = rows.map((row) => {
+      const ca = parseFloat(row.querySelector(".entry-ca").value) || 0;
+      const exam = parseFloat(row.querySelector(".entry-exam").value) || 0;
+      return {
+        student_id: row.dataset.student,
+        subject_id: subjectIdNow,
+        term_id: termIdNow,
+        teacher_id: currentTeacher.id,
+        class_at_entry: classNameNow,
+        ca_score: ca,
+        exam_score: exam,
+        status: "submitted",
+      };
+    });
+
+    const overLimit = payload.find((p) => p.ca_score + p.exam_score > 100);
+    if (overLimit) {
+      showToast("CA + Exam can't add up to more than 100 for any student.");
+      return;
+    }
+
+    const btn = document.getElementById("submitResultsBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Submitting...';
+
+    const { error } = await supabaseClient.from("results").upsert(payload, { onConflict: "student_id,subject_id,term_id" });
+
+    if (!error) {
+      resultBox.innerHTML = `<div class="alert alert-success">${payload.length} result(s) submitted for review.</div>`;
+      showToast(`${payload.length} result(s) submitted.`, "success");
+      loadResultEntry();
+      loadOverview();
+    } else {
+      resultBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = '<span class="btn-text">Submit for review</span>';
+    }
+  });
+}
+
+["entrySubject", "entryClass", "entryTerm"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", loadResultEntry);
+});
+
+// ---- My students (classes I'm the class teacher of) ----
+async function loadMyStudents() {
+  const myClasses = allClasses.filter((c) => c.class_teacher_id === currentTeacher.id);
+  const container = document.getElementById("myStudentsGroups");
+  const emptyHint = document.getElementById("myStudentsEmptyHint");
+
+  if (!myClasses.length) {
+    container.innerHTML = "";
+    emptyHint.querySelector("p").textContent = "You're not set as class teacher for any class yet.";
+    emptyHint.style.display = "block";
+    return;
+  }
+
+  const { data: students } = await supabaseClient
+    .rpc("get_students_in_classes", { p_classes: myClasses.map((c) => c.name) });
+  students?.sort((a, b) => a.full_name.localeCompare(b.full_name));
+
+  if (!students || !students.length) {
+    container.innerHTML = "";
+    const classNames = myClasses.map((c) => c.name).join(", ");
+    emptyHint.querySelector("p").textContent = `No students are enrolled in ${classNames} yet.`;
+    emptyHint.style.display = "block";
+    return;
+  }
+  emptyHint.style.display = "none";
+
+  container.innerHTML = myClasses.map((c) => {
+    const studentsInClass = students.filter((s) => s.class === c.name);
+    if (!studentsInClass.length) return "";
+    const rowsHtml = studentsInClass.map((s) => `
+      <tr>
+        <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+        <td>${s.surname}</td>
+      </tr>`).join("");
+    return `
+      <div class="class-group">
+        <div class="class-group-header" style="cursor:default;">
+          <span class="class-group-name"><i class="bi bi-people-fill"></i> ${c.name}</span>
+          <span class="class-group-count">${studentsInClass.length} student${studentsInClass.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="class-group-body open">
+          <table class="data-table">
+            <thead><tr><th>Full name</th><th>Surname</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+// ---- Announcements (read-only) ----
+let allAnnouncements = [];
+
+async function loadAnnouncements() {
+  const { data } = await supabaseClient.from("announcements").select("*").order("created_at", { ascending: false });
+  allAnnouncements = data || [];
+  renderAnnouncements();
+}
+
+function renderAnnouncements() {
+  const list = document.getElementById("announcementsList");
+  const emptyHint = document.getElementById("announcementsEmptyHint");
+  if (!allAnnouncements.length) {
+    list.innerHTML = "";
+    emptyHint.style.display = "block";
+    return;
+  }
+  emptyHint.style.display = "none";
+
+  list.innerHTML = allAnnouncements.map((a) => `
+    <div class="announcement-card">
+      <div class="announcement-card-head">
+        <h3>${a.title}</h3>
+        <span class="badge-pill ${audienceBadgeClass(a.audience)}">${audienceLabel(a.audience)}</span>
+      </div>
+      <p class="announcement-body">${a.body}</p>
+      <div class="announcement-card-foot" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <span>${new Date(a.created_at).toLocaleString()}</span>
+        ${a.created_by === currentTeacher.id ? `<button class="approve-btn delete-btn delete-my-announcement-btn" data-id="${a.id}">Delete</button>` : ""}
+      </div>
+    </div>`).join("");
+
+  list.querySelectorAll(".delete-my-announcement-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this announcement?"))) return;
+      const { error } = await supabaseClient.from("announcements").delete().eq("id", btn.dataset.id);
+      if (!error) {
+        loadAnnouncements();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+}
+
+// ---- Post to my class ----
+function setupClassAnnouncementPanel() {
+  const myClasses = allClasses.filter((c) => c.class_teacher_id === currentTeacher.id);
+  const panel = document.getElementById("postToClassPanel");
+  if (!myClasses.length) {
+    panel.style.display = "none";
+    return;
+  }
+  panel.style.display = "block";
+  document.getElementById("classAnnouncementClass").innerHTML =
+    myClasses.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
+}
+
+document.getElementById("postClassAnnouncementForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = document.getElementById("classAnnouncementTitle").value.trim();
+  const body = document.getElementById("classAnnouncementBody").value.trim();
+  const audience = document.getElementById("classAnnouncementClass").value;
+  const btn = document.getElementById("postClassAnnouncementBtn");
+  const resultBox = document.getElementById("postClassAnnouncementResult");
+  resultBox.innerHTML = "";
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Posting...';
+
+  try {
+    const { error } = await supabaseClient.from("announcements").insert({
+      title, body, audience, created_by: currentTeacher.id,
+    });
+    if (error) throw error;
+    resultBox.innerHTML = `<div class="alert alert-success">Posted to ${audience}.</div>`;
+    document.getElementById("postClassAnnouncementForm").reset();
+    loadAnnouncements();
+  } catch (err) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Post to class</span>';
+  }
+});
+
+// ---- Exams (CBT) ----
+let allExams = [];
+let allExamQuestions = [];
+let allExamAttempts = [];
+let openExams = new Set();
+
+async function loadExams() {
+  const { data: exams } = await supabaseClient.from("exams").select("*").order("created_at", { ascending: false });
+  allExams = exams || [];
+
+  if (allExams.length) {
+    const examIds = allExams.map((e) => e.id);
+    const [{ data: questions }, { data: attempts }] = await Promise.all([
+      supabaseClient.from("exam_questions").select("*").in("exam_id", examIds).order("sort_order"),
+      supabaseClient.from("exam_attempts").select("*").in("exam_id", examIds),
+    ]);
+    allExamQuestions = questions || [];
+    allExamAttempts = attempts || [];
+  } else {
+    allExamQuestions = [];
+    allExamAttempts = [];
+  }
+
+  renderExams();
+}
+
+document.getElementById("createExamForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = document.getElementById("examTitle").value.trim();
+  const subject_id = document.getElementById("examSubject").value;
+  const class_name = document.getElementById("examClass").value;
+  const term_id = document.getElementById("examTerm").value;
+  const duration_minutes = parseInt(document.getElementById("examDuration").value, 10) || 20;
+  const btn = document.getElementById("createExamBtn");
+  const resultBox = document.getElementById("createExamResult");
+  resultBox.innerHTML = "";
+
+  if (!subject_id || !class_name || !term_id) {
+    showToast("Pick a subject, class, and term first.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Creating...';
+
+  try {
+    const { error } = await supabaseClient.from("exams").insert({
+      title, subject_id, class_name, term_id, duration_minutes, teacher_id: currentTeacher.id,
+    });
+    if (error) throw error;
+    resultBox.innerHTML = `<div class="alert alert-success">Exam created — add questions below, then publish when ready.</div>`;
+    document.getElementById("createExamForm").reset();
+    document.getElementById("examDuration").value = 20;
+    loadExams();
+  } catch (err) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Create exam</span>';
+  }
+});
+
+function renderExams() {
+  const container = document.getElementById("examsList");
+  const emptyHint = document.getElementById("examsEmptyHint");
+
+  if (!allExams.length) {
+    container.innerHTML = "";
+    emptyHint.style.display = "block";
+    return;
+  }
+  emptyHint.style.display = "none";
+
+  container.innerHTML = allExams.map((exam) => {
+    const subject = mySubjects.find((s) => s.id === exam.subject_id);
+    const term = allTerms.find((t) => t.id === exam.term_id);
+    const questions = allExamQuestions.filter((q) => q.exam_id === exam.id);
+    const attempts = allExamAttempts.filter((a) => a.exam_id === exam.id);
+    const avgScore = attempts.length
+      ? Math.round((attempts.reduce((sum, a) => sum + a.score / a.total_questions, 0) / attempts.length) * 100)
+      : null;
+    const isOpen = openExams.has(exam.id);
+
+    const questionsHtml = questions.length
+      ? questions.map((q, i) => `
+        <div class="widget-list-item">
+          <div class="avatar-chip" style="border-radius:8px;">${i + 1}</div>
+          <div style="flex:1;">
+            <p class="widget-list-title">${q.question_text}</p>
+            <p class="widget-list-meta">A) ${q.option_a} &nbsp; B) ${q.option_b} &nbsp; C) ${q.option_c} &nbsp; D) ${q.option_d} — correct: ${q.correct_option.toUpperCase()}</p>
+          </div>
+          <button class="approve-btn delete-btn delete-question-btn" data-id="${q.id}">Delete</button>
+        </div>`).join("")
+      : '<p class="empty-hint">No questions added yet.</p>';
+
+    const attemptsHtml = attempts.length
+      ? `<p class="empty-hint" style="padding:0.5rem 0;text-align:left;">Average score: ${avgScore}% across ${attempts.length} attempt${attempts.length === 1 ? "" : "s"}.</p>`
+      : `<p class="empty-hint" style="padding:0.5rem 0;text-align:left;">No student has attempted this yet.</p>`;
+
+    return `
+      <div class="class-group">
+        <button type="button" class="class-group-header exam-toggle-btn" data-id="${exam.id}">
+          <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${exam.title} — ${exam.class_name}</span>
+          <span class="class-group-count">
+            <span class="badge-pill badge-${exam.status === "published" ? "published" : "submitted"}">${exam.status}</span>
+            &nbsp;${questions.length} question${questions.length === 1 ? "" : "s"}
+          </span>
+        </button>
+        <div class="class-group-body${isOpen ? " open" : ""}">
+          <p class="empty-hint" style="text-align:left;padding:0 0 0.6rem;">${subject ? subject.name : "—"} · ${term ? term.name + " · " + term.session : "—"} · ${exam.duration_minutes} min</p>
+          ${attemptsHtml}
+          <div class="widget-list" style="margin-bottom:1rem;">${questionsHtml}</div>
+
+          <form class="add-question-form inline-form" data-exam="${exam.id}" style="margin-bottom:1rem;">
+            <div class="form-row">
+              <div class="field" style="grid-column:1/-1;">
+                <label>Question</label>
+                <input type="text" class="q-text" required />
+              </div>
+              <div class="field"><label>Option A</label><input type="text" class="q-a" required /></div>
+              <div class="field"><label>Option B</label><input type="text" class="q-b" required /></div>
+              <div class="field"><label>Option C</label><input type="text" class="q-c" required /></div>
+              <div class="field"><label>Option D</label><input type="text" class="q-d" required /></div>
+              <div class="field">
+                <label>Correct option</label>
+                <select class="q-correct">
+                  <option value="a">A</option><option value="b">B</option><option value="c">C</option><option value="d">D</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="approve-btn">Add question</button>
+          </form>
+
+          <div class="row-actions">
+            ${exam.status === "draft"
+              ? `<button type="button" class="primary-btn publish-exam-btn" data-id="${exam.id}" ${questions.length ? "" : "disabled"}><span class="btn-text">Publish</span></button>`
+              : `<span class="badge-pill badge-published">Published</span>`}
+            <button type="button" class="approve-btn delete-btn delete-exam-btn" data-id="${exam.id}">Delete exam</button>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+
+  container.querySelectorAll(".exam-toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      if (openExams.has(id)) openExams.delete(id); else openExams.add(id);
+      renderExams();
+    });
+  });
+
+  container.querySelectorAll(".add-question-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const examId = form.dataset.exam;
+      const question_text = form.querySelector(".q-text").value.trim();
+      const option_a = form.querySelector(".q-a").value.trim();
+      const option_b = form.querySelector(".q-b").value.trim();
+      const option_c = form.querySelector(".q-c").value.trim();
+      const option_d = form.querySelector(".q-d").value.trim();
+      const correct_option = form.querySelector(".q-correct").value;
+      const existingCount = allExamQuestions.filter((q) => q.exam_id === examId).length;
+
+      const { error } = await supabaseClient.from("exam_questions").insert({
+        exam_id: examId, question_text, option_a, option_b, option_c, option_d, correct_option, sort_order: existingCount,
+      });
+      if (!error) {
+        openExams.add(examId);
+        loadExams();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+
+  container.querySelectorAll(".delete-question-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this question?"))) return;
+      const { error } = await supabaseClient.from("exam_questions").delete().eq("id", btn.dataset.id);
+      if (!error) loadExams(); else showToast(error.message);
+    });
+  });
+
+  container.querySelectorAll(".publish-exam-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Publish this exam? Students in the class will be able to take it immediately, and you won't be able to add more questions afterward without them affecting fairness."))) return;
+      btn.disabled = true;
+      const { error } = await supabaseClient.from("exams").update({ status: "published" }).eq("id", btn.dataset.id);
+      if (!error) {
+        loadExams();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+      }
+    });
+  });
+
+  container.querySelectorAll(".delete-exam-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this exam and all its questions and attempts? This cannot be undone."))) return;
+      const { error } = await supabaseClient.from("exams").delete().eq("id", btn.dataset.id);
+      if (!error) loadExams(); else showToast(error.message);
+    });
+  });
+}
+
+guardAndInit();
+</script>
 </body>
 </html>

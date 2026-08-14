@@ -47,6 +47,11 @@
     <header class="topbar">
       <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
       <h1 id="viewTitle">Overview</h1>
+      <div class="topbar-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="globalSearch" placeholder="Search students, teachers, classes, subjects..." autocomplete="off" />
+        <div class="search-results" id="searchResults"></div>
+      </div>
       <div class="topbar-right">
         <span class="admin-name" id="adminName">Admin</span>
         <div class="admin-avatar"><i class="bi bi-person-fill"></i></div>
@@ -59,47 +64,87 @@
       <section class="view active" id="view-overview">
         <div class="stat-grid">
           <div class="stat-card">
-            <span class="stat-label">Total students</span>
-            <span class="stat-value" id="statStudents">—</span>
+            <div class="stat-icon-chip chip-purple"><i class="bi bi-mortarboard-fill"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Total students</span>
+              <span class="stat-value" id="statStudents">—</span>
+            </div>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Total teachers</span>
-            <span class="stat-value" id="statTeachers">—</span>
+            <div class="stat-icon-chip chip-sky"><i class="bi bi-person-workspace"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Total teachers</span>
+              <span class="stat-value" id="statTeachers">—</span>
+            </div>
           </div>
           <div class="stat-card highlight">
-            <span class="stat-label">Pending approvals</span>
-            <span class="stat-value" id="statPending">—</span>
+            <div class="stat-icon-chip chip-orange"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Pending approvals</span>
+              <span class="stat-value" id="statPending">—</span>
+            </div>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Registered this year</span>
-            <span class="stat-value" id="statThisYear">—</span>
+            <div class="stat-icon-chip chip-green"><i class="bi bi-calendar-check-fill"></i></div>
+            <div class="stat-card-body">
+              <span class="stat-label">Registered this year</span>
+              <span class="stat-value" id="statThisYear">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-chip-row">
+          <button class="qa-chip" data-view="students" data-open="registerStudent">
+            <i class="bi bi-person-plus-fill"></i><span>Register a student</span>
+          </button>
+          <button class="qa-chip" data-view="teachers" data-open="addTeacher">
+            <i class="bi bi-person-badge"></i><span>Add a teacher</span>
+          </button>
+          <button class="qa-chip" data-view="announcements" data-open="postAnnouncement">
+            <i class="bi bi-megaphone"></i><span>Post an announcement</span>
+          </button>
+          <button class="qa-chip" data-view="results">
+            <i class="bi bi-clipboard-check-fill"></i><span>Review results</span>
+          </button>
+        </div>
+
+        <div class="panel-row split-65">
+          <div class="panel">
+            <div class="panel-header-flex">
+              <h2>Student registrations</h2>
+              <div class="panel-header-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+            <div class="chart-total" id="chartTotalRegistrations">—</div>
+            <div class="chart-total-label" id="chartTotalLabel">registered this year</div>
+            <div class="bar-chart-wrap" id="registrationsChartWrap" style="margin-top:0.75rem;"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header-flex">
+              <h2>Recent announcements</h2>
+              <div class="panel-header-icon"><i class="bi bi-megaphone-fill"></i></div>
+            </div>
+            <div class="widget-list" id="recentAnnouncementsList">
+              <div class="empty-state"><i class="bi bi-megaphone"></i><p>No announcements posted yet.</p></div>
+            </div>
           </div>
         </div>
 
         <div class="panel-row">
           <div class="panel">
-            <div class="panel-header">
-              <h2>Quick actions</h2>
+            <div class="panel-header-flex">
+              <h2>Recently registered</h2>
+              <div class="panel-header-icon"><i class="bi bi-person-check-fill"></i></div>
             </div>
-            <div class="quick-actions">
-              <button class="qa-btn" data-view="students" data-open="registerStudent">
-                <i class="bi bi-person-plus-fill"></i>
-                <span>Register a student</span>
-              </button>
-              <button class="qa-btn" data-view="teachers" data-open="addTeacher">
-                <i class="bi bi-person-badge"></i>
-                <span>Add a teacher</span>
-              </button>
-              <button class="qa-btn" data-view="announcements">
-                <i class="bi bi-megaphone"></i>
-                <span>Post an announcement</span>
-              </button>
+            <div class="widget-list" id="recentRegistrationsList">
+              <div class="empty-state"><i class="bi bi-people"></i><p>No students registered yet.</p></div>
             </div>
           </div>
 
           <div class="panel">
-            <div class="panel-header">
+            <div class="panel-header-flex">
               <h2>Recent activity</h2>
+              <div class="panel-header-icon"><i class="bi bi-activity"></i></div>
             </div>
             <ul class="activity-list" id="activityList">
               <li class="empty-hint">Activity will appear here as you register students and approve teachers.</li>
@@ -111,9 +156,12 @@
       <!-- CLASSES -->
       <section class="view" id="view-classes">
         <div class="panel">
-          <div class="panel-header">
-            <h2>Add a class</h2>
-            <p>Only fill in "Arm / Branch" for classes that are split into streams (e.g. JSS1 A / JSS1 B) — leave it blank for classes with just one group.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Add a class</h2>
+              <p>Only fill in "Arm / Branch" for classes that are split into streams (e.g. JSS1 A / JSS1 B) — leave it blank for classes with just one group.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-plus-circle-fill"></i></div>
           </div>
           <form id="addClassForm" class="inline-form">
             <div class="form-row">
@@ -140,9 +188,12 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>All classes</h2>
-            <p>Promoting moves every student up one class level. Students in your highest class (e.g. SSS3) are marked as Graduated instead of moved.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>All classes</h2>
+              <p>Promoting moves every student up one class level. Students in your highest class (e.g. SSS3) are marked as Graduated instead of moved.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-diagram-3-fill"></i></div>
           </div>
           <button type="button" class="primary-btn" id="promoteAllBtn" style="margin-bottom:1.25rem;">
             <i class="bi bi-arrow-up-circle-fill"></i>
@@ -154,7 +205,7 @@
               <thead><tr><th>Class</th><th>Class teacher</th><th>Students</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
-            <p class="empty-hint" id="classesEmptyHint">No classes created yet.</p>
+            <div class="empty-state" id="classesEmptyHint"><i class="bi bi-diagram-3"></i><p>No classes created yet.</p></div>
           </div>
         </div>
       </section>
@@ -162,8 +213,11 @@
       <!-- SUBJECTS -->
       <section class="view" id="view-subjects">
         <div class="panel">
-          <div class="panel-header">
-            <h2>Add a subject</h2>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Add a subject</h2>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-plus-circle-fill"></i></div>
           </div>
           <form id="addSubjectForm" class="inline-form">
             <div class="form-row">
@@ -194,9 +248,12 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>Bulk add subjects</h2>
-            <p>Paste a list of subject names (one per line) for a single level/track at a time.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Bulk add subjects</h2>
+              <p>Paste a list of subject names (one per line) for a single level/track at a time.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-stack"></i></div>
           </div>
           <form id="bulkSubjectForm" class="inline-form">
             <div class="form-row">
@@ -224,21 +281,27 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>All subjects</h2>
-            <p>Click a level to expand it, then use Assign or Delete right beside each subject.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>All subjects</h2>
+              <p>Click a level to expand it, then use Assign or Delete right beside each subject.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
           </div>
           <div id="subjectGroups"></div>
-          <p class="empty-hint" id="subjectsEmptyHint">No subjects added yet.</p>
+          <div class="empty-state" id="subjectsEmptyHint"><i class="bi bi-journal-bookmark"></i><p>No subjects added yet.</p></div>
         </div>
       </section>
 
       <!-- STUDENTS -->
       <section class="view" id="view-students">
         <div class="panel">
-          <div class="panel-header">
-            <h2>Register a student</h2>
-            <p>Portal number is generated automatically — give it to the student to log in.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Register a student</h2>
+              <p>Portal number is generated automatically — give it to the student to log in.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-person-plus-fill"></i></div>
           </div>
           <form id="registerStudentForm" class="inline-form">
             <div class="form-row">
@@ -265,9 +328,12 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>Bulk import students</h2>
-            <p>Upload a CSV with columns <strong>full_name, surname, class</strong> — each row gets registered and given its own portal number automatically.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Bulk import students</h2>
+              <p>Upload a CSV with columns <strong>full_name, surname, class</strong> — each row gets registered and given its own portal number automatically.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-cloud-upload-fill"></i></div>
           </div>
           <a href="data:text/csv;charset=utf-8,full_name,surname,class%0AAdeyemi Oluwaseun,Adeyemi,JSS2%0A" download="rohi-portal-student-template.csv" class="template-link">
             <i class="bi bi-download"></i> Download CSV template
@@ -283,26 +349,32 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>All students</h2>
-            <div class="filter-row">
-              <input type="text" id="studentSearch" class="search-input" placeholder="Search by name, surname, or portal number" />
-              <select id="studentClassFilter" class="search-input filter-select">
-                <option value="">All classes</option>
-              </select>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>All students</h2>
+              <div class="filter-row">
+                <input type="text" id="studentSearch" class="search-input" placeholder="Search by name, surname, or portal number" />
+                <select id="studentClassFilter" class="search-input filter-select">
+                  <option value="">All classes</option>
+                </select>
+              </div>
             </div>
+            <div class="panel-header-icon"><i class="bi bi-mortarboard-fill"></i></div>
           </div>
           <div id="studentGroups"></div>
-          <p class="empty-hint" id="studentsEmptyHint">No students registered yet.</p>
+          <div class="empty-state" id="studentsEmptyHint"><i class="bi bi-mortarboard"></i><p>No students registered yet.</p></div>
         </div>
       </section>
 
       <!-- TEACHERS -->
       <section class="view" id="view-teachers">
         <div class="panel">
-          <div class="panel-header">
-            <h2>Add a teacher</h2>
-            <p>They'll be able to log in with this email and the shared staff password once approved.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Add a teacher</h2>
+              <p>They'll be able to log in with this email and the shared staff password once approved.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-person-badge-fill"></i></div>
           </div>
           <form id="addTeacherForm" class="inline-form">
             <div class="form-row">
@@ -327,45 +399,172 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>Pending approval</h2>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Pending approval</h2>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-hourglass-split"></i></div>
           </div>
           <div class="table-wrap">
             <table class="data-table" id="pendingTeachersTable">
               <thead><tr><th>Full name</th><th>Email</th><th>Subjects</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
-            <p class="empty-hint" id="pendingEmptyHint">No teachers awaiting approval.</p>
+            <div class="empty-state" id="pendingEmptyHint"><i class="bi bi-hourglass"></i><p>No teachers awaiting approval.</p></div>
           </div>
         </div>
 
         <div class="panel">
-          <div class="panel-header">
-            <h2>Approved teachers</h2>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Approved teachers</h2>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-patch-check-fill"></i></div>
           </div>
           <div class="table-wrap">
             <table class="data-table" id="approvedTeachersTable">
               <thead><tr><th>Full name</th><th>Email</th><th>Subjects</th><th>Class teacher of</th></tr></thead>
               <tbody></tbody>
             </table>
-            <p class="empty-hint" id="approvedEmptyHint">No approved teachers yet.</p>
+            <div class="empty-state" id="approvedEmptyHint"><i class="bi bi-patch-check"></i><p>No approved teachers yet.</p></div>
           </div>
         </div>
       </section>
 
-      <!-- RESULTS (placeholder for next build phase) -->
+      <!-- RESULTS -->
       <section class="view" id="view-results">
         <div class="panel">
-          <div class="panel-header"><h2>Results approval</h2></div>
-          <p class="empty-hint">Coming next: teachers submit results here for your review and approval before students can see them.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Terms</h2>
+              <p>Create a term for each session, and mark one as current — that's the default used across the portal.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-calendar-range-fill"></i></div>
+          </div>
+          <form id="addTermForm" class="inline-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="termSession">Session</label>
+                <input type="text" id="termSession" placeholder="e.g. 2025/2026" required />
+              </div>
+              <div class="field">
+                <label for="termName">Term</label>
+                <select id="termName">
+                  <option>First Term</option>
+                  <option>Second Term</option>
+                  <option>Third Term</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="primary-btn" id="addTermBtn">
+              <span class="btn-text">Add term</span>
+            </button>
+            <div id="addTermResult"></div>
+          </form>
+          <div class="term-pill-row" id="termPillRow" style="margin-top:1.1rem;"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Add / edit a result</h2>
+              <p>Enter a result directly — useful for corrections or entering on a teacher's behalf. New entries still go through the review step below before students can see them.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-pencil-square"></i></div>
+          </div>
+          <form id="addResultForm" class="inline-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="resultClass">Class</label>
+                <select id="resultClass" required><option value="">Select a class</option></select>
+              </div>
+              <div class="field">
+                <label for="resultStudent">Student</label>
+                <select id="resultStudent" required><option value="">Select a class first</option></select>
+              </div>
+              <div class="field">
+                <label for="resultSubject">Subject</label>
+                <select id="resultSubject" required><option value="">Select a subject</option></select>
+              </div>
+              <div class="field">
+                <label for="resultTerm">Term</label>
+                <select id="resultTerm" required><option value="">Select a term</option></select>
+              </div>
+              <div class="field">
+                <label for="resultCa">CA score</label>
+                <input type="number" id="resultCa" min="0" step="0.5" value="0" required />
+              </div>
+              <div class="field">
+                <label for="resultExam">Exam score</label>
+                <input type="number" id="resultExam" min="0" step="0.5" value="0" required />
+              </div>
+            </div>
+            <button type="submit" class="primary-btn" id="addResultBtn">
+              <span class="btn-text">Save result</span>
+            </button>
+            <div id="addResultResult"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Review & publish</h2>
+              <p>Publishing makes a result visible to that student. Grouped by class, for the term selected below.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-clipboard-check-fill"></i></div>
+          </div>
+          <div class="filter-row" style="margin-bottom:1.1rem;">
+            <select id="reviewTermFilter" class="search-input filter-select"></select>
+          </div>
+          <div id="resultsReviewGroups"></div>
+          <div class="empty-state" id="resultsReviewEmptyHint"><i class="bi bi-clipboard-x"></i><p>No results submitted for this term yet.</p></div>
         </div>
       </section>
 
-      <!-- ANNOUNCEMENTS (placeholder for next build phase) -->
+      <!-- ANNOUNCEMENTS -->
       <section class="view" id="view-announcements">
         <div class="panel">
-          <div class="panel-header"><h2>Announcements</h2></div>
-          <p class="empty-hint">Coming next: post school-wide or class-specific announcements from here.</p>
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Post an announcement</h2>
+              <p>Choose who should see it — everyone, all students, all teachers, or a single class.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-megaphone-fill"></i></div>
+          </div>
+          <form id="postAnnouncementForm" class="inline-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="announcementTitle">Title</label>
+                <input type="text" id="announcementTitle" placeholder="e.g. Resumption date for Second Term" required />
+              </div>
+              <div class="field">
+                <label for="announcementAudience">Audience</label>
+                <select id="announcementAudience">
+                  <option value="all">Everyone</option>
+                  <option value="students">All students</option>
+                  <option value="teachers">All teachers</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="announcementBody">Message</label>
+              <textarea id="announcementBody" rows="4" placeholder="Write the announcement..." style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border-c);font-family:'Inter',sans-serif;font-size:0.9rem;" required></textarea>
+            </div>
+            <button type="submit" class="primary-btn" id="postAnnouncementBtn">
+              <span class="btn-text">Post announcement</span>
+            </button>
+            <div id="postAnnouncementResult"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header"><h2>All announcements</h2></div>
+            <div class="panel-header-icon"><i class="bi bi-card-list"></i></div>
+          </div>
+          <div id="announcementsList"></div>
+          <div class="empty-state" id="announcementsEmptyHint"><i class="bi bi-megaphone"></i><p>No announcements posted yet.</p></div>
         </div>
       </section>
 
@@ -444,10 +643,16 @@ function switchView(name) {
 }
 
 navItems.forEach((n) => n.addEventListener("click", () => switchView(n.dataset.view)));
+const QUICK_ACTION_TARGETS = {
+  registerStudent: "studentFullName",
+  addTeacher: "teacherFullName",
+  postAnnouncement: "announcementTitle",
+};
+
 document.querySelectorAll("[data-view][data-open]").forEach((btn) => {
   btn.addEventListener("click", () => {
     switchView(btn.dataset.view);
-    const target = document.getElementById(btn.dataset.open === "registerStudent" ? "studentFullName" : "teacherFullName");
+    const target = document.getElementById(QUICK_ACTION_TARGETS[btn.dataset.open]);
     if (target) target.focus();
   });
 });
@@ -491,11 +696,14 @@ async function guardAndInit() {
 
   currentAdmin = profile;
   document.getElementById("adminName").textContent = profile.full_name || "Admin";
+  const announcementsPromise = loadAnnouncements(); // independent of everything below, runs concurrently
   await loadClasses();
-  loadSubjects();
+  await loadSubjects();
+  await loadStudents();
+  await loadTeachers(false); // classes were just loaded above, skip the redundant refresh
+  await loadTerms();
+  await announcementsPromise;
   loadOverview();
-  loadStudents();
-  loadTeachers();
 }
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
@@ -505,17 +713,141 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 
 // ---- Overview ----
 async function loadOverview() {
-  const { count: studentCount } = await supabaseClient
-    .from("profiles").select("*", { count: "exact", head: true }).eq("role", "student");
-  const { count: teacherCount } = await supabaseClient
-    .from("profiles").select("*", { count: "exact", head: true }).eq("role", "teacher");
-  const { count: pendingCount } = await supabaseClient
-    .from("profiles").select("*", { count: "exact", head: true }).eq("role", "teacher").eq("approved", false);
+  // allStudents is already loaded by this point — no need for a separate count query.
+  const studentCount = allStudents.length;
+  const [{ count: teacherCount }, { count: pendingCount }] = await Promise.all([
+    supabaseClient.from("profiles").select("*", { count: "exact", head: true }).eq("role", "teacher"),
+    supabaseClient.from("profiles").select("*", { count: "exact", head: true }).eq("role", "teacher").eq("approved", false),
+  ]);
+
+  const thisYear = new Date().getFullYear();
+  const registeredThisYear = allStudents.filter(
+    (s) => s.created_at && new Date(s.created_at).getFullYear() === thisYear
+  ).length;
 
   document.getElementById("statStudents").textContent = studentCount ?? 0;
   document.getElementById("statTeachers").textContent = teacherCount ?? 0;
   document.getElementById("statPending").textContent = pendingCount ?? 0;
-  document.getElementById("statThisYear").textContent = studentCount ?? 0;
+  document.getElementById("statThisYear").textContent = registeredThisYear;
+
+  renderRegistrationsChart();
+  renderRecentRegistrations();
+  renderRecentAnnouncementsWidget();
+}
+
+function initials(name) {
+  return (name || "").trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+}
+
+function timeAgo(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function renderRegistrationsChart() {
+  const wrap = document.getElementById("registrationsChartWrap");
+  const year = new Date().getFullYear();
+  const counts = new Array(12).fill(0);
+  allStudents.forEach((s) => {
+    if (!s.created_at) return;
+    const d = new Date(s.created_at);
+    if (d.getFullYear() === year) counts[d.getMonth()]++;
+  });
+  const total = counts.reduce((a, b) => a + b, 0);
+  document.getElementById("chartTotalRegistrations").textContent = total;
+  document.getElementById("chartTotalLabel").textContent = `registered in ${year}`;
+
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const max = Math.max(1, ...counts);
+  const w = 620, h = 180, padBottom = 22, padTop = 8;
+  const barW = w / 12;
+  const currentMonth = new Date().getMonth();
+
+  let bars = "";
+  counts.forEach((c, i) => {
+    const barH = c > 0 ? Math.max(4, (c / max) * (h - padBottom - padTop)) : 0;
+    const x = i * barW + barW * 0.22;
+    const bw = barW * 0.56;
+    const y = h - padBottom - barH;
+    bars += `
+      <rect class="bar-fill${i === currentMonth ? " current" : ""}" x="${x}" y="${y}" width="${bw}" height="${barH}" rx="4"></rect>
+      <rect class="bar-hit" data-count="${c}" data-month="${months[i]}" x="${i * barW}" y="0" width="${barW}" height="${h - padBottom}"></rect>
+      <text class="bar-label" x="${i * barW + barW / 2}" y="${h - 6}" text-anchor="middle">${months[i]}</text>`;
+  });
+
+  wrap.innerHTML = `
+    <svg class="bar-chart-svg" viewBox="0 0 ${w} ${h}">${bars}</svg>
+    <div class="chart-tooltip" id="chartTooltip"></div>`;
+
+  const tooltip = document.getElementById("chartTooltip");
+  wrap.querySelectorAll(".bar-hit").forEach((rect) => {
+    rect.addEventListener("mousemove", (e) => {
+      const wrapRect = wrap.getBoundingClientRect();
+      const count = rect.dataset.count;
+      tooltip.textContent = `${rect.dataset.month}: ${count} student${count === "1" ? "" : "s"}`;
+      tooltip.style.left = `${e.clientX - wrapRect.left}px`;
+      tooltip.style.top = `${e.clientY - wrapRect.top}px`;
+      tooltip.classList.add("show");
+    });
+    rect.addEventListener("mouseleave", () => tooltip.classList.remove("show"));
+  });
+}
+
+function renderRecentRegistrations() {
+  const list = document.getElementById("recentRegistrationsList");
+  const recent = [...allStudents].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+  if (!recent.length) {
+    list.innerHTML = '<div class="empty-state"><i class="bi bi-people"></i><p>No students registered yet.</p></div>';
+    return;
+  }
+  list.innerHTML = recent.map((s) => `
+    <div class="widget-list-item">
+      <div class="avatar-chip">${initials(s.full_name)}</div>
+      <div>
+        <p class="widget-list-title">${s.full_name}</p>
+        <p class="widget-list-meta">${s.class || "Unassigned"} · ${s.portal_number || ""}</p>
+      </div>
+      <span class="widget-list-time">${timeAgo(s.created_at)}</span>
+    </div>`).join("");
+}
+
+function audienceLabel(audience) {
+  if (audience === "all") return "Everyone";
+  if (audience === "teachers") return "All teachers";
+  if (audience === "students") return "All students";
+  return audience;
+}
+
+function audienceBadgeClass(audience) {
+  if (audience === "all") return "badge-all";
+  if (audience === "teachers") return "badge-teachers";
+  if (audience === "students") return "badge-students";
+  return "badge-class";
+}
+
+function renderRecentAnnouncementsWidget() {
+  const list = document.getElementById("recentAnnouncementsList");
+  const recent = allAnnouncements.slice(0, 3);
+  if (!recent.length) {
+    list.innerHTML = '<div class="empty-state"><i class="bi bi-megaphone"></i><p>No announcements posted yet.</p></div>';
+    return;
+  }
+  list.innerHTML = recent.map((a) => `
+    <div class="widget-list-item">
+      <div class="avatar-chip"><i class="bi bi-megaphone-fill"></i></div>
+      <div>
+        <p class="widget-list-title">${a.title}</p>
+        <p class="widget-list-meta">${audienceLabel(a.audience)}</p>
+      </div>
+      <span class="widget-list-time">${timeAgo(a.created_at)}</span>
+    </div>`).join("");
 }
 
 function logActivity(text) {
@@ -526,6 +858,68 @@ function logActivity(text) {
   li.innerHTML = `<i class="bi bi-dot"></i> ${text} <span class="activity-time">just now</span>`;
   list.prepend(li);
 }
+
+// ---- Global search ----
+const globalSearchInput = document.getElementById("globalSearch");
+const searchResultsBox = document.getElementById("searchResults");
+
+function runGlobalSearch(q) {
+  const query = q.trim().toLowerCase();
+  if (!query) {
+    searchResultsBox.classList.remove("show");
+    searchResultsBox.innerHTML = "";
+    return;
+  }
+
+  const studentMatches = allStudents.filter((s) =>
+    (s.full_name || "").toLowerCase().includes(query) ||
+    (s.surname || "").toLowerCase().includes(query) ||
+    (s.portal_number || "").toLowerCase().includes(query)
+  ).slice(0, 5);
+  const teacherMatches = allTeachers.filter((t) =>
+    (t.full_name || "").toLowerCase().includes(query) || (t.email || "").toLowerCase().includes(query)
+  ).slice(0, 5);
+  const classMatches = allClasses.filter((c) => c.name.toLowerCase().includes(query)).slice(0, 5);
+  const subjectMatches = allSubjects.filter((s) => s.name.toLowerCase().includes(query)).slice(0, 5);
+
+  const groups = [
+    { label: "Students", items: studentMatches.map((s) => ({ text: s.full_name, meta: s.class || "Unassigned", view: "students" })) },
+    { label: "Teachers", items: teacherMatches.map((t) => ({ text: t.full_name, meta: t.approved ? "Approved" : "Pending", view: "teachers" })) },
+    { label: "Classes", items: classMatches.map((c) => ({ text: c.name, meta: `${allStudents.filter((s) => s.class === c.name).length} students`, view: "classes" })) },
+    { label: "Subjects", items: subjectMatches.map((s) => ({ text: s.name, meta: s.category || "General", view: "subjects" })) },
+  ].filter((g) => g.items.length);
+
+  if (!groups.length) {
+    searchResultsBox.innerHTML = '<div class="search-results-empty">No matches found.</div>';
+    searchResultsBox.classList.add("show");
+    return;
+  }
+
+  searchResultsBox.innerHTML = groups.map((g) => `
+    <div class="search-result-group-label">${g.label}</div>
+    ${g.items.map((item) => `
+      <button type="button" class="search-result-item" data-view="${item.view}">
+        <span>${item.text}</span>
+        <span class="search-result-meta">${item.meta}</span>
+      </button>`).join("")}
+  `).join("");
+
+  searchResultsBox.querySelectorAll(".search-result-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      switchView(btn.dataset.view);
+      searchResultsBox.classList.remove("show");
+      globalSearchInput.value = "";
+    });
+  });
+
+  searchResultsBox.classList.add("show");
+}
+
+globalSearchInput.addEventListener("input", () => runGlobalSearch(globalSearchInput.value));
+globalSearchInput.addEventListener("focus", () => { if (globalSearchInput.value.trim()) runGlobalSearch(globalSearchInput.value); });
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".topbar-search")) searchResultsBox.classList.remove("show");
+});
 
 // ---- Classes ----
 let allClasses = [];
@@ -574,6 +968,16 @@ async function loadClasses() {
   const classOptions = allClasses.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
   document.getElementById("studentClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
   document.getElementById("studentClassFilter").innerHTML = '<option value="">All classes</option>' + classOptions + '<option value="Graduated">Graduated</option><option value="Left School">Left School</option>';
+  document.getElementById("resultClass").innerHTML = '<option value="">Select a class</option>' + classOptions;
+
+  const audienceSelect = document.getElementById("announcementAudience");
+  audienceSelect.querySelector("optgroup")?.remove();
+  if (allClasses.length) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = "A specific class";
+    optgroup.innerHTML = classOptions;
+    audienceSelect.appendChild(optgroup);
+  }
 
   renderClasses();
 }
@@ -805,6 +1209,11 @@ async function loadSubjects() {
   const { data: assignments } = await supabaseClient.from("subject_teachers").select("*");
   allSubjects = subjects || [];
   allAssignments = assignments || [];
+
+  const resultSubjectSelect = document.getElementById("resultSubject");
+  resultSubjectSelect.innerHTML = '<option value="">Select a subject</option>' +
+    allSubjects.map((s) => `<option value="${s.id}">${s.name} (${s.category || "General"})</option>`).join("");
+
   renderSubjects();
 }
 
@@ -1086,7 +1495,7 @@ function renderStudents(list) {
           </tr>`;
         }
         return `<tr>
-          <td>${s.full_name}</td>
+          <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
           <td>${s.surname}</td>
           <td>${s.class || "—"}</td>
           <td class="mono">${s.portal_number}</td>
@@ -1344,12 +1753,14 @@ document.getElementById("bulkUploadBtn").addEventListener("click", () => {
 });
 
 // ---- Teachers ----
-async function loadTeachers() {
+async function loadTeachers(refreshClasses = true) {
   const { data } = await supabaseClient.from("profiles").select("*").eq("role", "teacher").order("created_at", { ascending: false });
   const teachers = data || [];
   renderTeacherTable("pendingTeachersTable", "pendingEmptyHint", teachers.filter((t) => !t.approved), true, false);
   renderTeacherTable("approvedTeachersTable", "approvedEmptyHint", teachers.filter((t) => t.approved), false, true);
-  loadClasses(); // refresh class-teacher dropdown options as approved teachers change
+  // Refreshes the class-teacher dropdown after a teacher is added/approved.
+  // Skipped on initial page load (guardAndInit already just loaded classes).
+  if (refreshClasses) loadClasses();
 }
 
 function renderTeacherTable(tableId, emptyId, list, showApprove, showClassTeacherOf) {
@@ -1365,7 +1776,7 @@ function renderTeacherTable(tableId, emptyId, list, showApprove, showClassTeache
     const subjectsText = (t.subjects && t.subjects.length) ? t.subjects.join(", ") : "—";
     const classTeacherOf = allClasses.find((c) => c.class_teacher_id === t.id);
     const tr = document.createElement("tr");
-    let rowHtml = `<td>${t.full_name}</td><td>${t.email}</td><td>${subjectsText}</td>`;
+    let rowHtml = `<td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(t.full_name)}</span>${t.full_name}</td><td>${t.email}</td><td>${subjectsText}</td>`;
     if (showApprove) rowHtml += `<td><button class="approve-btn" data-id="${t.id}">Approve</button></td>`;
     if (showClassTeacherOf) rowHtml += `<td>${classTeacherOf ? classTeacherOf.name : "—"}</td>`;
     tr.innerHTML = rowHtml;
@@ -1427,6 +1838,405 @@ document.getElementById("addTeacherForm").addEventListener("submit", async (e) =
     btn.innerHTML = '<span class="btn-text">Add teacher</span>';
   }
 });
+
+// ---- Announcements ----
+let allAnnouncements = [];
+
+async function loadAnnouncements() {
+  const { data } = await supabaseClient.from("announcements").select("*").order("created_at", { ascending: false });
+  allAnnouncements = data || [];
+  renderAnnouncements();
+}
+
+function renderAnnouncements() {
+  const list = document.getElementById("announcementsList");
+  const emptyHint = document.getElementById("announcementsEmptyHint");
+  if (!allAnnouncements.length) {
+    list.innerHTML = "";
+    emptyHint.style.display = "block";
+    return;
+  }
+  emptyHint.style.display = "none";
+
+  list.innerHTML = allAnnouncements.map((a) => `
+    <div class="announcement-card">
+      <div class="announcement-card-head">
+        <h3>${a.title}</h3>
+        <span class="badge-pill ${audienceBadgeClass(a.audience)}">${audienceLabel(a.audience)}</span>
+      </div>
+      <p class="announcement-body">${a.body}</p>
+      <div class="announcement-card-foot">
+        <span>${new Date(a.created_at).toLocaleString()}</span>
+        <button class="approve-btn delete-btn delete-announcement-btn" data-id="${a.id}">Delete</button>
+      </div>
+    </div>`).join("");
+
+  list.querySelectorAll(".delete-announcement-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this announcement?"))) return;
+      const { error } = await supabaseClient.from("announcements").delete().eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Deleted an announcement`);
+        loadAnnouncements();
+        loadOverview();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+}
+
+document.getElementById("postAnnouncementForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = document.getElementById("announcementTitle").value.trim();
+  const body = document.getElementById("announcementBody").value.trim();
+  const audience = document.getElementById("announcementAudience").value;
+  const btn = document.getElementById("postAnnouncementBtn");
+  const resultBox = document.getElementById("postAnnouncementResult");
+  resultBox.innerHTML = "";
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Posting...';
+
+  try {
+    const { error } = await supabaseClient.from("announcements").insert({
+      title, body, audience, created_by: currentAdmin.id,
+    });
+    if (error) throw error;
+    resultBox.innerHTML = `<div class="alert alert-success">Announcement posted.</div>`;
+    logActivity(`Posted announcement <strong>${title}</strong>`);
+    document.getElementById("postAnnouncementForm").reset();
+    loadAnnouncements();
+    loadOverview();
+  } catch (err) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Post announcement</span>';
+  }
+});
+
+// ---- Terms ----
+let allTerms = [];
+let currentTermId = null;
+
+async function loadTerms() {
+  const { data } = await supabaseClient.from("terms").select("*").order("created_at", { ascending: false });
+  allTerms = data || [];
+  const current = allTerms.find((t) => t.is_current);
+  currentTermId = current ? current.id : (allTerms[0] ? allTerms[0].id : null);
+  renderTermPills();
+  populateTermSelects();
+}
+
+function renderTermPills() {
+  const row = document.getElementById("termPillRow");
+  if (!allTerms.length) {
+    row.innerHTML = '<p class="empty-hint" style="padding:0;">No terms yet — add one above.</p>';
+    return;
+  }
+  row.innerHTML = allTerms.map((t) => `
+    <div class="term-pill ${t.is_current ? "is-current" : ""}">
+      <span>${t.name} · ${t.session}${t.is_current ? " (current)" : ""}</span>
+      <button type="button" class="set-current-term-btn" data-id="${t.id}">Set current</button>
+    </div>`).join("");
+
+  row.querySelectorAll(".set-current-term-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      const { error: clearError } = await supabaseClient.from("terms").update({ is_current: false }).eq("is_current", true);
+      if (clearError) { showToast(clearError.message); btn.disabled = false; return; }
+      const { error } = await supabaseClient.from("terms").update({ is_current: true }).eq("id", btn.dataset.id);
+      if (error) { showToast(error.message); btn.disabled = false; return; }
+      logActivity(`Changed the current term`);
+      loadTerms();
+    });
+  });
+}
+
+function populateTermSelects() {
+  const options = allTerms.map((t) => `<option value="${t.id}">${t.name} · ${t.session}</option>`).join("");
+
+  const resultTermSelect = document.getElementById("resultTerm");
+  resultTermSelect.innerHTML = '<option value="">Select a term</option>' + options;
+  if (currentTermId) resultTermSelect.value = currentTermId;
+
+  const reviewFilter = document.getElementById("reviewTermFilter");
+  reviewFilter.innerHTML = options || '<option value="">No terms yet</option>';
+  if (currentTermId) reviewFilter.value = currentTermId;
+  loadResultsReview();
+}
+
+document.getElementById("addTermForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const session = document.getElementById("termSession").value.trim();
+  const name = document.getElementById("termName").value;
+  const btn = document.getElementById("addTermBtn");
+  const resultBox = document.getElementById("addTermResult");
+  resultBox.innerHTML = "";
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Adding...';
+
+  try {
+    const makeCurrent = allTerms.length === 0;
+    const { error } = await supabaseClient.from("terms").insert({ session, name, is_current: makeCurrent });
+    if (error) throw error;
+    resultBox.innerHTML = `<div class="alert alert-success">Term added.</div>`;
+    logActivity(`Added term <strong>${name} · ${session}</strong>`);
+    document.getElementById("addTermForm").reset();
+    loadTerms();
+  } catch (err) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Add term</span>';
+  }
+});
+
+// ---- Results ----
+let reviewResultsData = [];
+let openResultGroups = new Set();
+let editingResultId = null;
+
+document.getElementById("resultClass").addEventListener("change", () => {
+  const className = document.getElementById("resultClass").value;
+  const studentSelect = document.getElementById("resultStudent");
+  const studentsInClass = allStudents.filter((s) => s.class === className);
+  studentSelect.innerHTML = studentsInClass.length
+    ? studentsInClass.map((s) => `<option value="${s.id}">${s.full_name} (${s.portal_number})</option>`).join("")
+    : '<option value="">No students in this class</option>';
+});
+
+function gradeFor(total) {
+  if (total >= 70) return "A";
+  if (total >= 60) return "B";
+  if (total >= 50) return "C";
+  if (total >= 45) return "D";
+  if (total >= 40) return "E";
+  return "F";
+}
+
+document.getElementById("addResultForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const studentId = document.getElementById("resultStudent").value;
+  const subjectId = document.getElementById("resultSubject").value;
+  const termId = document.getElementById("resultTerm").value;
+  const ca = parseFloat(document.getElementById("resultCa").value) || 0;
+  const exam = parseFloat(document.getElementById("resultExam").value) || 0;
+  const btn = document.getElementById("addResultBtn");
+  const resultBox = document.getElementById("addResultResult");
+  resultBox.innerHTML = "";
+
+  if (!studentId || !subjectId || !termId) {
+    showToast("Pick a class, student, subject, and term first.");
+    return;
+  }
+  if (ca + exam > 100) {
+    showToast("CA + Exam can't add up to more than 100.");
+    return;
+  }
+
+  const student = allStudents.find((s) => s.id === studentId);
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving...';
+
+  try {
+    const { error } = await supabaseClient.from("results").upsert({
+      student_id: studentId,
+      subject_id: subjectId,
+      term_id: termId,
+      teacher_id: currentAdmin.id,
+      class_at_entry: student ? student.class : null,
+      ca_score: ca,
+      exam_score: exam,
+      status: "submitted",
+    }, { onConflict: "student_id,subject_id,term_id" });
+    if (error) throw error;
+    resultBox.innerHTML = `<div class="alert alert-success">Result saved.</div>`;
+    logActivity(`Entered a result for <strong>${student ? student.full_name : "a student"}</strong>`);
+    document.getElementById("addResultForm").reset();
+    document.getElementById("resultTerm").value = currentTermId || "";
+    loadResultsReview();
+  } catch (err) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Save result</span>';
+  }
+});
+
+async function loadResultsReview() {
+  const termId = document.getElementById("reviewTermFilter").value || currentTermId;
+  if (!termId) { reviewResultsData = []; renderResultsReview(); return; }
+  const { data } = await supabaseClient.from("results").select("*").eq("term_id", termId);
+  reviewResultsData = data || [];
+  renderResultsReview();
+}
+
+document.getElementById("reviewTermFilter").addEventListener("change", loadResultsReview);
+
+function renderResultsReview() {
+  const container = document.getElementById("resultsReviewGroups");
+  const emptyHint = document.getElementById("resultsReviewEmptyHint");
+  container.innerHTML = "";
+
+  if (!reviewResultsData.length) {
+    emptyHint.style.display = "block";
+    return;
+  }
+  emptyHint.style.display = "none";
+
+  const groupNames = [...new Set(reviewResultsData.map((r) => r.class_at_entry || "Unassigned"))]
+    .sort((a, b) => classSortRank(a) - classSortRank(b));
+
+  groupNames.forEach((groupName) => {
+    const rows = reviewResultsData.filter((r) => (r.class_at_entry || "Unassigned") === groupName);
+    const isOpen = openResultGroups.has(groupName);
+    const submittedCount = rows.filter((r) => r.status === "submitted").length;
+
+    const rowsHtml = rows.map((r) => {
+      const student = allStudents.find((s) => s.id === r.student_id);
+      const subject = allSubjects.find((s) => s.id === r.subject_id);
+      const total = r.ca_score + r.exam_score;
+
+      if (editingResultId === r.id) {
+        return `<tr>
+          <td>${student ? student.full_name : "—"}</td>
+          <td>${subject ? subject.name : "—"}</td>
+          <td><input type="number" min="0" step="0.5" class="score-input edit-result-ca" value="${r.ca_score}" /></td>
+          <td><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
+          <td>—</td>
+          <td>${r.status}</td>
+          <td class="row-actions">
+            <button class="approve-btn save-result-btn" data-id="${r.id}">Save</button>
+            <button class="approve-btn cancel-result-btn">Cancel</button>
+          </td>
+        </tr>`;
+      }
+
+      return `<tr>
+        <td>${student ? student.full_name : "—"}</td>
+        <td>${subject ? subject.name : "—"}</td>
+        <td>${r.ca_score}</td>
+        <td>${r.exam_score}</td>
+        <td>${total} (${gradeFor(total)})</td>
+        <td><span class="badge-pill badge-${r.status}">${r.status}</span></td>
+        <td class="row-actions">
+          ${r.status === "submitted" ? `<button class="approve-btn publish-result-btn" data-id="${r.id}">Publish</button>` : ""}
+          <button class="approve-btn edit-result-btn" data-id="${r.id}">Edit</button>
+          <button class="approve-btn delete-btn delete-result-btn" data-id="${r.id}">Delete</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    const groupEl = document.createElement("div");
+    groupEl.className = "class-group";
+    groupEl.innerHTML = `
+      <button type="button" class="class-group-header" data-group="${groupName}">
+        <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${groupName}</span>
+        <span class="class-group-count">${rows.length} result${rows.length === 1 ? "" : "s"}${submittedCount ? ` · ${submittedCount} awaiting publish` : ""}</span>
+      </button>
+      <div class="class-group-body${isOpen ? " open" : ""}">
+        ${submittedCount ? `<button type="button" class="approve-btn publish-group-btn" data-group="${groupName}" style="margin-bottom:0.75rem;">Publish all submitted in ${groupName}</button>` : ""}
+        <table class="data-table">
+          <thead><tr><th>Student</th><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+    container.appendChild(groupEl);
+  });
+
+  container.querySelectorAll(".class-group-header").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const group = btn.dataset.group;
+      if (openResultGroups.has(group)) openResultGroups.delete(group);
+      else openResultGroups.add(group);
+      renderResultsReview();
+    });
+  });
+
+  container.querySelectorAll(".publish-group-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const group = btn.dataset.group;
+      const ids = reviewResultsData
+        .filter((r) => (r.class_at_entry || "Unassigned") === group && r.status === "submitted")
+        .map((r) => r.id);
+      if (!ids.length) return;
+      if (!(await appConfirm(`Publish ${ids.length} result(s) for ${group}? Students will be able to see them.`))) return;
+      btn.disabled = true;
+      const { error } = await supabaseClient.from("results").update({ status: "published" }).in("id", ids);
+      if (!error) {
+        logActivity(`Published ${ids.length} results for <strong>${group}</strong>`);
+        loadResultsReview();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+      }
+    });
+  });
+
+  container.querySelectorAll(".publish-result-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      const { error } = await supabaseClient.from("results").update({ status: "published" }).eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Published a result`);
+        loadResultsReview();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+      }
+    });
+  });
+
+  container.querySelectorAll(".edit-result-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingResultId = btn.dataset.id;
+      renderResultsReview();
+    });
+  });
+
+  container.querySelectorAll(".cancel-result-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingResultId = null;
+      renderResultsReview();
+    });
+  });
+
+  container.querySelectorAll(".save-result-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const ca = parseFloat(row.querySelector(".edit-result-ca").value) || 0;
+      const exam = parseFloat(row.querySelector(".edit-result-exam").value) || 0;
+      if (ca + exam > 100) { showToast("CA + Exam can't add up to more than 100."); return; }
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const { error } = await supabaseClient.from("results").update({ ca_score: ca, exam_score: exam }).eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Updated a result`);
+        editingResultId = null;
+        loadResultsReview();
+      } else {
+        showToast(error.message);
+        btn.disabled = false;
+        btn.textContent = "Save";
+      }
+    });
+  });
+
+  container.querySelectorAll(".delete-result-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this result?"))) return;
+      const { error } = await supabaseClient.from("results").delete().eq("id", btn.dataset.id);
+      if (!error) {
+        logActivity(`Deleted a result`);
+        loadResultsReview();
+      } else {
+        showToast(error.message);
+      }
+    });
+  });
+}
 
 guardAndInit();
 </script>

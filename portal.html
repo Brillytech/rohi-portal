@@ -256,6 +256,11 @@
           throw new Error("Account role mismatch. Please select the correct role.");
         }
 
+        if (profile.role === "teacher" && !profile.approved) {
+          await supabaseClient.auth.signOut();
+          throw new Error("Your account is awaiting admin approval. Please check back soon.");
+        }
+
         formAlert.className = "alert alert-success";
         formAlert.textContent = "Login successful. Redirecting...";
 

@@ -5,19 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Student Dashboard | Rohi Portal</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
   <link rel="stylesheet" href="css/students.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <script>
-    const user = JSON.parse(localStorage.getItem("loggedInUser"));
-
-    if (!user) {
-      window.location.href = "portal.html";
-    }
-  </script>
 
   <!-- Topbar -->
   <nav class="navbar navbar-expand-lg student-topbar fixed-top">
@@ -32,10 +28,10 @@
       <div class="d-flex align-items-center gap-3 ms-auto">
         <span id="clock" class="topbar-clock d-none d-md-inline"></span>
         <span class="topbar-badge d-none d-sm-inline">Student Portal</span>
-        <button class="topbar-icon" type="button" title="Notifications">
+        <button class="topbar-icon coming-soon-btn" type="button" title="Notifications">
           <i class="bi bi-bell"></i>
         </button>
-        <button class="topbar-icon" type="button" title="Settings">
+        <button class="topbar-icon coming-soon-btn" type="button" title="Settings">
           <i class="bi bi-gear"></i>
         </button>
       </div>
@@ -58,12 +54,12 @@
           <i class="bi bi-person-circle"></i>
         </div>
         <div>
-          <h6 class="mb-1" id="sidebarUserName">Student User</h6>
+          <h6 class="mb-1" id="sidebarUserName">Student</h6>
           <small id="sidebarUserRole">Student</small>
         </div>
       </div>
 
-      <ul class="nav flex-column sidebar-links mt-4">
+      <ul class="nav flex-column sidebar-links mt-2">
         <li class="nav-item">
           <a href="#" class="nav-link active">
             <i class="bi bi-speedometer2"></i>
@@ -71,31 +67,31 @@
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#mySubjects" class="nav-link" data-bs-dismiss="offcanvas">
             <i class="bi bi-book"></i>
             <span>Subjects</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#" class="nav-link coming-soon-btn">
             <i class="bi bi-calendar3"></i>
             <span>Timetable</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#myExams" class="nav-link" data-bs-dismiss="offcanvas">
             <i class="bi bi-pen"></i>
             <span>Take Exam</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="student-results.html" class="nav-link">
             <i class="bi bi-bar-chart-line"></i>
             <span>Results</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a href="#myProfile" class="nav-link" data-bs-dismiss="offcanvas">
             <i class="bi bi-person-vcard"></i>
             <span>Profile</span>
           </a>
@@ -112,17 +108,17 @@
 
   <!-- Main Content -->
   <main class="student-main">
-    <div class="container-fluid px-3 px-lg-4">
+    <div class="container-fluid px-3 px-lg-4 py-4">
 
       <!-- Welcome -->
-      <section class="welcome-card" data-aos="fade-down">
+      <section class="welcome-card">
         <div class="row align-items-center g-4">
           <div class="col-lg-8">
             <div class="welcome-text">
               <div class="welcome-label">Student Dashboard</div>
-              <h2 id="welcomeUser">Welcome, Student</h2>
-              <p class="mb-2">Class: SS2 | Admission No: ROH12345</p>
-              <p class="mb-0">Academic Session: 2024/2025</p>
+              <h2 id="welcomeUser">Welcome</h2>
+              <p class="mb-2" id="welcomeMeta">Class: — | Portal number: —</p>
+              <p class="mb-0" id="welcomeTerm">—</p>
             </div>
           </div>
 
@@ -142,33 +138,33 @@
 
       <!-- Stats / Main Actions -->
       <section class="row g-4 mb-4">
-        <div class="col-md-6 col-xl-4" data-aos="fade-up">
+        <div class="col-md-6 col-xl-4">
           <div class="portal-card action-card">
             <div class="action-icon icon-blue">
               <i class="bi bi-book"></i>
             </div>
             <div class="action-content">
               <h5>Subjects</h5>
-              <p>Check your registered subjects and class materials.</p>
-              <a href="#" class="action-link">Open Subjects <i class="bi bi-arrow-right"></i></a>
+              <p>Check your registered subjects for this term.</p>
+              <a href="#mySubjects" class="action-link">View Subjects <i class="bi bi-arrow-right"></i></a>
             </div>
           </div>
         </div>
 
-        <div class="col-md-6 col-xl-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-md-6 col-xl-4">
           <div class="portal-card action-card">
             <div class="action-icon icon-green">
               <i class="bi bi-pencil-square"></i>
             </div>
             <div class="action-content">
               <h5>Take Exam</h5>
-              <p>Access available CBT exams and ongoing assessments.</p>
-              <a href="#" class="action-link">Start Exam <i class="bi bi-arrow-right"></i></a>
+              <p>Access CBT exams your teachers have published for your class.</p>
+              <a href="#myExams" class="action-link">View Exams <i class="bi bi-arrow-right"></i></a>
             </div>
           </div>
         </div>
 
-        <div class="col-md-6 col-xl-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="col-md-6 col-xl-4">
           <div class="portal-card action-card">
             <div class="action-icon icon-orange">
               <i class="bi bi-bar-chart-line"></i>
@@ -182,61 +178,64 @@
         </div>
       </section>
 
-      <!-- Quick Access + Notices -->
-      <section class="row g-4 mb-4">
-        <div class="col-xl-8" data-aos="fade-up">
+      <!-- My Subjects -->
+      <section class="row g-4 mb-4" id="mySubjects">
+        <div class="col-12">
           <div class="portal-card section-card">
             <div class="section-header">
-              <div>
-                <h5 class="mb-1">Quick Access</h5>
-                <p class="mb-0">Fast actions for your day-to-day portal activities</p>
-              </div>
+              <h5 class="mb-1">My Subjects</h5>
+              <p class="mb-0">Subjects offered at your class level, grouped by track.</p>
+            </div>
+            <div id="subjectsWrap">
+              <div class="list-empty"><i class="bi bi-journal-x"></i>Loading your subjects...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Exams -->
+      <section class="row g-4 mb-4" id="myExams">
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">Exams</h5>
+              <p class="mb-0">Published CBT exams for your class. Each one can only be taken once.</p>
+            </div>
+            <div class="activity-list" id="examsList">
+              <div class="list-empty"><i class="bi bi-pencil-square"></i>Loading exams...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Access + Notices -->
+      <section class="row g-4 mb-4">
+        <div class="col-xl-8">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">Quick Access</h5>
+              <p class="mb-0">Fast actions for your day-to-day portal activities</p>
             </div>
 
             <div class="quick-actions-grid">
-              <a href="#" class="quick-action-btn"><i class="bi bi-person-vcard"></i><span>Profile Details</span></a>
-              <a href="#" class="quick-action-btn"><i class="bi bi-calendar-week"></i><span>View Timetable</span></a>
-              <a href="#" class="quick-action-btn"><i class="bi bi-journal-text"></i><span>Registered Subjects</span></a>
-              <a href="#" class="quick-action-btn"><i class="bi bi-check2-square"></i><span>Start Exam</span></a>
-              <a href="#" class="quick-action-btn"><i class="bi bi-clipboard-data"></i><span>Check Results</span></a>
-              <a href="#" class="quick-action-btn"><i class="bi bi-person-check"></i><span>Attendance</span></a>
+              <a href="#myProfile" class="quick-action-btn"><i class="bi bi-person-vcard"></i><span>Profile Details</span></a>
+              <a href="#" class="quick-action-btn coming-soon-btn"><i class="bi bi-calendar-week"></i><span>View Timetable</span></a>
+              <a href="#mySubjects" class="quick-action-btn"><i class="bi bi-journal-text"></i><span>Registered Subjects</span></a>
+              <a href="#myExams" class="quick-action-btn"><i class="bi bi-check2-square"></i><span>Start Exam</span></a>
+              <a href="student-results.html" class="quick-action-btn"><i class="bi bi-clipboard-data"></i><span>Check Results</span></a>
+              <a href="#" class="quick-action-btn coming-soon-btn"><i class="bi bi-person-check"></i><span>Attendance</span></a>
             </div>
           </div>
         </div>
 
-        <div class="col-xl-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-xl-4">
           <div class="portal-card section-card h-100">
             <div class="section-header">
-              <div>
-                <h5 class="mb-1">Notices</h5>
-                <p class="mb-0">Latest updates from the school portal</p>
-              </div>
+              <h5 class="mb-1">Notices</h5>
+              <p class="mb-0">Latest updates from the school</p>
             </div>
-
-            <div class="notice-list">
-              <div class="notice-item">
-                <span class="notice-dot"></span>
-                <div>
-                  <h6>CBT exam schedule available</h6>
-                  <p>Check your exam section for active assessments.</p>
-                </div>
-              </div>
-
-              <div class="notice-item">
-                <span class="notice-dot"></span>
-                <div>
-                  <h6>Second term result update</h6>
-                  <p>Results for selected classes are now accessible.</p>
-                </div>
-              </div>
-
-              <div class="notice-item">
-                <span class="notice-dot"></span>
-                <div>
-                  <h6>Attendance records</h6>
-                  <p>Your attendance summary has been updated.</p>
-                </div>
-              </div>
+            <div class="notice-list" id="noticeList">
+              <div class="list-empty"><i class="bi bi-megaphone"></i>Loading announcements...</div>
             </div>
           </div>
         </div>
@@ -244,68 +243,67 @@
 
       <!-- Extra Section -->
       <section class="row g-4">
-        <div class="col-xl-7" data-aos="fade-up">
+        <div class="col-xl-7">
           <div class="portal-card section-card">
             <div class="section-header">
-              <div>
-                <h5 class="mb-1">Recent Activity</h5>
-                <p class="mb-0">Overview of recent actions on your account</p>
-              </div>
+              <h5 class="mb-1">Recent Results</h5>
+              <p class="mb-0">Your most recently published results</p>
             </div>
-
-            <div class="activity-list">
-              <div class="activity-item">
-                <div class="activity-icon"><i class="bi bi-book"></i></div>
-                <div>
-                  <h6>Subjects viewed</h6>
-                  <p>You checked your registered subjects recently.</p>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
-                <div>
-                  <h6>Results accessed</h6>
-                  <p>Your academic records were updated successfully.</p>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-icon"><i class="bi bi-calendar-check"></i></div>
-                <div>
-                  <h6>Attendance updated</h6>
-                  <p>Your latest attendance information is available.</p>
-                </div>
-              </div>
+            <div class="activity-list" id="recentResultsList">
+              <div class="list-empty"><i class="bi bi-clipboard-data"></i>Loading...</div>
             </div>
           </div>
         </div>
 
-        <div class="col-xl-5" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-xl-5">
           <div class="portal-card section-card">
             <div class="section-header">
-              <div>
-                <h5 class="mb-1">Student Summary</h5>
-                <p class="mb-0">A quick look at your current portal records</p>
-              </div>
+              <h5 class="mb-1">Student Summary</h5>
+              <p class="mb-0">A quick look at your current portal records</p>
             </div>
 
             <div class="summary-grid">
               <div class="summary-box">
-                <h3>9</h3>
+                <h3 id="summarySubjects">—</h3>
                 <p>Registered Subjects</p>
               </div>
               <div class="summary-box">
-                <h3>3</h3>
-                <p>Available Exams</p>
+                <h3 id="summaryResults">—</h3>
+                <p>Published Results</p>
               </div>
               <div class="summary-box">
-                <h3>87%</h3>
-                <p>Attendance Rate</p>
+                <h3 id="summaryTerm">—</h3>
+                <p>Current Term</p>
               </div>
               <div class="summary-box">
-                <h3>B+</h3>
-                <p>Current Grade Trend</p>
+                <h3 id="summaryClass">—</h3>
+                <p>Class</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile -->
+      <section class="row g-4 mt-1" id="myProfile">
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">Profile</h5>
+              <p class="mb-0">Your portal account details</p>
+            </div>
+            <div class="row g-3" id="profileGrid">
+              <div class="col-sm-6 col-lg-3">
+                <div class="summary-box"><h3 id="profileFullName" style="font-size:1.05rem;">—</h3><p>Full name</p></div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="summary-box"><h3 id="profileSurname" style="font-size:1.05rem;">—</h3><p>Surname (login username)</p></div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="summary-box"><h3 id="profilePortalNumber" style="font-size:1.05rem;">—</h3><p>Portal number (login password)</p></div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="summary-box"><h3 id="profileClassBox" style="font-size:1.05rem;">—</h3><p>Class</p></div>
               </div>
             </div>
           </div>
@@ -315,46 +313,223 @@
     </div>
   </main>
 
+  <div class="toast-stack" id="toastStack"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 
   <script>
-    AOS.init({
-      duration: 700,
-      once: true
-    });
+    const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const savedUser = JSON.parse(localStorage.getItem("loggedInUser"));
-
-    if (savedUser) {
-      const userName = savedUser.username || "Student";
-      const role = savedUser.role || "student";
-
-      const welcomeUser = document.getElementById("welcomeUser");
-      const sidebarUserName = document.getElementById("sidebarUserName");
-      const sidebarUserRole = document.getElementById("sidebarUserRole");
-
-      welcomeUser.textContent = `Welcome, ${userName}`;
-      sidebarUserName.textContent = userName;
-      sidebarUserRole.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+    function showToast(message) {
+      const stack = document.getElementById("toastStack");
+      const toast = document.createElement("div");
+      toast.className = "mini-toast";
+      toast.innerHTML = `<i class="bi bi-info-circle-fill"></i><span>${message}</span>`;
+      stack.appendChild(toast);
+      setTimeout(() => toast.classList.add("show"), 10);
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
     }
+
+    document.querySelectorAll(".coming-soon-btn").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        showToast("This feature is coming soon.");
+      });
+    });
 
     function updateClock() {
       const clock = document.getElementById("clock");
       const now = new Date();
-      clock.textContent = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
+      clock.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
-
     updateClock();
     setInterval(updateClock, 1000);
 
-    document.getElementById("logoutBtn").addEventListener("click", function () {
-      localStorage.removeItem("loggedInUser");
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
       window.location.href = "portal.html";
     });
+
+    function timeAgo(dateStr) {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.round(diffMs / 60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.round(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.round(hrs / 24);
+      if (days < 30) return `${days}d ago`;
+      return new Date(dateStr).toLocaleDateString();
+    }
+
+    function gradeFor(total) {
+      if (total >= 70) return "A";
+      if (total >= 60) return "B";
+      if (total >= 50) return "C";
+      if (total >= 45) return "D";
+      if (total >= 40) return "E";
+      return "F";
+    }
+
+    // Subjects aren't linked to a specific class in this schema — only to a
+    // level/track category. JSS and below map to one category; SSS classes
+    // don't record which track (Science/Humanities/Commercial/Trade) a
+    // student is on, so all four are shown, clearly grouped, rather than
+    // guessing one.
+    function categoriesForClass(className) {
+      const n = (className || "").toUpperCase();
+      if (/^(CRECHE|PRE-?NURSERY|NURSERY)/.test(n)) return ["Nursery", "General"];
+      if (/^(KG|KINDERGARTEN)/.test(n)) return ["Kindergarten", "General"];
+      if (/^PRIMARY/.test(n)) return ["Primary", "General"];
+      if (/^JSS/.test(n)) return ["Junior Secondary", "General"];
+      if (/^SSS/.test(n)) return [
+        "Senior Secondary — Science", "Senior Secondary — Humanities",
+        "Senior Secondary — Commercial", "Senior Secondary — Trade", "General",
+      ];
+      return ["General"];
+    }
+
+    async function guardAndInit() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        window.location.href = "portal.html";
+        return;
+      }
+      const { data: profile } = await supabaseClient
+        .from("profiles").select("*").eq("id", session.user.id).single();
+
+      if (!profile || profile.role !== "student") {
+        window.location.href = "portal.html";
+        return;
+      }
+
+      document.getElementById("welcomeUser").textContent = `Welcome, ${profile.full_name || "Student"}`;
+      document.getElementById("welcomeMeta").textContent = `Class: ${profile.class || "Unassigned"} | Portal number: ${profile.portal_number || "—"}`;
+      document.getElementById("sidebarUserName").textContent = profile.full_name || "Student";
+      document.getElementById("sidebarUserRole").textContent = "Student";
+      document.getElementById("summaryClass").textContent = profile.class || "—";
+      document.getElementById("profileFullName").textContent = profile.full_name || "—";
+      document.getElementById("profileSurname").textContent = profile.surname || "—";
+      document.getElementById("profilePortalNumber").textContent = profile.portal_number || "—";
+      document.getElementById("profileClassBox").textContent = profile.class || "—";
+
+      const [{ data: terms }, { data: subjects }, { data: results }, { data: announcements }, { data: exams }, { data: myAttempts }] = await Promise.all([
+        supabaseClient.from("terms").select("*").order("created_at", { ascending: false }),
+        supabaseClient.from("subjects").select("*").order("name"),
+        supabaseClient.from("results").select("*").eq("student_id", profile.id).eq("status", "published").order("updated_at", { ascending: false }),
+        supabaseClient.from("announcements").select("*").order("created_at", { ascending: false }),
+        supabaseClient.from("exams").select("*").eq("status", "published").eq("class_name", profile.class).order("created_at", { ascending: false }),
+        supabaseClient.from("exam_attempts").select("*").eq("student_id", profile.id),
+      ]);
+
+      const currentTerm = (terms || []).find((t) => t.is_current) || (terms || [])[0] || null;
+      document.getElementById("welcomeTerm").textContent = currentTerm
+        ? `Academic Session: ${currentTerm.session} · ${currentTerm.name}`
+        : "No academic term has been set up yet.";
+      document.getElementById("summaryTerm").textContent = currentTerm ? currentTerm.name : "—";
+
+      renderSubjects(subjects || [], profile.class);
+      renderResults(results || [], subjects || []);
+      renderNotices(announcements || [], profile.class);
+      renderExams(exams || [], myAttempts || [], subjects || []);
+    }
+
+    function renderSubjects(allSubjects, className) {
+      const wrap = document.getElementById("subjectsWrap");
+      const categories = categoriesForClass(className);
+      const matched = allSubjects.filter((s) => categories.includes(s.category || "General"));
+      document.getElementById("summarySubjects").textContent = matched.length;
+
+      if (!matched.length) {
+        wrap.innerHTML = '<div class="list-empty"><i class="bi bi-journal-x"></i>No subjects have been added for your class level yet.</div>';
+        return;
+      }
+
+      wrap.innerHTML = '<div class="subject-chip-list">' +
+        matched.map((s) => `<span class="subject-chip">${s.name}<small>${s.category || "General"}</small></span>`).join("") +
+        "</div>";
+    }
+
+    function renderResults(results, allSubjects) {
+      const list = document.getElementById("recentResultsList");
+      document.getElementById("summaryResults").textContent = results.length;
+
+      if (!results.length) {
+        list.innerHTML = '<div class="list-empty"><i class="bi bi-clipboard-data"></i>No results have been published yet.</div>';
+        return;
+      }
+
+      list.innerHTML = results.slice(0, 5).map((r) => {
+        const subject = allSubjects.find((s) => s.id === r.subject_id);
+        const total = r.ca_score + r.exam_score;
+        return `
+          <div class="activity-item">
+            <div class="activity-icon"><i class="bi bi-clipboard-check"></i></div>
+            <div>
+              <h6>${subject ? subject.name : "A subject"} — ${total} (${gradeFor(total)})</h6>
+              <p>Published ${timeAgo(r.updated_at)}</p>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderNotices(announcements, className) {
+      const list = document.getElementById("noticeList");
+      const relevant = announcements.filter((a) =>
+        a.audience === "all" || a.audience === "students" || a.audience === className
+      );
+
+      if (!relevant.length) {
+        list.innerHTML = '<div class="list-empty"><i class="bi bi-megaphone"></i>No announcements yet.</div>';
+        return;
+      }
+
+      list.innerHTML = relevant.slice(0, 5).map((a) => `
+        <div class="notice-item">
+          <span class="notice-dot"></span>
+          <div>
+            <h6>${a.title}</h6>
+            <p>${a.body}</p>
+          </div>
+        </div>`).join("");
+    }
+
+    function renderExams(exams, myAttempts, allSubjects) {
+      const list = document.getElementById("examsList");
+      if (!exams.length) {
+        list.innerHTML = '<div class="list-empty"><i class="bi bi-pencil-square"></i>No exams have been published for your class yet.</div>';
+        return;
+      }
+
+      const attemptByExam = {};
+      myAttempts.forEach((a) => { attemptByExam[a.exam_id] = a; });
+
+      list.innerHTML = exams.map((exam) => {
+        const subject = allSubjects.find((s) => s.id === exam.subject_id);
+        const attempt = attemptByExam[exam.id];
+        const rightSide = attempt
+          ? `<span class="badge-pill badge-published" style="align-self:center;">Score: ${attempt.score}/${attempt.total_questions}</span>`
+          : `<a href="take-exam.html?exam=${exam.id}" class="action-link" style="align-self:center;white-space:nowrap;">Start Exam <i class="bi bi-arrow-right"></i></a>`;
+        return `
+          <div class="activity-item" style="justify-content:space-between;">
+            <div class="d-flex gap-3">
+              <div class="activity-icon"><i class="bi bi-pencil-square"></i></div>
+              <div>
+                <h6>${exam.title}</h6>
+                <p>${subject ? subject.name : "Subject"} · ${exam.duration_minutes} min</p>
+              </div>
+            </div>
+            ${rightSide}
+          </div>`;
+      }).join("");
+    }
+
+    guardAndInit();
   </script>
 </body>
 </html>
