@@ -171,10 +171,11 @@
     // A dead battery mid-exam used to lose every answer. Selections are
     // mirrored to localStorage as they are made and restored on return.
     //
-    // The clock is stored as an absolute deadline rather than "seconds left":
-    // if it paused while the tab was closed, closing the tab would be a way
-    // to buy thinking time. Time keeps running, which is what an invigilated
-    // exam does.
+    // The CLOCK, though, is not kept here — it comes from the server
+    // (start_exam_session). Anything browser-side can be reset by closing the
+    // tab before answering, clearing site data, or switching phone. The
+    // server records the first open and every reload asks it how long is
+    // left, so the exam keeps counting down regardless.
     function examDraftKey() { return `exam.${examId}`; }
 
     function saveExamProgress() {
@@ -183,7 +184,6 @@
         answers,
         flagged: [...flagged],
         currentIndex,
-        deadlineAt: examDeadlineAt,
       });
     }
 
@@ -198,9 +198,11 @@
 
     let examDeadlineAt = null;
 
-    function startTimer(minutes, onExpire) {
-      if (!examDeadlineAt) examDeadlineAt = Date.now() + minutes * 60 * 1000;
-      let secondsLeft = Math.max(0, Math.round((examDeadlineAt - Date.now()) / 1000));
+    // secondsRemaining comes from the server, so a wrong clock on the
+    // student's phone cannot lengthen or shorten the exam.
+    function startTimer(secondsRemaining, onExpire) {
+      examDeadlineAt = Date.now() + secondsRemaining * 1000;
+      let secondsLeft = Math.max(0, secondsRemaining);
       const timerEl = document.getElementById("examTimer");
 
       function tick() {
@@ -382,16 +384,36 @@
       await Promise.all(rows.filter((q) => q.image_url).map(async (q) => { imageUrls[q.question_id] = await resolveImageUrl(q.image_url); }));
 
       const resumed = restoreExamProgress();
-      if (resumed && resumed.deadlineAt) examDeadlineAt = resumed.deadlineAt;
+
+      // Records the start on the very first open, and on every later open
+      // reports how much of the duration is actually left.
+      const { data: sessionRows, error: sessionError } = await supabaseClient
+        .rpc("start_exam_session", { p_exam_id: examId });
+      if (sessionError) {
+        showState("unavailableState");
+        document.getElementById("unavailableText").textContent = sessionError.message;
+        return;
+      }
+      const secondsRemaining = sessionRows && sessionRows[0]
+        ? Number(sessionRows[0].seconds_remaining)
+        : duration_minutes * 60;
+
+      if (secondsRemaining <= 0) {
+        showState("unavailableState");
+        document.getElementById("unavailableText").textContent =
+          "Your time for this exam has already run out.";
+        return;
+      }
 
       showState("examWrap");
       renderQuestion();
 
       if (resumed && Object.keys(resumed.answers || {}).length) {
-        showToast(`Welcome back — ${Object.keys(resumed.answers).length} of your answers were restored.`, "success");
+        const mins = Math.ceil(secondsRemaining / 60);
+        showToast(`Welcome back — ${Object.keys(resumed.answers).length} answer(s) restored. ${mins} minute(s) left.`, "success");
       }
 
-      startTimer(duration_minutes, () => {
+      startTimer(secondsRemaining, () => {
         showToast("Time's up — submitting your answers.");
         submitExam(true);
       });

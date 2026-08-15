@@ -479,3 +479,35 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .activity-item { flex-wrap: wrap; gap: 8px; }
   .activity-item .action-link, .activity-item .badge-pill { align-self: flex-start !important; }
 }
+
+/* =========================================================
+   RESPONSIVE CORRECTIONS (appended last so they win on order)
+   ========================================================= */
+.summary-box, .portal-card, .section-card { min-width: 0; }
+.row > * { min-width: 0; }
+/* Never break inside a word — see admin.css. Figures stay on one line. */
+.summary-box h3 { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.summary-box p, .activity-item p, .activity-item h6 {
+  overflow-wrap: break-word; word-break: normal;
+}
+
+/* Long titles/emails must wrap instead of setting a floor on layout width. */
+.widget-list-title, .widget-list-meta, .empty-hint { overflow-wrap: break-word; word-break: normal; }
+
+@media (max-width: 380px) {
+  .portal-card, .section-card { padding: 0.85rem 0.7rem; }
+}
+
+/* ---------- Autosave indicator ---------- */
+.draft-status {
+  display: none;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.draft-status.show { display: inline-block; }
+.draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
+.draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }

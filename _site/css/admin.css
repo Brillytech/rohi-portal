@@ -1190,3 +1190,133 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .class-group-header { flex-wrap: wrap; gap: 4px; }
   .class-group-count { font-size: 0.72rem; }
 }
+
+/* =========================================================
+   RESPONSIVE CORRECTIONS
+   Appended last so these win on source order. Each entry fixes a box that
+   was measured extending past the viewport, rather than hiding it.
+   ========================================================= */
+
+/* A grid track of `1fr` is really `minmax(auto, 1fr)`, and `auto` never
+   shrinks below the content's min-content width. A stat card (icon chip +
+   "Registered this year") therefore pushed its track wider than the screen.
+   minmax(0, 1fr) lets the track actually shrink. */
+.stat-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+.stat-grid > * { min-width: 0; }
+.stat-card { min-width: 0; }
+.stat-card-body { min-width: 0; }
+.stat-label { overflow-wrap: break-word; word-break: normal; }
+
+/* Any grid/flex child must be allowed to shrink, or its content's
+   min-content width becomes a floor and the row overflows. */
+.panel-row > *, .view > *, .form-row > *, .filter-row > * { min-width: 0; }
+.panel { min-width: 0; }
+
+/* .panel-row.split-65 is both later in the file and more specific than the
+   `.panel-row { 1fr }` inside the 960px query, so it was overriding it and
+   the two-column overview never collapsed on a phone. */
+@media (max-width: 960px) {
+  .panel-row.split-65 { grid-template-columns: 1fr; }
+}
+
+/* Tables rendered inside a collapsible class group had no scroll container,
+   so a 4-column roster ran off the screen. */
+.class-group-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Long admin/teacher names pushed the topbar past the edge. text-overflow
+   is inert on an inline box, so the name needs inline-block to truncate —
+   truncating with an ellipsis reads far better than snapping a name in half. */
+.topbar-right { min-width: 0; flex-shrink: 1; }
+.topbar-right .admin-name,
+.topbar-right .topbar-user-name,
+.topbar-right > span {
+  display: inline-block;
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  min-width: 0;
+}
+
+@media (max-width: 780px) {
+  /* Two stat cards side by side stop fitting well below ~380px. */
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .topbar-search { display: none; }
+}
+
+/* One stat card per row until there is genuinely room for two: at ~390px a
+   two-up grid squeezed labels like "Outstanding" until they snapped. */
+@media (max-width: 430px) {
+  .stat-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 380px) {
+  .topbar-right .admin-name, .topbar-right .topbar-user-name, .topbar-right > span { display: none; }
+  .view-body { padding: 1rem 0.75rem; }
+  .panel { padding: 0.9rem 0.75rem; }
+}
+
+/* ---------- Line breaking ----------
+   Never break inside a word. Mid-word breaking turns names into
+   "Oluwadaras / imi" and amounts into "₦50,0 / 00", which is unreadable.
+   Prose wraps at spaces; figures never wrap; and a table that genuinely
+   cannot fit scrolls sideways instead of crushing its columns. */
+.widget-list-title, .widget-list-meta, .panel-header p, .empty-hint,
+.activity-item p, .activity-item h6 {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Size data-table columns to their content and let the wrapper scroll, so a
+   name or a portal number always stays on one line. */
+.table-wrap .data-table,
+.class-group-body .data-table { width: max-content; min-width: 100%; }
+.data-table th, .data-table td { white-space: nowrap; }
+
+/* Figures stay on one line and line up column-wise. */
+.stat-value, .cell-total, .bulk-fee-hint strong,
+.class-group-count, .badge-pill { white-space: nowrap; }
+.stat-value, .data-table td { font-variant-numeric: tabular-nums; }
+
+/* In stacked-card mode each cell is already its own row, so prose may wrap
+   at spaces again — still never mid-word, and never for figures. */
+@media (max-width: 680px) {
+  table.stacked-on-mobile { width: 100%; min-width: 0; }
+  table.stacked-on-mobile th, table.stacked-on-mobile td {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  table.stacked-on-mobile td[data-label="Expected"],
+  table.stacked-on-mobile td[data-label="Paid"],
+  table.stacked-on-mobile td[data-label="Balance"],
+  table.stacked-on-mobile td[data-label="Total"],
+  table.stacked-on-mobile td[data-label="Test 1"],
+  table.stacked-on-mobile td[data-label="Test 2"],
+  table.stacked-on-mobile td[data-label="CBT"],
+  table.stacked-on-mobile td[data-label="Exam"] { white-space: nowrap; }
+}
+
+/* ---------- Avatars that carry a real photo ---------- */
+.avatar-chip.has-photo { padding: 0; overflow: hidden; background: #e9edf5; }
+.avatar-chip.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Figures are auto-fitted in JS (see autoFitFigures), which sets an explicit
+   px font-size. Keep them on one line so the fitter measures real overflow
+   rather than a wrapped box. */
+.stat-value { display: block; white-space: nowrap; overflow: hidden; }
+
+/* ---------- Autosave indicator ---------- */
+.draft-status {
+  display: none;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.draft-status.show { display: inline-block; }
+.draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
+.draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }

@@ -603,3 +603,84 @@ html, body { max-width: 100%; overflow-x: hidden; }
   table.stacked-on-mobile td input.score-input { width: 110px; text-align: right; }
   .class-group-header { flex-wrap: wrap; gap: 4px; }
 }
+
+/* =========================================================
+   RESPONSIVE CORRECTIONS (appended last so they win on order)
+   ========================================================= */
+
+/* `1fr` == `minmax(auto, 1fr)`, and `auto` floors at min-content, so cards
+   with an icon + long label pushed their track past the screen edge. */
+.stat-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+.stat-grid > *, .panel-row > *, .view > *, .form-row > *, .filter-row > * { min-width: 0; }
+.panel, .stat-card { min-width: 0; }
+.stat-label { overflow-wrap: break-word; word-break: normal; }
+
+/* Rosters inside collapsible class groups had no scroll container. */
+.class-group-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* text-overflow is inert on an inline box — inline-block lets the name
+   truncate with an ellipsis instead of snapping in half. */
+.topbar-right { min-width: 0; flex-shrink: 1; }
+.topbar-right .admin-name,
+.topbar-right > span {
+  display: inline-block; max-width: 42vw; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; min-width: 0;
+}
+
+@media (max-width: 780px) {
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 430px) {
+  .stat-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 380px) {
+  .topbar-right .admin-name, .topbar-right > span { display: none; }
+  .view-body { padding: 1rem 0.75rem; }
+  .panel { padding: 0.9rem 0.75rem; }
+}
+
+/* ---------- Line breaking ---------- see admin.css for the rationale.
+   Never break inside a word; scroll the table instead. */
+.widget-list-title, .widget-list-meta, .panel-header p, .empty-hint {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.table-wrap .data-table,
+.class-group-body .data-table { width: max-content; min-width: 100%; }
+.data-table th, .data-table td { white-space: nowrap; }
+.stat-value, .class-group-count, .badge-pill { white-space: nowrap; }
+.stat-value, .data-table td { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 680px) {
+  table.stacked-on-mobile { width: 100%; min-width: 0; }
+  table.stacked-on-mobile th, table.stacked-on-mobile td {
+    white-space: normal; overflow-wrap: break-word; word-break: normal;
+  }
+  table.stacked-on-mobile td[data-label^="Test"],
+  table.stacked-on-mobile td[data-label="CBT"],
+  table.stacked-on-mobile td[data-label="Exam (30)"],
+  table.stacked-on-mobile td[data-label="Total"] { white-space: nowrap; }
+}
+
+/* ---------- Avatars that carry a real photo ---------- */
+.avatar-chip.has-photo { padding: 0; overflow: hidden; background: #e9edf5; }
+.avatar-chip.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.stat-value { display: block; white-space: nowrap; overflow: hidden; }
+
+/* ---------- Autosave indicator ---------- */
+.draft-status {
+  display: none;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.draft-status.show { display: inline-block; }
+.draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
+.draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }
