@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Portal density — 85%
+   Loaded last on every portal page.
+
+   The public site is rem-first, so a root font-size gave it a true global
+   zoom. The portal stylesheets are the opposite: roughly two-thirds of their
+   sizing is literal px (admin.css alone has ~380 px values against ~166 rem).
+   Changing the root there would shrink the type while every padding, gap,
+   border and icon stayed put — lopsided rather than smaller.
+
+   `zoom` scales layout the way the browser's own zoom control does, px
+   included, which is exactly what was asked for. It is supported in Chrome,
+   Edge and Safari, and in Firefox 126+; anywhere it is not, the page simply
+   renders at 100% rather than breaking.
+   ========================================================================== */
+
+@media screen {
+  body {
+    zoom: 0.85;
+  }
+}
+
+/* Print is deliberately untouched. The report card's one-page fit is tuned
+   through its own `html { font-size }` in the print block of
+   student-results.css; stacking a zoom on top would silently change a layout
+   that was measured to fill 237mm of a 283mm page. */
+@media print {
+  body { zoom: 1; }
+}
+
+/* ---------- Tap targets ----------
+   At 0.85 zoom a control needs 52 CSS px to land at the 44 physical px that
+   makes a tap reliable (44 / 0.85 = 51.8). Targeting element types rather
+   than a list of class names, because the class list missed icon-only
+   controls — the menu toggle, sidebar close, password reveal and role pills
+   were all measuring 19-34px on a phone.
+   Buttons that are icon-only also get a matching min-width so they are square
+   rather than a thin wide strip. */
+@media screen and (pointer: coarse) {
+  button,
+  [role="button"],
+  .btn,
+  .primary-btn,
+  .approve-btn,
+  .nav-item,
+  .qa-chip,
+  .role-pill,
+  .exam-option,
+  .palette-btn,
+  .segmented-btn,
+  select,
+  textarea,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+    min-height: 52px;
+  }
+
+  /* Square controls: icon-only buttons need width as well as height. */
+  .menu-toggle,
+  .sidebar-close,
+  .password-toggle-btn,
+  .topbar-icon,
+  .btn-close,
+  .sidebar-toggle,
+  .gal-del,
+  .palette-btn {
+    min-width: 52px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* ---------- Viewport-height units under zoom ----------
+   zoom scales the element box but NOT the meaning of vh, so a 100vh sidebar
+   renders at 85% of the screen and its dark ground stops short of the bottom.
+   Dividing by the zoom factor (100 / 0.85 = 117.65) restores true full
+   height. Scoped to screen, and only to the shells that actually fill the
+   viewport — not to the many `height: 100%` image fills, which are relative
+   to their own parent and are already correct. */
+@media screen {
+  .admin-shell { min-height: 117.65vh; }
+  .sidebar { height: 117.65vh; }
+  .portal-page,
+  .portal-shell,
+  body > .auth-wrap { min-height: 117.65vh; }
+}
+
+/* Below 780px the sidebar becomes a fixed off-canvas drawer. A fixed element
+   positions against the zoomed viewport, so it still needs the correction to
+   reach the bottom of the screen. */
+@media screen and (max-width: 780px) {
+  .sidebar { height: 117.65vh; }
+}
