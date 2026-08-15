@@ -432,15 +432,19 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .welcome-label { font-family: 'Sora', san
 .nav-link:focus { outline: none !important; box-shadow: none !important; }
 
 /* ---------- Student self-service profile ---------- */
-.profile-edit-grid {
+.profile-readonly {
   display: grid;
   grid-template-columns: 150px 1fr;
-  gap: 1.25rem;
+  gap: 1.5rem;
   align-items: start;
 }
+.profile-facts { display: grid; gap: 0.9rem; margin: 0; }
+.profile-facts > div { display: flex; flex-direction: column; gap: 2px; }
+.profile-facts dt { font-size: 0.76rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+.profile-facts dd { margin: 0; font-size: 1rem; font-weight: 600; color: #1e293b; }
 @media (max-width: 575px) {
-  .profile-edit-grid { grid-template-columns: 1fr; }
-  .profile-photo-col { max-width: 220px; }
+  .profile-readonly { grid-template-columns: 1fr; }
+  .profile-readonly .profile-photo-box { max-width: 200px; }
 }
 
 .profile-photo-box {

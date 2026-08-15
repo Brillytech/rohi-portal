@@ -344,55 +344,118 @@ body:not(.has-hero) .nav-brand-sub { color: var(--muted); }
 body:not(.has-hero) .nav-links a { color: var(--ink-2); }
 body:not(.has-hero) .nav-links a.is-active { color: var(--brand); }
 body:not(.has-hero) .nav-toggle { color: var(--ink); }
-body:not(.has-hero) main { padding-top: var(--nav-h); }
 
-/* ---------- Footer ---------- */
+
+/* ==========================================================================
+   FOOTER
+   Rebuilt: the old one was three loose Bootstrap columns of unstyled lists.
+   Now a proper four-track masthead — identity, two link columns and contact
+   with its own portal CTA — over a brand-tinted ground with an accent rule.
+   ========================================================================== */
 .site-footer {
-  background: linear-gradient(165deg, #1a1226, #241633);
-  color: rgba(255,255,255,0.72);
+  position: relative;
+  background:
+    radial-gradient(900px 380px at 8% 0%, rgba(89, 6, 148, 0.55), transparent 62%),
+    linear-gradient(168deg, #191024 0%, #221630 55%, #17101f 100%);
+  color: rgba(255, 255, 255, 0.7);
   padding-block: var(--sp-8) var(--sp-5);
-  margin-top: var(--sp-8);
+  margin-top: var(--sp-9);
+  font-size: 0.94rem;
 }
-.site-footer h5, .site-footer h6 { color: #fff; }
-.footer-grid {
+.footer-accent {
+  position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--brand-300) 45%, var(--sky) 100%);
+}
+
+.footer-top {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1.4fr;
-  gap: var(--sp-7);
+  grid-template-columns: 1.7fr 1fr 1fr 1.5fr;
+  gap: var(--sp-7) var(--sp-6);
+  padding-bottom: var(--sp-7);
 }
-.footer-brand { display: flex; align-items: center; gap: 0.7rem; margin-bottom: var(--sp-3); }
-.footer-brand img { width: 44px; height: 44px; border-radius: 12px; }
-.site-footer a { color: rgba(255,255,255,0.72); text-decoration: none; }
-.site-footer a:hover { color: var(--accent); }
-.footer-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.55rem; }
-.footer-contact { display: grid; gap: 0.6rem; }
-.footer-contact li { display: flex; gap: 0.6rem; align-items: flex-start; list-style: none; }
-.footer-contact i { color: var(--accent); margin-top: 0.2rem; }
-.footer-socials { display: flex; gap: 0.6rem; margin-top: var(--sp-4); }
+.footer-top > * { min-width: 0; }
+
+.footer-brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: var(--sp-4); }
+.footer-brand img { width: 48px; height: 48px; border-radius: 13px; object-fit: cover; flex-shrink: 0; }
+.footer-brand-name {
+  display: block;
+  font-family: "Sora", sans-serif; font-weight: 800; font-size: 1.05rem;
+  color: #fff; letter-spacing: -0.01em; line-height: 1.2;
+}
+.footer-brand-sub {
+  display: block; font-size: 0.72rem; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--accent);
+}
+.footer-tagline { max-width: 40ch; margin: 0 0 var(--sp-5); line-height: 1.7; }
+
+.footer-col h6 {
+  color: #fff; font-family: "Sora", sans-serif;
+  font-size: 0.78rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.7rem; }
+.site-footer a { color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s var(--ease); }
+.footer-col a { display: inline-flex; align-items: center; gap: 0.4rem; }
+.footer-col a::before {
+  content: ""; width: 0; height: 1px; background: var(--accent);
+  transition: width 0.24s var(--ease);
+}
+.footer-col a:hover { color: #fff; }
+.footer-col a:hover::before { width: 12px; }
+
+.footer-contact { display: grid; gap: 0.85rem; }
+.footer-contact li { display: flex; gap: 0.65rem; align-items: flex-start; min-width: 0; line-height: 1.6; }
+.footer-contact i { color: var(--accent); margin-top: 0.25rem; flex-shrink: 0; }
+.footer-contact li span, .footer-contact li a { min-width: 0; overflow-wrap: anywhere; }
+.footer-contact a:hover { color: #fff; }
+
+.footer-portal-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  margin-top: var(--sp-5);
+  min-height: 46px; padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: #fff !important; font-weight: 650; font-size: 0.9rem;
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.footer-portal-btn:hover {
+  background: linear-gradient(135deg, var(--accent), var(--accent-600));
+  border-color: transparent; transform: translateY(-2px);
+}
+
+.footer-socials { display: flex; gap: 0.55rem; }
 .footer-socials a {
   width: 42px; height: 42px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 12px;
-  background: rgba(255,255,255,0.08);
-  font-size: 1.1rem;
-  transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 1.05rem; color: rgba(255,255,255,0.8);
+  transition: background 0.2s var(--ease), transform 0.2s var(--ease), color 0.2s var(--ease);
 }
-.footer-socials a:hover { background: var(--accent); color: #fff; transform: translateY(-2px); }
-.footer-base {
-  margin-top: var(--sp-7);
-  padding-top: var(--sp-4);
-  border-top: 1px solid rgba(255,255,255,0.1);
-  display: flex; flex-wrap: wrap; gap: var(--sp-2);
-  align-items: center; justify-content: space-between;
-  font-size: var(--step--1);
-}
+.footer-socials a:hover { background: var(--accent); color: #fff; transform: translateY(-3px); border-color: transparent; }
 
-@media (max-width: 900px) {
-  .footer-grid { grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
-  .footer-contact-col { grid-column: 1 / -1; }
+.footer-base {
+  padding-top: var(--sp-5);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex; flex-wrap: wrap; gap: var(--sp-3);
+  align-items: center; justify-content: space-between;
+  font-size: 0.84rem; color: rgba(255,255,255,0.55);
+}
+.footer-credit strong { color: var(--accent); font-weight: 700; }
+
+@media (max-width: 980px) {
+  .footer-top { grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+  .footer-identity { grid-column: 1 / -1; }
 }
 @media (max-width: 560px) {
-  .footer-grid { grid-template-columns: 1fr; }
-  .footer-base { flex-direction: column; text-align: center; }
+  .footer-top { grid-template-columns: 1fr; }
+  .footer-base { flex-direction: column; text-align: center; gap: var(--sp-2); }
+  .footer-portal-btn { width: 100%; }
 }
 
 /* ==========================================================================
@@ -688,16 +751,22 @@ body:not(.has-hero) main { padding-top: var(--nav-h); }
    ALL-CAPS h3s and a five-item accordion. Same content, given hierarchy.
    ========================================================================== */
 .page-hero {
-  padding-block: calc(var(--nav-h) + var(--sp-7)) var(--sp-7);
+  padding-block: var(--sp-7);
   background:
     radial-gradient(1000px 400px at 15% -10%, rgba(255,140,0,0.10), transparent 60%),
     linear-gradient(170deg, var(--brand-50), var(--surface));
   border-bottom: 1px solid var(--line);
 }
-body:not(.has-hero) main { padding-top: 0; }
-body:not(.has-hero) .page-hero + * { padding-top: var(--sp-7); }
-/* Pages without their own hero still need clearance under the fixed nav. */
-body:not(.has-hero) main > section:first-child:not(.page-hero) { padding-top: calc(var(--nav-h) + var(--sp-6)); }
+/* The nav is fixed, so every page without a hero behind it must reserve its
+   height. This is set once on <main> rather than on "the first child", which
+   is what broke before: /news/ opens with a <header> and an article with an
+   <article>, so a `main > section:first-child` rule matched neither and the
+   nav sat on top of the text. */
+body:not(.has-hero) main { padding-top: var(--nav-h); }
+
+/* Anchor targets must clear the fixed nav too, or /about/#programmes lands
+   with its heading underneath it. */
+:target, [id] { scroll-margin-top: calc(var(--nav-h) + var(--sp-4)); }
 
 .about-h {
   font-family: "Sora", sans-serif;
@@ -717,12 +786,28 @@ body:not(.has-hero) main > section:first-child:not(.page-hero) { padding-top: ca
 .about-h.text-center { text-align: center; }
 .about-h.text-center::after { left: 50%; transform: translateX(-50%); }
 
+/* Portraits, restored from the pre-redesign rules.
+   A centred 4:3 crop beheads a tall portrait, which is exactly what the
+   original CSS avoided: it defaulted to object-position:top so faces stay in
+   frame, with a per-image nudge where the subject sits lower. The redesign
+   dropped both, and the proprietress image also still carried the old
+   .about-img class whose stylesheet is no longer loaded — so it had no rules
+   at all. Portrait framing is per-photo; there is no one-size crop. */
 .about-media {
   width: 100%;
+  height: 400px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  aspect-ratio: 4 / 3;
   object-fit: cover;
+  object-position: top;   /* keeps heads in frame by default */
+  display: block;
+}
+.about-media.portrait-lower { object-position: 0% 37%; }
+.about-media.portrait-centre { object-position: center; }
+
+@media (max-width: 767px) {
+  /* A fixed 400px is very tall next to a phone-width column. */
+  .about-media { height: clamp(240px, 62vw, 360px); }
 }
 
 /* Accordion: Bootstrap's default is a boxy grey stack. */
