@@ -75,7 +75,13 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-chip span { font-family: 'Sora'
 .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(20,4,40,0.5); backdrop-filter: blur(2px); z-index: 19; }
 .sidebar-backdrop.show { display: block; }
 
-.sidebar-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.5); }
+/* Wide signboard lockup — show it whole on a light plaque rather than cropping
+   a circle out of the middle, which lands on empty background. The 325/240
+   ratio trims the half-cut address line off the bottom of the source. */
+.sidebar-logo {
+  box-sizing: content-box; height: 42px; width: auto; aspect-ratio: 325 / 240; flex: none;
+  object-fit: cover; object-position: top center; padding: 3px; border-radius: 9px; background: #fff;
+}
 .sidebar-brand strong { display: block; font-size: 0.95rem; }
 .sidebar-brand span { font-size: 0.72rem; color: rgba(255,255,255,0.6); }
 
