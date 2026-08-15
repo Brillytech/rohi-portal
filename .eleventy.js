@@ -4,7 +4,6 @@ module.exports = function (eleventyConfig) {
   // ✅ Static assets pass-through
   eleventyConfig.addPassthroughCopy("css");
   eleventyConfig.addPassthroughCopy("img");
-  eleventyConfig.addPassthroughCopy("admin");
   eleventyConfig.addPassthroughCopy("js");
 
   // ✅ Standalone HTML pages outside /src
@@ -27,12 +26,8 @@ module.exports = function (eleventyConfig) {
     return arr.slice(0, n);
   });
 
-  // ✅ Posts collection (uses your tags: [posts])
-  eleventyConfig.addCollection("posts", (collectionApi) => {
-    return collectionApi
-      .getFilteredByTag("posts")
-      .sort((a, b) => b.date - a.date);
-  });
+  // News now comes from Supabase at build time (src/_data/announcements.js),
+  // so there is no markdown posts collection any more.
 
   return {
     dir: {

@@ -2,40 +2,33 @@
 layout: layouts/base.njk
 ---
 
-<section class="py-5 post-page">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-lg-9">
-        <article class="post-wrapper">
-
-          {% if title %}
-            <div class="mb-3">
-              <a href="/news/" class="text-decoration-none small text-muted">
-                ← Back to News
-              </a>
-            </div>
-
-            <h1 class="fw-bold mb-3">{{ title }}</h1>
-          {% endif %}
-
-          {% if date %}
-            <p class="post-meta text-muted mb-4">
-              {{ date | date("MMMM dd, yyyy") }}
-            </p>
-          {% endif %}
-
-          {% if image %}
-            <div class="mb-4">
-              <img src="{{ image }}" alt="{{ title }}" class="img-fluid rounded shadow-sm post-hero-img">
-            </div>
-          {% endif %}
-
-          <div class="post-content">
-            {{ content | safe }}
-          </div>
-
-        </article>
-      </div>
+<article class="post-page">
+  <header class="post-header">
+    <div class="container-narrow">
+      <a href="/news/" class="back-link"><i class="bi bi-arrow-left"></i> All news</a>
+      <span class="chip chip-{{ post.category | lower }}">{{ post.category }}</span>
+      <h1>{{ post.title }}</h1>
+      <p class="post-meta">
+        <time datetime="{{ post.publish_at }}">{{ post.dateObj | date("MMMM dd, yyyy") }}</time>
+      </p>
     </div>
+  </header>
+
+  {% if post.coverUrl %}
+    <div class="container-narrow">
+      <img src="{{ post.coverUrl }}" alt="{{ post.cover_image_alt or post.title }}"
+           class="post-cover" loading="eager" />
+    </div>
+  {% endif %}
+
+  <div class="container-narrow">
+    <div class="prose">
+      {{ post.body_html | safe }}
+    </div>
+
+    <nav class="post-nav">
+      <a href="/news/" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back to all news</a>
+      <a href="/contact/" class="btn-primary-solid">Get in touch</a>
+    </nav>
   </div>
-</section>
+</article>

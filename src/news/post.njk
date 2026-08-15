@@ -1,0 +1,11 @@
+---
+layout: layouts/post.njk
+pagination:
+  data: announcements
+  size: 1
+  alias: post
+permalink: "/news/{{ post.slug }}/"
+eleventyComputed:
+  title: "{{ post.title }}"
+  description: "{{ post.excerpt }}"
+---
