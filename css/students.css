@@ -485,10 +485,14 @@ html, body { max-width: 100%; overflow-x: hidden; }
    ========================================================= */
 .summary-box, .portal-card, .section-card { min-width: 0; }
 .row > * { min-width: 0; }
-.summary-box h3, .summary-box p, .activity-item p, .activity-item h6 { overflow-wrap: anywhere; }
+/* Never break inside a word — see admin.css. Figures stay on one line. */
+.summary-box h3 { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.summary-box p, .activity-item p, .activity-item h6 {
+  overflow-wrap: break-word; word-break: normal;
+}
 
 /* Long titles/emails must wrap instead of setting a floor on layout width. */
-.widget-list-title, .widget-list-meta, .empty-hint { overflow-wrap: anywhere; }
+.widget-list-title, .widget-list-meta, .empty-hint { overflow-wrap: break-word; word-break: normal; }
 
 @media (max-width: 380px) {
   .portal-card, .section-card { padding: 0.85rem 0.7rem; }

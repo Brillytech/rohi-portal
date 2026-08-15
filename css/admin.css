@@ -1205,7 +1205,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .stat-grid > * { min-width: 0; }
 .stat-card { min-width: 0; }
 .stat-card-body { min-width: 0; }
-.stat-value, .stat-label { overflow-wrap: anywhere; }
+.stat-label { overflow-wrap: break-word; word-break: normal; }
 
 /* Any grid/flex child must be allowed to shrink, or its content's
    min-content width becomes a floor and the row overflows. */
@@ -1223,13 +1223,19 @@ html, body { max-width: 100%; overflow-x: hidden; }
    so a 4-column roster ran off the screen. */
 .class-group-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-/* Long admin/teacher names pushed the topbar past the edge. */
+/* Long admin/teacher names pushed the topbar past the edge. text-overflow
+   is inert on an inline box, so the name needs inline-block to truncate —
+   truncating with an ellipsis reads far better than snapping a name in half. */
 .topbar-right { min-width: 0; flex-shrink: 1; }
+.topbar-right .admin-name,
 .topbar-right .topbar-user-name,
 .topbar-right > span {
+  display: inline-block;
+  max-width: 42vw;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  vertical-align: middle;
   min-width: 0;
 }
 
@@ -1239,14 +1245,55 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .topbar-search { display: none; }
 }
 
-@media (max-width: 380px) {
+/* One stat card per row until there is genuinely room for two: at ~390px a
+   two-up grid squeezed labels like "Outstanding" until they snapped. */
+@media (max-width: 430px) {
   .stat-grid { grid-template-columns: minmax(0, 1fr); }
-  .topbar-right .topbar-user-name, .topbar-right > span { display: none; }
+}
+
+@media (max-width: 380px) {
+  .topbar-right .admin-name, .topbar-right .topbar-user-name, .topbar-right > span { display: none; }
   .view-body { padding: 1rem 0.75rem; }
   .panel { padding: 0.9rem 0.75rem; }
 }
 
-/* Anything long and unbreakable (emails, portal numbers, URLs) must wrap
-   rather than set a floor on the layout width. */
-.data-table td, .data-table th, .widget-list-title, .widget-list-meta,
-.panel-header p, .empty-hint, .activity-item p { overflow-wrap: anywhere; }
+/* ---------- Line breaking ----------
+   Never break inside a word. Mid-word breaking turns names into
+   "Oluwadaras / imi" and amounts into "₦50,0 / 00", which is unreadable.
+   Prose wraps at spaces; figures never wrap; and a table that genuinely
+   cannot fit scrolls sideways instead of crushing its columns. */
+.widget-list-title, .widget-list-meta, .panel-header p, .empty-hint,
+.activity-item p, .activity-item h6 {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Size data-table columns to their content and let the wrapper scroll, so a
+   name or a portal number always stays on one line. */
+.table-wrap .data-table,
+.class-group-body .data-table { width: max-content; min-width: 100%; }
+.data-table th, .data-table td { white-space: nowrap; }
+
+/* Figures stay on one line and line up column-wise. */
+.stat-value, .cell-total, .bulk-fee-hint strong,
+.class-group-count, .badge-pill { white-space: nowrap; }
+.stat-value, .data-table td { font-variant-numeric: tabular-nums; }
+
+/* In stacked-card mode each cell is already its own row, so prose may wrap
+   at spaces again — still never mid-word, and never for figures. */
+@media (max-width: 680px) {
+  table.stacked-on-mobile { width: 100%; min-width: 0; }
+  table.stacked-on-mobile th, table.stacked-on-mobile td {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  table.stacked-on-mobile td[data-label="Expected"],
+  table.stacked-on-mobile td[data-label="Paid"],
+  table.stacked-on-mobile td[data-label="Balance"],
+  table.stacked-on-mobile td[data-label="Total"],
+  table.stacked-on-mobile td[data-label="Test 1"],
+  table.stacked-on-mobile td[data-label="Test 2"],
+  table.stacked-on-mobile td[data-label="CBT"],
+  table.stacked-on-mobile td[data-label="Exam"] { white-space: nowrap; }
+}

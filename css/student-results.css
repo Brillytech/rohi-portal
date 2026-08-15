@@ -315,3 +315,22 @@ body {
   #termSelect, .topbar-btn { font-size: 16px; min-height: 42px; }
   .no-results { padding: 2.5rem 1rem; }
 }
+
+/* ---------- Line breaking on the report card ----------
+   Scores, positions and averages are figures: they must never wrap or break.
+   Names and remarks may wrap at spaces, but never mid-word. */
+.subject-table tbody td,
+.rating-table .col-rating,
+.rating-table td.k,
+.bio-table td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The two genuinely wordy columns keep wrapping at spaces. */
+.subject-table td.col-subject,
+.subject-table td.col-remark,
+.bio-table td.bio-name,
+.comments-table td,
+.rating-table tbody td:first-child {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
