@@ -603,3 +603,36 @@ html, body { max-width: 100%; overflow-x: hidden; }
   table.stacked-on-mobile td input.score-input { width: 110px; text-align: right; }
   .class-group-header { flex-wrap: wrap; gap: 4px; }
 }
+
+/* =========================================================
+   RESPONSIVE CORRECTIONS (appended last so they win on order)
+   ========================================================= */
+
+/* `1fr` == `minmax(auto, 1fr)`, and `auto` floors at min-content, so cards
+   with an icon + long label pushed their track past the screen edge. */
+.stat-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+.stat-grid > *, .panel-row > *, .view > *, .form-row > *, .filter-row > * { min-width: 0; }
+.panel, .stat-card { min-width: 0; }
+.stat-value, .stat-label { overflow-wrap: anywhere; }
+
+/* Rosters inside collapsible class groups had no scroll container. */
+.class-group-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.topbar-right { min-width: 0; flex-shrink: 1; }
+.topbar-right > span {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+
+@media (max-width: 780px) {
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 380px) {
+  .stat-grid { grid-template-columns: minmax(0, 1fr); }
+  .topbar-right > span { display: none; }
+  .view-body { padding: 1rem 0.75rem; }
+  .panel { padding: 0.9rem 0.75rem; }
+}
+
+.data-table td, .data-table th, .widget-list-title, .widget-list-meta,
+.panel-header p, .empty-hint { overflow-wrap: anywhere; }

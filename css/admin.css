@@ -1190,3 +1190,63 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .class-group-header { flex-wrap: wrap; gap: 4px; }
   .class-group-count { font-size: 0.72rem; }
 }
+
+/* =========================================================
+   RESPONSIVE CORRECTIONS
+   Appended last so these win on source order. Each entry fixes a box that
+   was measured extending past the viewport, rather than hiding it.
+   ========================================================= */
+
+/* A grid track of `1fr` is really `minmax(auto, 1fr)`, and `auto` never
+   shrinks below the content's min-content width. A stat card (icon chip +
+   "Registered this year") therefore pushed its track wider than the screen.
+   minmax(0, 1fr) lets the track actually shrink. */
+.stat-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+.stat-grid > * { min-width: 0; }
+.stat-card { min-width: 0; }
+.stat-card-body { min-width: 0; }
+.stat-value, .stat-label { overflow-wrap: anywhere; }
+
+/* Any grid/flex child must be allowed to shrink, or its content's
+   min-content width becomes a floor and the row overflows. */
+.panel-row > *, .view > *, .form-row > *, .filter-row > * { min-width: 0; }
+.panel { min-width: 0; }
+
+/* .panel-row.split-65 is both later in the file and more specific than the
+   `.panel-row { 1fr }` inside the 960px query, so it was overriding it and
+   the two-column overview never collapsed on a phone. */
+@media (max-width: 960px) {
+  .panel-row.split-65 { grid-template-columns: 1fr; }
+}
+
+/* Tables rendered inside a collapsible class group had no scroll container,
+   so a 4-column roster ran off the screen. */
+.class-group-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Long admin/teacher names pushed the topbar past the edge. */
+.topbar-right { min-width: 0; flex-shrink: 1; }
+.topbar-right .topbar-user-name,
+.topbar-right > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+@media (max-width: 780px) {
+  /* Two stat cards side by side stop fitting well below ~380px. */
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .topbar-search { display: none; }
+}
+
+@media (max-width: 380px) {
+  .stat-grid { grid-template-columns: minmax(0, 1fr); }
+  .topbar-right .topbar-user-name, .topbar-right > span { display: none; }
+  .view-body { padding: 1rem 0.75rem; }
+  .panel { padding: 0.9rem 0.75rem; }
+}
+
+/* Anything long and unbreakable (emails, portal numbers, URLs) must wrap
+   rather than set a floor on the layout width. */
+.data-table td, .data-table th, .widget-list-title, .widget-list-meta,
+.panel-header p, .empty-hint, .activity-item p { overflow-wrap: anywhere; }

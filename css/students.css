@@ -479,3 +479,17 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .activity-item { flex-wrap: wrap; gap: 8px; }
   .activity-item .action-link, .activity-item .badge-pill { align-self: flex-start !important; }
 }
+
+/* =========================================================
+   RESPONSIVE CORRECTIONS (appended last so they win on order)
+   ========================================================= */
+.summary-box, .portal-card, .section-card { min-width: 0; }
+.row > * { min-width: 0; }
+.summary-box h3, .summary-box p, .activity-item p, .activity-item h6 { overflow-wrap: anywhere; }
+
+/* Long titles/emails must wrap instead of setting a floor on layout width. */
+.widget-list-title, .widget-list-meta, .empty-hint { overflow-wrap: anywhere; }
+
+@media (max-width: 380px) {
+  .portal-card, .section-card { padding: 0.85rem 0.7rem; }
+}
