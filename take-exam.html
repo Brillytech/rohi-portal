@@ -14,6 +14,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script src="js/portal-utils.js"></script>
 </head>
 <body style="padding-top:0;">
 
@@ -166,11 +167,46 @@
     let timerInterval = null;
     let autoSubmitted = false;
 
+    // ---- Crash / interruption recovery ----
+    // A dead battery mid-exam used to lose every answer. Selections are
+    // mirrored to localStorage as they are made and restored on return.
+    //
+    // The clock is stored as an absolute deadline rather than "seconds left":
+    // if it paused while the tab was closed, closing the tab would be a way
+    // to buy thinking time. Time keeps running, which is what an invigilated
+    // exam does.
+    function examDraftKey() { return `exam.${examId}`; }
+
+    function saveExamProgress() {
+      if (!examId) return;
+      saveDraft(examDraftKey(), {
+        answers,
+        flagged: [...flagged],
+        currentIndex,
+        deadlineAt: examDeadlineAt,
+      });
+    }
+
+    function restoreExamProgress() {
+      const d = loadDraft(examDraftKey());
+      if (!d) return null;
+      answers = d.answers || {};
+      flagged = new Set(d.flagged || []);
+      currentIndex = Number.isInteger(d.currentIndex) ? d.currentIndex : 0;
+      return d;
+    }
+
+    let examDeadlineAt = null;
+
     function startTimer(minutes, onExpire) {
-      let secondsLeft = minutes * 60;
+      if (!examDeadlineAt) examDeadlineAt = Date.now() + minutes * 60 * 1000;
+      let secondsLeft = Math.max(0, Math.round((examDeadlineAt - Date.now()) / 1000));
       const timerEl = document.getElementById("examTimer");
 
       function tick() {
+        // Recomputed from the deadline, so a throttled background tab does
+        // not silently gain extra time.
+        secondsLeft = Math.max(0, Math.round((examDeadlineAt - Date.now()) / 1000));
         const mins = Math.floor(secondsLeft / 60);
         const secs = secondsLeft % 60;
         timerEl.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -181,7 +217,6 @@
           onExpire();
           return;
         }
-        secondsLeft--;
       }
       tick();
       timerInterval = setInterval(tick, 1000);
@@ -230,6 +265,7 @@
       optionsWrap.querySelectorAll(".exam-option").forEach((btn) => {
         btn.addEventListener("click", () => {
           answers[q.question_id] = btn.dataset.opt;
+          saveExamProgress();
           renderQuestion();
           renderPalette();
         });
@@ -255,12 +291,14 @@
     function goToQuestion(index) {
       currentIndex = Math.max(0, Math.min(questions.length - 1, index));
       renderQuestion();
+      saveExamProgress();
     }
 
     document.getElementById("flagBtn").addEventListener("click", () => {
       const q = questions[currentIndex];
       if (flagged.has(q.question_id)) flagged.delete(q.question_id); else flagged.add(q.question_id);
       renderQuestion();
+      saveExamProgress();
     });
 
     document.getElementById("prevBtn").addEventListener("click", () => goToQuestion(currentIndex - 1));
@@ -282,6 +320,9 @@
         window.location.href = "portal.html";
         return;
       }
+      // Namespace drafts to this student so a shared phone never restores
+      // someone else's answers.
+      setDraftUser(session.user.id);
       const { data: profile } = await supabaseClient.from("profiles").select("*").eq("id", session.user.id).single();
       if (!profile || profile.role !== "student") {
         window.location.href = "portal.html";
@@ -340,8 +381,15 @@
 
       await Promise.all(rows.filter((q) => q.image_url).map(async (q) => { imageUrls[q.question_id] = await resolveImageUrl(q.image_url); }));
 
+      const resumed = restoreExamProgress();
+      if (resumed && resumed.deadlineAt) examDeadlineAt = resumed.deadlineAt;
+
       showState("examWrap");
       renderQuestion();
+
+      if (resumed && Object.keys(resumed.answers || {}).length) {
+        showToast(`Welcome back — ${Object.keys(resumed.answers).length} of your answers were restored.`, "success");
+      }
 
       startTimer(duration_minutes, () => {
         showToast("Time's up — submitting your answers.");
@@ -378,6 +426,7 @@
         return;
       }
 
+      clearDraft(examDraftKey());
       showState("scoreState");
       document.getElementById("scoreText").textContent = "Exam submitted successfully!";
     }

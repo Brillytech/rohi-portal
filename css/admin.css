@@ -1306,3 +1306,17 @@ html, body { max-width: 100%; overflow-x: hidden; }
    px font-size. Keep them on one line so the fitter measures real overflow
    rather than a wrapped box. */
 .stat-value { display: block; white-space: nowrap; overflow: hidden; }
+
+/* ---------- Autosave indicator ---------- */
+.draft-status {
+  display: none;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.draft-status.show { display: inline-block; }
+.draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
+.draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }

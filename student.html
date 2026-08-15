@@ -392,6 +392,7 @@
     setInterval(updateClock, 1000);
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
+      clearAllDrafts();
       await supabaseClient.auth.signOut();
       window.location.href = "portal.html";
     });
@@ -458,6 +459,7 @@
       document.getElementById("profileSurname").textContent = profile.surname || "—";
       document.getElementById("profilePortalNumber").textContent = profile.portal_number || "—";
       document.getElementById("profileClassBox").textContent = profile.class || "—";
+      setDraftUser(profile.id);
       initMyProfileEditor(profile);
 
       const [{ data: terms }, { data: subjects }, { data: results }, { data: announcements }, { data: exams }, { data: myAttempts }] = await Promise.all([
@@ -673,6 +675,16 @@
       updateRemoveBtn();
     });
 
+    // Gender/DOB are quick to retype, but restoring them costs nothing and
+    // keeps behaviour consistent with the rest of the portal.
+    ["myGender", "myDob"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const saved = loadDraft("studentProfile." + id);
+      if (saved && !el.value) el.value = saved;
+      el.addEventListener("change", () => saveDraft("studentProfile." + id, el.value));
+    });
+
     document.getElementById("saveMyProfileBtn").addEventListener("click", async () => {
       if (!myProfile) return;
       const btn = document.getElementById("saveMyProfileBtn");
@@ -712,6 +724,8 @@
         myPhotoRemoveRequested = false;
         document.getElementById("myPhotoInput").value = "";
         updateRemoveBtn();
+        clearDraft("studentProfile.myGender");
+        clearDraft("studentProfile.myDob");
         box.innerHTML = '<div class="alert alert-success py-2 mb-0">Saved. Your report card will use these details.</div>';
       } catch (err) {
         box.innerHTML = `<div class="alert alert-danger py-2 mb-0">${err.message}</div>`;

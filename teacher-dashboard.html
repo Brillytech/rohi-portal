@@ -176,6 +176,7 @@
           <div id="resultEntryWrap">
             <div class="empty-state"><i class="bi bi-clipboard-data"></i><p>Choose a subject, class, and term to load the student list.</p></div>
           </div>
+          <span class="draft-status" id="resultEntryDraftStatus"></span>
           <div id="resultEntryResult"></div>
         </div>
       </section>
@@ -230,6 +231,7 @@
               <span class="btn-text">Create exam</span>
             </button>
             <div id="createExamResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -320,6 +322,7 @@
               <span class="btn-text">Post to class</span>
             </button>
             <div id="postClassAnnouncementResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -535,7 +538,13 @@ async function guardAndInit() {
   }
 
   currentTeacher = profile;
+  setDraftUser(profile.id);
   document.getElementById("teacherName").textContent = profile.full_name || "Teacher";
+  // Forms that are always on the page can be wired once, here.
+  ["createExamForm", "postClassAnnouncementForm"].forEach((id) => {
+    const f = document.getElementById(id);
+    if (f) autosaveForm(f, id, { statusEl: f.querySelector(".draft-status") });
+  });
 
   await loadClasses();
   setupClassAnnouncementPanel();
@@ -548,6 +557,9 @@ async function guardAndInit() {
 }
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
+  // Drafts are per-user, but on a shared staff phone the safest thing on an
+  // explicit logout is to leave nothing behind.
+  clearAllDrafts();
   await supabaseClient.auth.signOut();
   window.location.href = "portal.html";
 });
@@ -808,6 +820,51 @@ async function loadResultEntry() {
       <span class="btn-text">Save results</span>
     </button>`;
 
+  // A whole class of scores is a lot of typing to lose. Mirror the grid to
+  // localStorage keyed by exactly which sheet it is, and put it back on
+  // return. Published rows are disabled and never restored over.
+  const entryDraftKey = `resultEntry.${subjectId}.${className}.${termId}`;
+  const entryStatus = document.getElementById("resultEntryDraftStatus");
+
+  const readGrid = () => {
+    const out = {};
+    wrap.querySelectorAll("tr[data-student]").forEach((row) => {
+      if (row.querySelector(".entry-test1").disabled) return;
+      out[row.dataset.student] = {
+        t1: row.querySelector(".entry-test1").value,
+        t2: row.querySelector(".entry-test2").value,
+        cbt: row.querySelector(".entry-cbt").value,
+        ex: row.querySelector(".entry-exam").value,
+      };
+    });
+    return out;
+  };
+
+  const savedGrid = loadDraft(entryDraftKey);
+  if (savedGrid) {
+    let restored = 0;
+    wrap.querySelectorAll("tr[data-student]").forEach((row) => {
+      const d = savedGrid[row.dataset.student];
+      if (!d || row.querySelector(".entry-test1").disabled) return;
+      row.querySelector(".entry-test1").value = d.t1;
+      row.querySelector(".entry-test2").value = d.t2;
+      row.querySelector(".entry-cbt").value = d.cbt;
+      row.querySelector(".entry-exam").value = d.ex;
+      restored++;
+    });
+    if (restored) draftStatus(entryStatus, `Unsaved scores for ${restored} student(s) restored from ${draftAge(entryDraftKey) || "earlier"}`, "restored");
+  }
+
+  let gridTimer = null;
+  const persistGrid = () => {
+    clearTimeout(gridTimer);
+    gridTimer = setTimeout(() => {
+      saveDraft(entryDraftKey, readGrid());
+      draftStatus(entryStatus, "Draft saved", "saved");
+    }, 400);
+  };
+  wrap.addEventListener("input", persistGrid);
+
   wrap.querySelectorAll("tr[data-student]").forEach((row) => {
     const updateTotal = () => {
       const test1 = parseFloat(row.querySelector(".entry-test1").value) || 0;
@@ -873,6 +930,8 @@ async function loadResultEntry() {
     const { error } = await supabaseClient.from("results").upsert(payload, { onConflict: "student_id,subject_id,term_id" });
 
     if (!error) {
+      clearDraft(entryDraftKey);
+      draftStatus(entryStatus, "", "saved");
       resultBox.innerHTML = `<div class="alert alert-success">${payload.length} result(s) saved. They stay hidden from students until an admin publishes this class’s results.</div>`;
       showToast(`${payload.length} result(s) saved.`, "success");
       loadResultEntry();
@@ -1382,7 +1441,7 @@ function questionFormHtml(examId, question) {
     <form class="question-form inline-form" data-exam="${examId}" ${isEdit ? `data-question-id="${question.id}"` : ""} style="margin-bottom:1rem;">
       <div class="field">
         <label>Question</label>
-        <textarea class="q-text math-field" data-field-label="Question" rows="2" required>${isEdit ? escapeHtml(question.question_text) : ""}</textarea>
+        <textarea class="q-text math-field" name="q_text" data-field-label="Question" rows="2" required>${isEdit ? escapeHtml(question.question_text) : ""}</textarea>
       </div>
       <div class="field">
         <label>Image <span style="font-weight:400;color:var(--muted);">— optional, for a diagram/graph that can't be typed</span></label>
@@ -1390,13 +1449,13 @@ function questionFormHtml(examId, question) {
         <div class="q-image-preview"></div>
       </div>
       <div class="form-row">
-        <div class="field"><label>Option A</label><input type="text" class="q-a math-field" data-field-label="Option A" value="${isEdit ? escapeHtml(question.option_a) : ""}" required /></div>
-        <div class="field"><label>Option B</label><input type="text" class="q-b math-field" data-field-label="Option B" value="${isEdit ? escapeHtml(question.option_b) : ""}" required /></div>
-        <div class="field"><label>Option C</label><input type="text" class="q-c math-field" data-field-label="Option C" value="${isEdit ? escapeHtml(question.option_c) : ""}" required /></div>
-        <div class="field"><label>Option D</label><input type="text" class="q-d math-field" data-field-label="Option D" value="${isEdit ? escapeHtml(question.option_d) : ""}" required /></div>
+        <div class="field"><label>Option A</label><input type="text" class="q-a math-field" name="q_a" data-field-label="Option A" value="${isEdit ? escapeHtml(question.option_a) : ""}" required /></div>
+        <div class="field"><label>Option B</label><input type="text" class="q-b math-field" name="q_b" data-field-label="Option B" value="${isEdit ? escapeHtml(question.option_b) : ""}" required /></div>
+        <div class="field"><label>Option C</label><input type="text" class="q-c math-field" name="q_c" data-field-label="Option C" value="${isEdit ? escapeHtml(question.option_c) : ""}" required /></div>
+        <div class="field"><label>Option D</label><input type="text" class="q-d math-field" name="q_d" data-field-label="Option D" value="${isEdit ? escapeHtml(question.option_d) : ""}" required /></div>
         <div class="field">
           <label>Correct option</label>
-          <select class="q-correct">
+          <select class="q-correct" name="q_correct">
             ${["a", "b", "c", "d"].map((o) => `<option value="${o}" ${isEdit && question.correct_option === o ? "selected" : ""}>${o.toUpperCase()}</option>`).join("")}
           </select>
         </div>
@@ -1405,6 +1464,7 @@ function questionFormHtml(examId, question) {
       <div class="row-actions">
         <button type="submit" class="approve-btn">${isEdit ? "Save question" : "Add question"}</button>
         ${isEdit ? `<button type="button" class="approve-btn cancel-question-btn">Cancel</button>` : ""}
+        <span class="draft-status"></span>
       </div>
     </form>`;
 }
@@ -1541,6 +1601,16 @@ async function renderExams() {
       const id = btn.dataset.id;
       if (openExams.has(id)) openExams.delete(id); else openExams.add(id);
       renderExams();
+    });
+  });
+
+  // Typing a long question and losing it to a phone call is the worst case
+  // here, so the new-question form autosaves per exam. Edit forms are not
+  // autosaved: they already hold saved server data, and a stale restore
+  // there would be more confusing than helpful.
+  container.querySelectorAll(".question-form:not([data-question-id])").forEach((form) => {
+    autosaveForm(form, `newQuestion.${form.dataset.exam}`, {
+      statusEl: form.querySelector(".draft-status"),
     });
   });
 

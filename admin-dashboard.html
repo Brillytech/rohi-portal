@@ -186,6 +186,7 @@
               <span class="btn-text">Add class</span>
             </button>
             <div id="addClassResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -246,6 +247,7 @@
               <span class="btn-text">Add subject</span>
             </button>
             <div id="addSubjectResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -279,6 +281,7 @@
               <span class="btn-text">Add all</span>
             </button>
             <div id="bulkSubjectResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -326,6 +329,7 @@
               <span class="btn-text">Register student</span>
             </button>
             <div id="registerStudentResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -399,6 +403,7 @@
               <span class="btn-text">Add teacher</span>
             </button>
             <div id="addTeacherResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -476,6 +481,7 @@
               <span class="btn-text">Add term</span>
             </button>
             <div id="addTermResult"></div>
+                      <span class="draft-status"></span>
           </form>
           <div class="term-pill-row" id="termPillRow" style="margin-top:1.1rem;"></div>
         </div>
@@ -528,6 +534,7 @@
               <span class="btn-text">Save result</span>
             </button>
             <div id="addResultResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -649,6 +656,7 @@
               <span class="btn-text">Post announcement</span>
             </button>
             <div id="postAnnouncementResult"></div>
+                      <span class="draft-status"></span>
           </form>
         </div>
 
@@ -1041,7 +1049,15 @@ async function guardAndInit() {
   }
 
   currentAdmin = profile;
+  setDraftUser(profile.id);
   document.getElementById("adminName").textContent = profile.full_name || "Admin";
+  // Every always-present form autosaves, so a half-filled registration or
+  // announcement survives leaving the browser.
+  ["addClassForm", "addSubjectForm", "bulkSubjectForm", "registerStudentForm",
+   "addTeacherForm", "addTermForm", "addResultForm", "postAnnouncementForm"].forEach((id) => {
+    const f = document.getElementById(id);
+    if (f) autosaveForm(f, id, { statusEl: f.querySelector(".draft-status") });
+  });
   const announcementsPromise = loadAnnouncements(); // independent of everything below, runs concurrently
   await loadClasses();
   await loadSubjects();
@@ -1053,6 +1069,7 @@ async function guardAndInit() {
 }
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
+  clearAllDrafts();
   await supabaseClient.auth.signOut();
   window.location.href = "portal.html";
 });
@@ -3234,6 +3251,35 @@ function renderPayments() {
     });
   });
 
+  const payDraftKey = `payments.${termId}`;
+  const paySaved = loadDraft(payDraftKey);
+  if (paySaved) {
+    let n = 0;
+    wrap.querySelectorAll("tr[data-student]").forEach((row) => {
+      const d = paySaved[row.dataset.student];
+      if (!d) return;
+      row.querySelector(".pay-expected").value = d.exp;
+      row.querySelector(".pay-paid").value = d.paid;
+      n++;
+    });
+    if (n) showToast(`Unsaved payment edits for ${n} student(s) were restored.`, "success");
+  }
+
+  let payTimer = null;
+  wrap.addEventListener("input", () => {
+    clearTimeout(payTimer);
+    payTimer = setTimeout(() => {
+      const out = {};
+      wrap.querySelectorAll("tr[data-student]").forEach((row) => {
+        out[row.dataset.student] = {
+          exp: row.querySelector(".pay-expected").value,
+          paid: row.querySelector(".pay-paid").value,
+        };
+      });
+      saveDraft(payDraftKey, out);
+    }, 500);
+  });
+
   wrap.querySelectorAll(".save-payment-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const row = btn.closest("tr");
@@ -3254,6 +3300,7 @@ function renderPayments() {
         updated_by: currentAdmin.id,
       }, { onConflict: "student_id,term_id" });
       if (!error) {
+        clearDraft(payDraftKey);
         logActivity(`Updated payment for <strong>${student ? student.full_name : "a student"}</strong>`);
         showToast("Payment saved.", "success");
         loadPayments();
