@@ -32,33 +32,38 @@
 
   /* Type scale — 1.25 ratio, clamped so it breathes on desktop without
      blowing out on a 320px phone. */
-  --step--1: clamp(0.82rem, 0.79rem + 0.13vw, 0.89rem);
-  --step-0:  clamp(1rem, 0.96rem + 0.18vw, 1.08rem);
-  --step-1:  clamp(1.2rem, 1.12rem + 0.38vw, 1.45rem);
-  --step-2:  clamp(1.45rem, 1.31rem + 0.7vw, 1.95rem);
-  --step-3:  clamp(1.75rem, 1.5rem + 1.2vw, 2.6rem);
-  --step-4:  clamp(2.1rem, 1.66rem + 2.1vw, 3.5rem);
-  --step-5:  clamp(2.5rem, 1.75rem + 3.4vw, 4.5rem);
+  --step--1: clamp(0.82rem, 0.79rem + 0.11vw, 0.89rem);
+  --step-0:  clamp(1rem, 0.96rem + 0.15vw, 1.08rem);
+  --step-1:  clamp(1.2rem, 1.12rem + 0.32vw, 1.45rem);
+  --step-2:  clamp(1.45rem, 1.31rem + 0.60vw, 1.95rem);
+  --step-3:  clamp(1.75rem, 1.5rem + 1.02vw, 2.6rem);
+  --step-4:  clamp(2.1rem, 1.66rem + 1.79vw, 3.5rem);
+  --step-5:  clamp(2.5rem, 1.75rem + 2.89vw, 4.5rem);
 
   /* Spacing rhythm */
   --sp-1: 0.25rem;  --sp-2: 0.5rem;   --sp-3: 0.75rem;
   --sp-4: 1rem;     --sp-5: 1.5rem;   --sp-6: 2rem;
   --sp-7: 3rem;     --sp-8: 4rem;     --sp-9: 6rem;
 
-  --radius: 14px;
-  --radius-lg: 22px;
+  --radius: 0.875rem;
+  --radius-lg: 1.375rem;
   --radius-pill: 999px;
 
   --shadow-sm: 0 1px 2px rgba(20, 16, 28, 0.06), 0 2px 8px rgba(20, 16, 28, 0.04);
   --shadow-md: 0 4px 12px rgba(20, 16, 28, 0.07), 0 12px 28px rgba(20, 16, 28, 0.07);
   --shadow-lg: 0 12px 28px rgba(20, 16, 28, 0.1), 0 28px 60px rgba(89, 6, 148, 0.12);
 
-  --nav-h: 68px;
+  --nav-h: 4.25rem;   /* 68px at 100%; scales with the root */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---------- Base ---------- */
-html { scroll-behavior: smooth; }
+/* ---------- Base ----------
+   The whole design system is rem-based, so one root font-size acts as a
+   global zoom. 85% (13.6px) reproduces the density of Chrome at 85% without
+   the user having to zoom manually. The vw terms in the type/spacing clamps
+   below are scaled by the same 0.85, otherwise headings would keep their full
+   size on wide screens while everything around them shrank. */
+html { scroll-behavior: smooth; font-size: 85%; }
 body {
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--ink-2);
@@ -100,7 +105,7 @@ img { max-width: 100%; }
   padding-inline: var(--sp-4);
 }
 
-.section { padding-block: clamp(3rem, 2rem + 5vw, 6rem); }
+.section { padding-block: clamp(3rem, 2rem + 4.25vw, 6rem); }
 .section-tint { background: var(--surface-2); }
 .section-brand {
   background: linear-gradient(160deg, var(--brand-50), var(--surface));
@@ -890,3 +895,18 @@ body:not(.has-hero) main { padding-top: var(--nav-h); }
 /* A chip in a flex column would otherwise stretch to the full column width. */
 .news-lead-body .chip, .post-header .chip { align-self: flex-start; }
 .post-header .chip { display: inline-block; }
+
+
+/* ==========================================================================
+   TOUCH TARGETS
+   The 85% root shrinks rem-based controls with everything else, which would
+   drop a 46px button to ~39px — under the 44px minimum that makes a tap
+   reliable. On coarse pointers the interactive minimums are restored in px so
+   they stay physically the same size while the type around them stays compact.
+   ========================================================================== */
+@media (pointer: coarse) {
+  .btn-primary-solid, .btn-ghost, .footer-portal-btn { min-height: 44px; }
+  .nav-panel a.panel-link { min-height: 52px; }
+  .nav-toggle, .nav-panel-close, .footer-socials a, .lightbox-close { min-width: 44px; min-height: 44px; }
+  .segmented-btn { min-height: 40px; }
+}
