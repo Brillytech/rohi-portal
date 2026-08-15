@@ -1,44 +1,73 @@
 ---
 layout: layouts/base.njk
 title: News & Updates
+description: Announcements, events and milestones from Rohi Group of Schools.
 permalink: /news/
 ---
 
-<section class="py-5 news-page">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h1 class="fw-bold">News & Updates</h1>
-      <p class="text-muted">Latest announcements, events, and milestones from Rohi Schools.</p>
+<header class="section section-brand" style="padding-bottom:var(--sp-6)">
+  <div class="container-wide">
+    <div class="section-head center">
+      <span class="eyebrow">Newsroom</span>
+      <h1>News &amp; Updates</h1>
+      <p class="section-lede">Announcements, events and milestones from across Rohi Group of Schools.</p>
     </div>
+  </div>
+</header>
 
-    {% if collections.posts and collections.posts.length > 0 %}
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for post in collections.posts %}
-          <div class="col" data-aos="fade-up" data-aos-delay="{{ 100 * loop.index }}">
-            <div class="card h-100 shadow-sm news-card border-0">
-              {% if post.data.image %}
-                <img src="{{ post.data.image }}" class="card-img-top news-img" alt="{{ post.data.title }}">
-              {% endif %}
+<section class="section" style="padding-top:var(--sp-5)">
+  <div class="container-wide">
 
-              <div class="card-body d-flex flex-column">
-                <small class="news-date mb-2">{{ post.date | date("MMMM dd, yyyy") }}</small>
-                <h5 class="card-title fw-bold">{{ post.data.title }}</h5>
+    {% if announcements.length %}
+      {% set lead = announcements[0] %}
 
-                <p class="card-text text-muted flex-grow-1">
-                  {{ post.data.excerpt or post.templateContent | striptags | truncate(140) }}
-                </p>
-
-                <a href="{{ post.url }}" class="btn btn-dark btn-sm mt-2 align-self-start rounded-pill px-3">
-                  Read More
-                </a>
-              </div>
-            </div>
+      <a class="news-lead" href="{{ lead.url }}">
+        <div class="news-lead-media">
+          {% if lead.coverUrl %}
+            <img src="{{ lead.coverUrl }}" alt="{{ lead.cover_image_alt or lead.title }}" loading="eager">
+          {% else %}
+            <div class="news-placeholder"><i class="bi bi-mortarboard-fill"></i></div>
+          {% endif %}
+        </div>
+        <div class="news-lead-body">
+          <span class="chip chip-{{ lead.category | lower }}">{{ lead.category }}</span>
+          <h2>{{ lead.title }}</h2>
+          {% if lead.excerpt %}<p class="news-excerpt">{{ lead.excerpt }}</p>{% endif %}
+          <div class="news-meta">
+            <time datetime="{{ lead.publish_at }}">{{ lead.dateObj | date("MMMM dd, yyyy") }}</time>
+            <span class="news-readmore">Read story <i class="bi bi-arrow-right"></i></span>
           </div>
-        {% endfor %}
-      </div>
+        </div>
+      </a>
+
+      {% if announcements.length > 1 %}
+        <div class="news-grid">
+          {% for post in announcements.slice(1) %}
+            <a class="news-card" href="{{ post.url }}">
+              <div class="news-card-media">
+                {% if post.coverUrl %}
+                  <img src="{{ post.coverUrl }}" alt="{{ post.cover_image_alt or post.title }}" loading="lazy">
+                {% else %}
+                  <div class="news-placeholder"><i class="bi bi-newspaper"></i></div>
+                {% endif %}
+                <span class="chip chip-{{ post.category | lower }}">{{ post.category }}</span>
+              </div>
+              <div class="news-card-body">
+                <time datetime="{{ post.publish_at }}">{{ post.dateObj | date("MMM dd, yyyy") }}</time>
+                <h3>{{ post.title }}</h3>
+                {% if post.excerpt %}<p class="news-excerpt">{{ post.excerpt }}</p>{% endif %}
+                <span class="news-readmore">Read more <i class="bi bi-arrow-right"></i></span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
     {% else %}
-      <div class="alert alert-info text-center">
-        No posts yet. We’ll publish updates soon.
+      <div class="empty-note">
+        <i class="bi bi-newspaper"></i>
+        <h3>No news yet</h3>
+        <p>We'll publish updates here as soon as there's something to share.</p>
       </div>
     {% endif %}
   </div>
