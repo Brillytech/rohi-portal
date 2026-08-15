@@ -1320,3 +1320,88 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .draft-status.show { display: inline-block; }
 .draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
 .draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }
+
+/* ---------- Website: rich text editor ---------- */
+.rt-toolbar {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--border-c);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: var(--panel-alt, #faf8fd);
+}
+.rt-toolbar button {
+  width: 34px; height: 34px;
+  border: none; background: transparent;
+  border-radius: 7px; cursor: pointer;
+  color: var(--ink); font-size: 0.95rem;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.rt-toolbar button:hover { background: rgba(89, 6, 148, 0.09); color: var(--purple-deep); }
+
+.rt-editor {
+  min-height: 220px;
+  max-height: 460px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border-c);
+  border-radius: 0 0 10px 10px;
+  background: #fff;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.rt-editor:focus { outline: none; border-color: var(--purple-deep); box-shadow: 0 0 0 3px rgba(89,6,148,0.1); }
+.rt-editor:empty::before { content: "Write the announcement here…"; color: var(--muted); }
+.rt-editor h2 { font-size: 1.2rem; margin: 1.1em 0 0.4em; }
+.rt-editor h3 { font-size: 1.05rem; margin: 1em 0 0.35em; }
+.rt-editor ul, .rt-editor ol { padding-left: 1.3rem; }
+.rt-editor blockquote { border-left: 3px solid var(--orange); padding-left: 0.9rem; color: var(--muted); margin: 0.8em 0; }
+
+.field-hint { display: block; margin-top: 5px; font-size: 0.74rem; color: var(--muted); }
+.link-btn { border: none; background: none; padding: 0; color: var(--purple-deep); font-size: 0.74rem; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+.cover-preview {
+  margin-top: 8px;
+  aspect-ratio: 16 / 10;
+  border: 1px dashed var(--border-c);
+  border-radius: 10px;
+  background: #faf8fd;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; color: var(--muted); font-size: 0.78rem;
+  overflow: hidden;
+}
+.cover-preview i { font-size: 1.5rem; }
+.cover-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Website: gallery manager ---------- */
+.gallery-album { margin-bottom: 1.6rem; }
+.gallery-album-head { display: flex; align-items: center; gap: 10px; margin-bottom: 0.7rem; }
+.gallery-album-head h3 { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--ink); }
+
+.admin-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(140px, 45%), 1fr));
+  gap: 10px;
+}
+.admin-gallery-item {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-c);
+  background: #f3eefa;
+}
+.admin-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gal-del {
+  position: absolute; top: 6px; right: 6px;
+  width: 30px; height: 30px;
+  border: none; border-radius: 8px;
+  background: rgba(220, 38, 38, 0.92);
+  color: #fff; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.8rem;
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.admin-gallery-item:hover .gal-del, .gal-del:focus-visible { opacity: 1; }
+@media (hover: none) { .gal-del { opacity: 1; } }

@@ -37,6 +37,7 @@
       <button class="nav-item" data-view="payments"><i class="bi bi-cash-coin"></i> Payments</button>
       <button class="nav-item" data-view="revenue"><i class="bi bi-graph-up-arrow"></i> Revenue</button>
       <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
+      <button class="nav-item" data-view="website"><i class="bi bi-globe2"></i> Website</button>
     </nav>
 
     <button class="logout-btn" id="logoutBtn"><i class="bi bi-box-arrow-left"></i> Log out</button>
@@ -623,6 +624,137 @@
         </div>
       </section>
 
+      <!-- WEBSITE (public marketing site content) -->
+      <section class="view" id="view-website">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Public announcements</h2>
+              <p>These appear on the public website under News — separate from the internal noticeboard staff and students see.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-newspaper"></i></div>
+          </div>
+
+          <form id="publicPostForm" class="inline-form">
+            <input type="hidden" id="ppId" />
+            <div class="form-row">
+              <div class="field" style="flex:2 1 320px;">
+                <label for="ppTitle">Title</label>
+                <input type="text" id="ppTitle" placeholder="e.g. Admissions now open for 2026/2027" required />
+              </div>
+              <div class="field">
+                <label for="ppCategory">Category</label>
+                <select id="ppCategory">
+                  <option>News</option><option>Admissions</option><option>Events</option>
+                  <option>Achievements</option><option>Notices</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field" style="flex:2 1 320px;">
+                <label for="ppSlug">Web address (slug)</label>
+                <input type="text" id="ppSlug" placeholder="auto-generated from the title" />
+                <small class="field-hint">/news/<span id="ppSlugPreview">your-post</span>/</small>
+              </div>
+              <div class="field">
+                <label for="ppStatus">Status</label>
+                <select id="ppStatus">
+                  <option value="draft">Draft — not on the site</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="ppPublishAt">Publish date &amp; time</label>
+                <input type="datetime-local" id="ppPublishAt" />
+                <small class="field-hint">A future time schedules it.</small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field" style="flex:1 1 240px;">
+                <label for="ppImage">Cover image</label>
+                <input type="file" id="ppImage" accept="image/*" />
+                <div id="ppImagePreview" class="cover-preview"><i class="bi bi-image"></i><span>No cover image</span></div>
+                <button type="button" class="approve-btn" id="ppImageRemove" style="display:none;margin-top:6px;">Remove image</button>
+              </div>
+              <div class="field" style="flex:2 1 320px;">
+                <label for="ppImageAlt">Image description (alt text)</label>
+                <input type="text" id="ppImageAlt" placeholder="Describe the photo for screen readers and search engines" />
+                <label for="ppExcerpt" style="margin-top:10px;">Excerpt</label>
+                <textarea id="ppExcerpt" rows="3" placeholder="One or two lines shown on the news list"></textarea>
+                <small class="field-hint"><span id="ppExcerptCount">0</span>/160 characters · <button type="button" class="link-btn" id="ppExcerptAuto">generate from body</button></small>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Body</label>
+              <div class="rt-toolbar" id="ppToolbar">
+                <button type="button" data-cmd="bold" title="Bold"><i class="bi bi-type-bold"></i></button>
+                <button type="button" data-cmd="italic" title="Italic"><i class="bi bi-type-italic"></i></button>
+                <button type="button" data-block="h2" title="Heading"><i class="bi bi-type-h2"></i></button>
+                <button type="button" data-block="h3" title="Subheading"><i class="bi bi-type-h3"></i></button>
+                <button type="button" data-cmd="insertUnorderedList" title="Bulleted list"><i class="bi bi-list-ul"></i></button>
+                <button type="button" data-cmd="insertOrderedList" title="Numbered list"><i class="bi bi-list-ol"></i></button>
+                <button type="button" data-block="blockquote" title="Quote"><i class="bi bi-quote"></i></button>
+                <button type="button" data-cmd="createLink" title="Add link"><i class="bi bi-link-45deg"></i></button>
+                <button type="button" data-cmd="removeFormat" title="Clear formatting"><i class="bi bi-eraser"></i></button>
+              </div>
+              <div id="ppBody" class="rt-editor" contenteditable="true"></div>
+            </div>
+
+            <label class="class-checkbox" style="margin:0.5rem 0 1rem;">
+              <input type="checkbox" id="ppFeatured" /> <span>Feature this on the homepage</span>
+            </label>
+
+            <div class="row-actions">
+              <button type="submit" class="primary-btn" id="ppSaveBtn"><span class="btn-text">Save post</span></button>
+              <button type="button" class="approve-btn" id="ppResetBtn">New / clear</button>
+              <span class="draft-status" id="ppDraftStatus"></span>
+            </div>
+            <div id="ppResult"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Published &amp; drafts</h2>
+              <p>Everything on the public news page, newest first.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-collection"></i></div>
+          </div>
+          <div id="publicPostsList"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Homepage gallery</h2>
+              <p>Up to 12 photos per album. Photos are resized and compressed automatically before upload, so they stay small.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-images"></i></div>
+          </div>
+          <div class="form-row" style="margin-bottom:1rem;">
+            <div class="field">
+              <label for="galAlbum">Album</label>
+              <select id="galAlbum">
+                <option value="class-projects">Class Projects</option>
+                <option value="cultural-day">Cultural Day</option>
+                <option value="daily-moments">Daily Moments</option>
+              </select>
+            </div>
+            <div class="field" style="flex:2 1 260px;">
+              <label for="galFiles">Add photos</label>
+              <input type="file" id="galFiles" accept="image/*" multiple />
+              <small class="field-hint" id="galCapHint"></small>
+            </div>
+          </div>
+          <div id="galUploadResult"></div>
+          <div id="galleryGrid"></div>
+        </div>
+      </section>
+
       <!-- ANNOUNCEMENTS -->
       <section class="view" id="view-announcements">
         <div class="panel">
@@ -1066,6 +1198,8 @@ async function guardAndInit() {
   await loadTerms();
   await announcementsPromise;
   loadOverview();
+  loadPublicPosts();
+  loadGallery();
 }
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
@@ -3480,6 +3614,401 @@ async function loadPrincipalComments() {
 });
 
 
+// ==========================================================================
+// WEBSITE — public marketing content (news + homepage gallery)
+// Replaces Netlify CMS. Everything here writes to Supabase; the public site
+// reads it at build time.
+// ==========================================================================
+const GALLERY_ALBUMS = {
+  "class-projects": "Class Projects",
+  "cultural-day": "Cultural Day",
+  "daily-moments": "Daily Moments",
+};
+const GALLERY_CAP = 12;
+
+let publicPosts = [];
+let galleryRows = [];
+
+function slugifyTitle(t) {
+  return String(t || "")
+    .normalize("NFKD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^\x00-\x7F]/g, "")   // strip emoji — the old CMS put them in URLs
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function toLocalInput(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// ---- Rich text ----
+document.getElementById("ppToolbar").addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const editor = document.getElementById("ppBody");
+  editor.focus();
+  if (btn.dataset.block) {
+    document.execCommand("formatBlock", false, btn.dataset.block);
+  } else if (btn.dataset.cmd === "createLink") {
+    const url = prompt("Link address (https://...)");
+    if (url) document.execCommand("createLink", false, url);
+  } else {
+    document.execCommand(btn.dataset.cmd, false, null);
+  }
+});
+
+// Paste as plain text: pasting from Word otherwise drags in a mountain of
+// inline styles that then render on the public site.
+document.getElementById("ppBody").addEventListener("paste", (e) => {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+  document.execCommand("insertText", false, text);
+});
+
+document.getElementById("ppTitle").addEventListener("input", () => {
+  const slugField = document.getElementById("ppSlug");
+  if (!slugField.dataset.touched) {
+    slugField.value = slugifyTitle(document.getElementById("ppTitle").value);
+    document.getElementById("ppSlugPreview").textContent = slugField.value || "your-post";
+  }
+});
+document.getElementById("ppSlug").addEventListener("input", (e) => {
+  e.target.dataset.touched = "1";
+  e.target.value = slugifyTitle(e.target.value);
+  document.getElementById("ppSlugPreview").textContent = e.target.value || "your-post";
+});
+
+document.getElementById("ppExcerpt").addEventListener("input", (e) => {
+  document.getElementById("ppExcerptCount").textContent = e.target.value.length;
+});
+document.getElementById("ppExcerptAuto").addEventListener("click", () => {
+  const text = document.getElementById("ppBody").innerText.replace(/\s+/g, " ").trim();
+  const cut = text.slice(0, 157);
+  const out = text.length > 157 ? cut.slice(0, cut.lastIndexOf(" ")) + "…" : cut;
+  const field = document.getElementById("ppExcerpt");
+  field.value = out;
+  document.getElementById("ppExcerptCount").textContent = out.length;
+});
+
+// ---- Cover image ----
+let ppPendingCover = null;
+let ppRemoveCover = false;
+
+document.getElementById("ppImage").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    // Cover images render at ~1200px on the article page.
+    ppPendingCover = await compressPhoto(file, { maxW: 1600, maxH: 1000, quality: 0.82 });
+    ppRemoveCover = false;
+    document.getElementById("ppImagePreview").innerHTML =
+      `<img src="${URL.createObjectURL(ppPendingCover)}" alt="" />`;
+    document.getElementById("ppImageRemove").style.display = "";
+  } catch (err) {
+    ppPendingCover = null;
+    e.target.value = "";
+    showToast(err.message);
+  }
+});
+
+document.getElementById("ppImageRemove").addEventListener("click", () => {
+  ppRemoveCover = true;
+  ppPendingCover = null;
+  document.getElementById("ppImage").value = "";
+  document.getElementById("ppImagePreview").innerHTML = '<i class="bi bi-image"></i><span>No cover image</span>';
+  document.getElementById("ppImageRemove").style.display = "none";
+});
+
+function resetPostForm() {
+  document.getElementById("publicPostForm").reset();
+  document.getElementById("ppId").value = "";
+  document.getElementById("ppBody").innerHTML = "";
+  document.getElementById("ppSlug").dataset.touched = "";
+  document.getElementById("ppSlugPreview").textContent = "your-post";
+  document.getElementById("ppExcerptCount").textContent = "0";
+  document.getElementById("ppImagePreview").innerHTML = '<i class="bi bi-image"></i><span>No cover image</span>';
+  document.getElementById("ppImageRemove").style.display = "none";
+  document.getElementById("ppPublishAt").value = toLocalInput(new Date().toISOString());
+  ppPendingCover = null;
+  ppRemoveCover = false;
+  document.getElementById("ppResult").innerHTML = "";
+}
+document.getElementById("ppResetBtn").addEventListener("click", resetPostForm);
+
+async function loadPublicPosts() {
+  const { data, error } = await supabaseClient
+    .from("public_announcements").select("*").order("publish_at", { ascending: false });
+  if (error) { await reportDbError(error, "Could not load public posts"); return; }
+  publicPosts = data || [];
+  renderPublicPosts();
+}
+
+function renderPublicPosts() {
+  const wrap = document.getElementById("publicPostsList");
+  if (!publicPosts.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-newspaper"></i><p>No public posts yet.</p></div>';
+    return;
+  }
+  const now = Date.now();
+  wrap.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table stacked-on-mobile">
+        <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Publish date</th><th></th></tr></thead>
+        <tbody>
+          ${publicPosts.map((p) => {
+            const scheduled = p.status === "published" && new Date(p.publish_at).getTime() > now;
+            const label = p.status === "draft" ? "Draft" : scheduled ? "Scheduled" : "Live";
+            const cls = p.status === "draft" ? "submitted" : scheduled ? "class" : "published";
+            return `<tr>
+              <td data-label="Title">${p.featured ? '<i class="bi bi-star-fill" style="color:var(--orange);margin-right:6px;" title="Featured"></i>' : ""}${escapeHtmlAdmin(p.title)}</td>
+              <td data-label="Category"><span class="badge-pill badge-class">${p.category}</span></td>
+              <td data-label="Status"><span class="badge-pill badge-${cls}">${label}</span></td>
+              <td data-label="Publish date">${new Date(p.publish_at).toLocaleString()}</td>
+              <td data-label="" class="row-actions">
+                <button class="approve-btn edit-pp-btn" data-id="${p.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
+                <button class="approve-btn delete-btn del-pp-btn" data-id="${p.id}"><i class="bi bi-trash-fill"></i></button>
+              </td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>`;
+
+  wrap.querySelectorAll(".edit-pp-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const p = publicPosts.find((x) => x.id === btn.dataset.id);
+      if (!p) return;
+      document.getElementById("ppId").value = p.id;
+      document.getElementById("ppTitle").value = p.title;
+      document.getElementById("ppSlug").value = p.slug;
+      document.getElementById("ppSlug").dataset.touched = "1";
+      document.getElementById("ppSlugPreview").textContent = p.slug;
+      document.getElementById("ppCategory").value = p.category;
+      document.getElementById("ppStatus").value = p.status;
+      document.getElementById("ppPublishAt").value = toLocalInput(p.publish_at);
+      document.getElementById("ppExcerpt").value = p.excerpt || "";
+      document.getElementById("ppExcerptCount").textContent = (p.excerpt || "").length;
+      document.getElementById("ppImageAlt").value = p.cover_image_alt || "";
+      document.getElementById("ppBody").innerHTML = p.body_html || "";
+      document.getElementById("ppFeatured").checked = !!p.featured;
+      ppPendingCover = null; ppRemoveCover = false;
+      const prev = document.getElementById("ppImagePreview");
+      if (p.cover_image_path) {
+        prev.innerHTML = `<img src="${publicSiteMediaUrl(p.cover_image_path)}" alt="" />`;
+        document.getElementById("ppImageRemove").style.display = "";
+      } else {
+        prev.innerHTML = '<i class="bi bi-image"></i><span>No cover image</span>';
+        document.getElementById("ppImageRemove").style.display = "none";
+      }
+      document.getElementById("view-website").scrollIntoView({ behavior: "smooth" });
+    });
+  });
+
+  wrap.querySelectorAll(".del-pp-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this public post? It will disappear from the website on the next build."))) return;
+      const { error } = await supabaseClient.from("public_announcements").delete().eq("id", btn.dataset.id);
+      if (error) return reportDbError(error, "Could not delete the post");
+      logActivity("Deleted a public news post");
+      loadPublicPosts();
+    });
+  });
+}
+
+function publicSiteMediaUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("/") || path.startsWith("http")) return path;
+  return `${SUPABASE_URL}/storage/v1/object/public/site-media/${path}`;
+}
+
+function escapeHtmlAdmin(str) {
+  const d = document.createElement("div");
+  d.textContent = str ?? "";
+  return d.innerHTML;
+}
+
+document.getElementById("publicPostForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("ppSaveBtn");
+  const box = document.getElementById("ppResult");
+  box.innerHTML = "";
+
+  const title = document.getElementById("ppTitle").value.trim();
+  let slug = slugifyTitle(document.getElementById("ppSlug").value || title);
+  if (!title || !slug) { showToast("A title is required."); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving...';
+
+  try {
+    const id = document.getElementById("ppId").value || null;
+    let cover_image_path = id ? (publicPosts.find((p) => p.id === id) || {}).cover_image_path : null;
+
+    if (ppRemoveCover) cover_image_path = null;
+    if (ppPendingCover) {
+      const path = `news/${slug}-${Date.now()}.jpg`;
+      const { error: upErr } = await supabaseClient.storage
+        .from("site-media").upload(path, ppPendingCover, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      cover_image_path = path;
+    }
+
+    const payload = {
+      title,
+      slug,
+      category: document.getElementById("ppCategory").value,
+      cover_image_path,
+      cover_image_alt: document.getElementById("ppImageAlt").value.trim() || null,
+      excerpt: document.getElementById("ppExcerpt").value.trim() || null,
+      body_html: document.getElementById("ppBody").innerHTML.trim(),
+      status: document.getElementById("ppStatus").value,
+      publish_at: new Date(document.getElementById("ppPublishAt").value || Date.now()).toISOString(),
+      featured: document.getElementById("ppFeatured").checked,
+      created_by: currentAdmin.id,
+    };
+
+    const q = id
+      ? supabaseClient.from("public_announcements").update(payload).eq("id", id)
+      : supabaseClient.from("public_announcements").insert(payload);
+    const { error } = await q;
+    if (error) {
+      if ((error.message || "").includes("duplicate key")) {
+        throw new Error(`The web address "${slug}" is already used by another post. Change the slug.`);
+      }
+      throw error;
+    }
+
+    const live = payload.status === "published" && new Date(payload.publish_at) <= new Date();
+    box.innerHTML = `<div class="alert alert-success">Saved. ${
+      live ? "It will appear on the website at the next site build."
+           : payload.status === "draft" ? "Kept as a draft — not on the website."
+           : "Scheduled — it will appear once the date passes and the site rebuilds."
+    }</div>`;
+    logActivity(`Saved public post <strong>${escapeHtmlAdmin(title)}</strong>`);
+    resetPostForm();
+    loadPublicPosts();
+  } catch (err) {
+    box.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Save post</span>';
+  }
+});
+
+// ==========================================================================
+// Homepage gallery
+// ==========================================================================
+async function loadGallery() {
+  const { data, error } = await supabaseClient
+    .from("site_gallery").select("*").order("sort_order").order("created_at");
+  if (error) { await reportDbError(error, "Could not load the gallery"); return; }
+  galleryRows = data || [];
+  renderGallery();
+  updateCapHint();
+}
+
+function updateCapHint() {
+  const album = document.getElementById("galAlbum").value;
+  const used = galleryRows.filter((r) => r.album === album).length;
+  const left = GALLERY_CAP - used;
+  document.getElementById("galCapHint").textContent =
+    `${used} of ${GALLERY_CAP} used in ${GALLERY_ALBUMS[album]}` + (left > 0 ? ` — room for ${left} more.` : " — remove one before adding another.");
+}
+document.getElementById("galAlbum").addEventListener("change", updateCapHint);
+
+function renderGallery() {
+  const wrap = document.getElementById("galleryGrid");
+  wrap.innerHTML = Object.entries(GALLERY_ALBUMS).map(([key, label]) => {
+    const imgs = galleryRows.filter((r) => r.album === key);
+    return `
+      <div class="gallery-album">
+        <div class="gallery-album-head">
+          <h3>${label}</h3>
+          <span class="badge-pill badge-${imgs.length >= GALLERY_CAP ? "class" : "published"}">${imgs.length}/${GALLERY_CAP}</span>
+        </div>
+        ${imgs.length ? `<div class="admin-gallery-grid">
+          ${imgs.map((r) => `
+            <figure class="admin-gallery-item">
+              <img src="${publicSiteMediaUrl(r.thumb_path)}" alt="${escapeHtmlAdmin(r.alt_text || "")}" loading="lazy" />
+              <button type="button" class="gal-del" data-id="${r.id}" title="Remove"><i class="bi bi-trash-fill"></i></button>
+            </figure>`).join("")}
+        </div>` : '<p class="empty-hint" style="text-align:left;padding:0.3rem 0;">No photos in this album yet.</p>'}
+      </div>`;
+  }).join("");
+
+  wrap.querySelectorAll(".gal-del").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = galleryRows.find((r) => r.id === btn.dataset.id);
+      if (!row) return;
+      if (!(await appConfirm("Remove this photo from the homepage gallery?"))) return;
+      await supabaseClient.storage.from("site-media").remove([row.thumb_path, row.full_path]);
+      const { error } = await supabaseClient.from("site_gallery").delete().eq("id", row.id);
+      if (error) return reportDbError(error, "Could not remove the photo");
+      logActivity("Removed a homepage gallery photo");
+      loadGallery();
+    });
+  });
+}
+
+document.getElementById("galFiles").addEventListener("change", async (e) => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+  const album = document.getElementById("galAlbum").value;
+  const box = document.getElementById("galUploadResult");
+  const used = galleryRows.filter((r) => r.album === album).length;
+
+  if (used + files.length > GALLERY_CAP) {
+    box.innerHTML = `<div class="alert alert-danger">${GALLERY_ALBUMS[album]} can hold ${GALLERY_CAP} photos and already has ${used}. You selected ${files.length}. Remove some photos first, or choose fewer.</div>`;
+    e.target.value = "";
+    return;
+  }
+
+  box.innerHTML = `<div class="alert alert-success">Processing ${files.length} photo(s)…</div>`;
+  let done = 0, failed = 0;
+
+  for (const file of files) {
+    try {
+      // Two renditions: the grid slot is ~260px, the lightbox ~800px. Sending
+      // one big file to both would waste mobile data on every visitor.
+      const [thumb, full] = await Promise.all([
+        compressPhoto(file, { maxW: 600, maxH: 450, quality: 0.78 }),
+        compressPhoto(file, { maxW: 1600, maxH: 1200, quality: 0.8 }),
+      ]);
+      const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const thumbPath = `gallery/${album}/${stamp}-thumb.jpg`;
+      const fullPath = `gallery/${album}/${stamp}-full.jpg`;
+
+      const up = await Promise.all([
+        supabaseClient.storage.from("site-media").upload(thumbPath, thumb, { contentType: "image/jpeg", upsert: true }),
+        supabaseClient.storage.from("site-media").upload(fullPath, full, { contentType: "image/jpeg", upsert: true }),
+      ]);
+      if (up.some((r) => r.error)) throw new Error(up.find((r) => r.error).error.message);
+
+      const { error } = await supabaseClient.from("site_gallery").insert({
+        album, thumb_path: thumbPath, full_path: fullPath,
+        alt_text: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+        sort_order: used + done,
+        created_by: currentAdmin.id,
+      });
+      if (error) throw error;
+      done++;
+    } catch (err) {
+      failed++;
+      box.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+    }
+  }
+
+  if (!failed) box.innerHTML = `<div class="alert alert-success">${done} photo(s) added. They appear on the homepage at the next site build.</div>`;
+  e.target.value = "";
+  loadGallery();
+});
+
+resetPostForm();
 guardAndInit();
 </script>
 </body>

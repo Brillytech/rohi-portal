@@ -26,7 +26,10 @@ function photoPathFor(studentId) {
   return `${studentId}/photo.jpg`;
 }
 
-function compressPhoto(file) {
+function compressPhoto(file, opts = {}) {
+  const maxW = opts.maxW || PHOTO_MAX_W;
+  const maxH = opts.maxH || PHOTO_MAX_H;
+  const quality = opts.quality || PHOTO_QUALITY;
   return new Promise((resolve, reject) => {
     if (!file) return reject(new Error("No file selected."));
     if (!/^image\//.test(file.type)) return reject(new Error("That file is not an image."));
@@ -41,7 +44,7 @@ function compressPhoto(file) {
       img.onerror = () => reject(new Error("That image could not be opened."));
       img.onload = () => {
         // Contain within the target box, never upscale a small photo.
-        const scale = Math.min(PHOTO_MAX_W / img.width, PHOTO_MAX_H / img.height, 1);
+        const scale = Math.min(maxW / img.width, maxH / img.height, 1);
         const w = Math.max(1, Math.round(img.width * scale));
         const h = Math.max(1, Math.round(img.height * scale));
 
@@ -58,7 +61,7 @@ function compressPhoto(file) {
         canvas.toBlob((blob) => {
           if (!blob) return reject(new Error("Could not process that image."));
           resolve(blob);
-        }, "image/jpeg", PHOTO_QUALITY);
+        }, "image/jpeg", quality);
       };
       img.src = reader.result;
     };

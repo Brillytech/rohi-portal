@@ -767,3 +767,41 @@ body:not(.has-hero) main > section:first-child:not(.page-hero) { padding-top: ca
 /* Bootstrap leftovers that would otherwise fight the new system */
 .bg-light { background: var(--surface-2) !important; }
 .text-muted { color: var(--muted) !important; }
+
+/* ==========================================================================
+   RESPONSIVE CORRECTIONS (measured, not guessed)
+   ========================================================================== */
+
+/* Bootstrap .row applies negative inline margins of half its gutter. With
+   g-5 (3rem) that is -24px a side, against only 16px of container padding —
+   so every .row inside our containers hung 8px past the screen. Our
+   containers already provide the outer rhythm, so drop the pull-back. */
+.container-wide > .row,
+.container-narrow > .row,
+.container-wide .contact-card .row { margin-inline: 0; }
+
+/* Grid/flex children must be allowed to shrink; otherwise their content's
+   min-content width becomes a floor and the track overflows. */
+.footer-grid > *,
+.news-lead > *,
+.pillar-grid > *,
+.news-grid > * { min-width: 0; }
+
+.footer-contact li span { min-width: 0; overflow-wrap: break-word; }
+.site-footer a { overflow-wrap: break-word; }
+
+/* Long unbroken strings (emails, URLs) wrap at a sensible point rather than
+   setting the layout width — but never mid-word for ordinary prose. */
+.footer-contact, .prose, .news-excerpt, .section-lede {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* The contact <li>s are grid items containing an icon plus an unbroken
+   email/phone string, so they needed the shrink permission too. */
+.footer-contact li { min-width: 0; }
+.footer-contact li span, .footer-contact li a { min-width: 0; overflow-wrap: anywhere; }
+
+/* A chip in a flex column would otherwise stretch to the full column width. */
+.news-lead-body .chip, .post-header .chip { align-self: flex-start; }
+.post-header .chip { display: inline-block; }
