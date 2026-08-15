@@ -1297,3 +1297,12 @@ html, body { max-width: 100%; overflow-x: hidden; }
   table.stacked-on-mobile td[data-label="CBT"],
   table.stacked-on-mobile td[data-label="Exam"] { white-space: nowrap; }
 }
+
+/* ---------- Avatars that carry a real photo ---------- */
+.avatar-chip.has-photo { padding: 0; overflow: hidden; background: #e9edf5; }
+.avatar-chip.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Figures are auto-fitted in JS (see autoFitFigures), which sets an explicit
+   px font-size. Keep them on one line so the fitter measures real overflow
+   rather than a wrapped box. */
+.stat-value { display: block; white-space: nowrap; overflow: hidden; }

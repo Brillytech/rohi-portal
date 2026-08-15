@@ -352,8 +352,46 @@
 </div>
 
 <!-- Toast container (replaces browser alert()) -->
+<!-- Student profile editor (class teachers, for their own class) -->
+<div class="app-modal-backdrop" id="stuProfileBackdrop">
+  <div class="app-modal" style="max-width:400px;">
+    <div class="panel-header" style="margin-bottom:1rem;">
+      <h2 style="margin:0;font-size:1.05rem;">Student profile — <span id="stuProfileName"></span></h2>
+      <p style="margin:2px 0 0;">Used on the report card header.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div id="stuProfilePreview" style="width:72px;height:88px;border-radius:10px;background:#f1f3f7;border:1px solid var(--border-c);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+          <i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+          <input type="file" id="stuProfilePhotoInput" accept="image/*" style="font-size:0.78rem;max-width:100%;" />
+          <button type="button" class="app-modal-cancel" id="stuProfileRemoveBtn" style="font-size:0.75rem;padding:5px 10px;display:none;">Remove photo</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="stuProfileGender">Gender</label>
+        <select id="stuProfileGender">
+          <option value="">— Not set —</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="stuProfileDob">Date of birth</label>
+        <input type="date" id="stuProfileDob" />
+      </div>
+    </div>
+    <div class="app-modal-actions" style="margin-top:1.25rem;">
+      <button type="button" class="app-modal-cancel" id="stuProfileCancelBtn">Cancel</button>
+      <button type="button" class="app-modal-confirm" id="stuProfileSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-stack" id="toastStack"></div>
 
+<script src="js/portal-utils.js"></script>
 <script>
 const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
@@ -875,6 +913,9 @@ async function loadMyStudents() {
     .rpc("get_students_in_classes", { p_classes: myClasses.map((c) => c.name) });
   students?.sort((a, b) => a.full_name.localeCompare(b.full_name));
 
+  // One batched signed-URL call for the whole roster instead of one per row.
+  myStudentPhotoUrls = await signedPhotoUrls(supabaseClient, (students || []).map((s) => s.photo_path));
+
   if (!students || !students.length) {
     container.innerHTML = "";
     const classNames = myClasses.map((c) => c.name).join(", ");
@@ -889,8 +930,13 @@ async function loadMyStudents() {
     if (!studentsInClass.length) return "";
     const rowsHtml = studentsInClass.map((s) => `
       <tr>
-        <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
-        <td>${s.surname}</td>
+        <td data-label="Full name">${avatarHtml(s, myStudentPhotoUrls[s.photo_path], { size: 28, style: "margin-right:8px;vertical-align:middle;" })}${s.full_name}</td>
+        <td data-label="Surname">${s.surname}</td>
+        <td data-label="" class="row-actions">
+          <button type="button" class="approve-btn edit-student-profile-btn" data-id="${s.id}">
+            <i class="bi bi-person-vcard"></i> Edit profile
+          </button>
+        </td>
       </tr>`).join("");
     return `
       <div class="class-group">
@@ -899,14 +945,125 @@ async function loadMyStudents() {
           <span class="class-group-count">${studentsInClass.length} student${studentsInClass.length === 1 ? "" : "s"}</span>
         </div>
         <div class="class-group-body open">
-          <table class="data-table">
-            <thead><tr><th>Full name</th><th>Surname</th></tr></thead>
+          <table class="data-table stacked-on-mobile">
+            <thead><tr><th>Full name</th><th>Surname</th><th></th></tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
       </div>`;
   }).join("");
+
+  container.querySelectorAll(".edit-student-profile-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const student = students.find((s) => s.id === btn.dataset.id);
+      if (student) openStuProfile(student);
+    });
+  });
 }
+
+// ---- Student profile editing (class teacher, own class only) ----
+// Writes go through the update_student_profile RPC, never a direct table
+// update: a broad UPDATE policy on profiles would also let a teacher rewrite
+// a student's role, class or portal number.
+let myStudentPhotoUrls = {};
+let stuProfileTarget = null;
+let stuProfilePendingFile = null;
+let stuProfileRemoveRequested = false;
+
+function updateStuRemoveBtn() {
+  const hasPhoto = !!(stuProfileTarget && stuProfileTarget.photo_path) || !!stuProfilePendingFile;
+  document.getElementById("stuProfileRemoveBtn").style.display =
+    (hasPhoto && !stuProfileRemoveRequested) ? "" : "none";
+}
+
+async function openStuProfile(student) {
+  stuProfileTarget = student;
+  stuProfilePendingFile = null;
+  stuProfileRemoveRequested = false;
+
+  document.getElementById("stuProfileName").textContent = student.full_name;
+  document.getElementById("stuProfileGender").value = student.gender || "";
+  document.getElementById("stuProfileDob").value = student.date_of_birth || "";
+  document.getElementById("stuProfilePhotoInput").value = "";
+
+  const preview = document.getElementById("stuProfilePreview");
+  preview.innerHTML = `<i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>`;
+  const url = myStudentPhotoUrls[student.photo_path];
+  if (url) preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;" />`;
+
+  updateStuRemoveBtn();
+  document.getElementById("stuProfileBackdrop").classList.add("show");
+}
+
+document.getElementById("stuProfileCancelBtn").addEventListener("click", () => {
+  document.getElementById("stuProfileBackdrop").classList.remove("show");
+  stuProfileTarget = null;
+});
+
+document.getElementById("stuProfilePhotoInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    stuProfilePendingFile = await compressPhoto(file);
+    stuProfileRemoveRequested = false;
+    document.getElementById("stuProfilePreview").innerHTML =
+      `<img src="${URL.createObjectURL(stuProfilePendingFile)}" style="width:100%;height:100%;object-fit:cover;" />`;
+    updateStuRemoveBtn();
+  } catch (err) {
+    stuProfilePendingFile = null;
+    e.target.value = "";
+    showToast(err.message);
+  }
+});
+
+document.getElementById("stuProfileRemoveBtn").addEventListener("click", () => {
+  stuProfileRemoveRequested = true;
+  stuProfilePendingFile = null;
+  document.getElementById("stuProfilePhotoInput").value = "";
+  document.getElementById("stuProfilePreview").innerHTML =
+    `<i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>`;
+  updateStuRemoveBtn();
+});
+
+document.getElementById("stuProfileSaveBtn").addEventListener("click", async () => {
+  if (!stuProfileTarget) return;
+  const btn = document.getElementById("stuProfileSaveBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+  try {
+    const changes = {
+      gender: document.getElementById("stuProfileGender").value || null,
+      date_of_birth: document.getElementById("stuProfileDob").value || null,
+    };
+
+    if (stuProfileRemoveRequested && stuProfileTarget.photo_path) {
+      await supabaseClient.storage.from("student-photos").remove([stuProfileTarget.photo_path]);
+      changes.photo_path = null;
+    }
+    if (stuProfilePendingFile) {
+      const path = photoPathFor(stuProfileTarget.id);
+      const { error: upErr } = await supabaseClient.storage
+        .from("student-photos").upload(path, stuProfilePendingFile, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      changes.photo_path = path;
+    }
+
+    const { error } = await supabaseClient.rpc("update_student_profile", {
+      p_student_id: stuProfileTarget.id, p_changes: changes,
+    });
+    if (error) throw error;
+
+    showToast("Student profile saved.", "success");
+    document.getElementById("stuProfileBackdrop").classList.remove("show");
+    stuProfileTarget = null;
+    loadMyStudents();
+  } catch (err) {
+    showToast(err.message || "Could not save the profile.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+});
 
 // ---- Announcements (read-only) ----
 let allAnnouncements = [];

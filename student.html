@@ -323,7 +323,7 @@
                   <div class="profile-photo-empty" id="myPhotoEmpty"><i class="bi bi-person-fill"></i><span>No photo</span></div>
                 </div>
                 <input type="file" id="myPhotoInput" accept="image/*" class="form-control form-control-sm mt-2" />
-                <button type="button" class="btn btn-sm btn-outline-secondary mt-2 w-100" id="myPhotoRemoveBtn">Remove photo</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2 w-100" id="myPhotoRemoveBtn" style="display:none;">Remove photo</button>
               </div>
 
               <div class="profile-fields-col">
@@ -356,6 +356,7 @@
   <div class="toast-stack" id="toastStack"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/portal-utils.js"></script>
 
   <script>
     const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
@@ -621,6 +622,15 @@
           .from("student-photos").createSignedUrl(profile.photo_path, 3600);
         if (data && data.signedUrl) showMyPhoto(data.signedUrl);
       }
+      updateRemoveBtn();
+    }
+
+    // "Remove photo" is meaningless with no photo on file, and offering it
+    // just invites a confusing no-op.
+    function updateRemoveBtn() {
+      const hasPhoto = !!(myProfile && myProfile.photo_path) || !!myPhotoPendingFile;
+      document.getElementById("myPhotoRemoveBtn").style.display =
+        (hasPhoto && !myPhotoRemoveRequested) ? "" : "none";
     }
 
     function showMyPhoto(src) {
@@ -636,14 +646,23 @@
 
     document.getElementById("myDob").addEventListener("change", refreshAgeHint);
 
-    document.getElementById("myPhotoInput").addEventListener("change", (e) => {
+    document.getElementById("myPhotoInput").addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      myPhotoPendingFile = file;
-      myPhotoRemoveRequested = false;
-      const reader = new FileReader();
-      reader.onload = () => showMyPhoto(reader.result);
-      reader.readAsDataURL(file);
+      const box = document.getElementById("myProfileResult");
+      box.innerHTML = "";
+      try {
+        // Shrink before upload, not after: a 3 MB phone photo would eat the
+        // free storage tier for no visual gain at passport size.
+        myPhotoPendingFile = await compressPhoto(file);
+        myPhotoRemoveRequested = false;
+        showMyPhoto(URL.createObjectURL(myPhotoPendingFile));
+        updateRemoveBtn();
+      } catch (err) {
+        myPhotoPendingFile = null;
+        e.target.value = "";
+        box.innerHTML = `<div class="alert alert-danger py-2 mb-0">${err.message}</div>`;
+      }
     });
 
     document.getElementById("myPhotoRemoveBtn").addEventListener("click", () => {
@@ -651,6 +670,7 @@
       myPhotoPendingFile = null;
       document.getElementById("myPhotoInput").value = "";
       clearMyPhotoPreview();
+      updateRemoveBtn();
     });
 
     document.getElementById("saveMyProfileBtn").addEventListener("click", async () => {
@@ -673,12 +693,13 @@
         }
 
         if (myPhotoPendingFile) {
-          const ext = (myPhotoPendingFile.name.split(".").pop() || "jpg").toLowerCase();
-          // Path must start with the student's own id — the storage policy
-          // reads the owner straight out of the first path segment.
-          const path = `${myProfile.id}/photo.${ext}`;
+          // Always the same .jpg path: keying it on the source extension left
+          // photo.png AND photo.jpg behind for one student. The first path
+          // segment must be the student's own id — the storage policy reads
+          // the owner straight out of it.
+          const path = photoPathFor(myProfile.id);
           const { error: upErr } = await supabaseClient.storage
-            .from("student-photos").upload(path, myPhotoPendingFile, { upsert: true });
+            .from("student-photos").upload(path, myPhotoPendingFile, { upsert: true, contentType: "image/jpeg" });
           if (upErr) throw upErr;
           changes.photo_path = path;
         }
@@ -690,6 +711,7 @@
         myPhotoPendingFile = null;
         myPhotoRemoveRequested = false;
         document.getElementById("myPhotoInput").value = "";
+        updateRemoveBtn();
         box.innerHTML = '<div class="alert alert-success py-2 mb-0">Saved. Your report card will use these details.</div>';
       } catch (err) {
         box.innerHTML = `<div class="alert alert-danger py-2 mb-0">${err.message}</div>`;

@@ -664,3 +664,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
   table.stacked-on-mobile td[data-label="Exam (30)"],
   table.stacked-on-mobile td[data-label="Total"] { white-space: nowrap; }
 }
+
+/* ---------- Avatars that carry a real photo ---------- */
+.avatar-chip.has-photo { padding: 0; overflow: hidden; background: #e9edf5; }
+.avatar-chip.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.stat-value { display: block; white-space: nowrap; overflow: hidden; }

@@ -723,6 +723,7 @@
 <!-- Toast container (replaces browser alert()) -->
 <div class="toast-stack" id="toastStack"></div>
 
+<script src="js/portal-utils.js"></script>
 <script>
 const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
@@ -796,6 +797,7 @@ async function openStudentProfileModal(student) {
     if (url) preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;" />`;
   }
 
+  updateStudentRemovePhotoBtn();
   document.getElementById("studentProfileModalBackdrop").classList.add("show");
   loadProfileHistory(student.id);
 }
@@ -844,15 +846,22 @@ function closeStudentProfileModal() {
 
 document.getElementById("studentProfileCancelBtn").addEventListener("click", closeStudentProfileModal);
 
-document.getElementById("studentProfilePhotoInput").addEventListener("change", (e) => {
+document.getElementById("studentProfilePhotoInput").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  studentProfilePendingFile = file;
-  studentProfileRemoveRequested = false;
-  const preview = document.getElementById("studentProfilePhotoPreview");
-  const reader = new FileReader();
-  reader.onload = () => { preview.innerHTML = `<img src="${reader.result}" style="width:100%;height:100%;object-fit:cover;" />`; };
-  reader.readAsDataURL(file);
+  try {
+    // Downscale before upload — a raw phone photo is ~3 MB and would eat the
+    // free storage tier for no gain at passport size.
+    studentProfilePendingFile = await compressPhoto(file);
+    studentProfileRemoveRequested = false;
+    document.getElementById("studentProfilePhotoPreview").innerHTML =
+      `<img src="${URL.createObjectURL(studentProfilePendingFile)}" style="width:100%;height:100%;object-fit:cover;" />`;
+    updateStudentRemovePhotoBtn();
+  } catch (err) {
+    studentProfilePendingFile = null;
+    e.target.value = "";
+    showToast(err.message);
+  }
 });
 
 document.getElementById("studentProfileRemovePhotoBtn").addEventListener("click", () => {
@@ -860,7 +869,15 @@ document.getElementById("studentProfileRemovePhotoBtn").addEventListener("click"
   studentProfilePendingFile = null;
   document.getElementById("studentProfilePhotoInput").value = "";
   document.getElementById("studentProfilePhotoPreview").innerHTML = `<i class="bi bi-person-fill" style="font-size:1.8rem;color:var(--muted);"></i>`;
+  updateStudentRemovePhotoBtn();
 });
+
+// Offering "Remove photo" when there is no photo is a confusing no-op.
+function updateStudentRemovePhotoBtn() {
+  const hasPhoto = !!(studentProfileTarget && studentProfileTarget.photo_path) || !!studentProfilePendingFile;
+  document.getElementById("studentProfileRemovePhotoBtn").style.display =
+    (hasPhoto && !studentProfileRemoveRequested) ? "" : "none";
+}
 
 document.getElementById("studentProfileSaveBtn").addEventListener("click", async () => {
   if (!studentProfileTarget) return;
@@ -879,11 +896,12 @@ document.getElementById("studentProfileSaveBtn").addEventListener("click", async
     }
 
     if (studentProfilePendingFile) {
-      const ext = studentProfilePendingFile.name.split(".").pop();
-      const path = `${studentProfileTarget.id}/photo.${ext}`;
+      // Always the same .jpg object, so a replacement overwrites instead of
+      // leaving photo.png *and* photo.jpg behind for the same student.
+      const path = photoPathFor(studentProfileTarget.id);
       const { error: uploadError } = await supabaseClient.storage
         .from("student-photos")
-        .upload(path, studentProfilePendingFile, { upsert: true });
+        .upload(path, studentProfilePendingFile, { upsert: true, contentType: "image/jpeg" });
       if (uploadError) throw uploadError;
       photo_path = path;
     }
@@ -1061,6 +1079,7 @@ async function loadOverview() {
   renderRegistrationsChart();
   renderRecentRegistrations();
   renderRecentAnnouncementsWidget();
+  autoFitFigures();
 }
 
 function initials(name) {
@@ -1137,7 +1156,7 @@ function renderRecentRegistrations() {
   }
   list.innerHTML = recent.map((s) => `
     <div class="widget-list-item">
-      <div class="avatar-chip">${initials(s.full_name)}</div>
+      ${avatarHtml(s, studentPhotoUrls[s.photo_path], { size: 38 })}
       <div>
         <p class="widget-list-title">${s.full_name}</p>
         <p class="widget-list-meta">${s.class || "Unassigned"} · ${s.portal_number || ""}</p>
@@ -1826,9 +1845,14 @@ document.getElementById("bulkSubjectForm").addEventListener("submit", async (e) 
 // ---- Students ----
 let allStudents = [];
 
+let studentPhotoUrls = {};
+
 async function loadStudents() {
   const { data } = await supabaseClient.from("profiles").select("*").eq("role", "student").order("created_at", { ascending: false });
   allStudents = data || [];
+  // One batched signed-URL call for every student photo, rather than one
+  // request per row.
+  studentPhotoUrls = await signedPhotoUrls(supabaseClient, allStudents.map((s) => s.photo_path));
   currentFilteredList = allStudents;
   renderStudents(currentFilteredList);
   renderClasses();
@@ -1882,7 +1906,7 @@ function renderStudents(list) {
           </tr>`;
         }
         return `<tr>
-          <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+          <td>${avatarHtml(s, studentPhotoUrls[s.photo_path], { size: 28, style: "margin-right:8px;vertical-align:middle;" })}${s.full_name}</td>
           <td>${s.surname}</td>
           <td>${s.class || "—"}</td>
           <td class="mono">${s.portal_number}</td>
@@ -3078,6 +3102,8 @@ function renderPayments() {
     <div class="stat-card"><div class="stat-icon-chip chip-orange"><i class="bi bi-hourglass-split"></i></div><div class="stat-card-body"><span class="stat-label">Outstanding</span><span class="stat-value">${naira(Math.max(totals.expected - totals.paid, 0))}</span></div></div>
     <div class="stat-card"><div class="stat-icon-chip chip-sky"><i class="bi bi-unlock-fill"></i></div><div class="stat-card-body"><span class="stat-label">Overrides</span><span class="stat-value">${totals.overrides}</span></div></div>`;
 
+  autoFitFigures(document.getElementById("paymentSummary"));
+
   if (!students.length) {
     wrap.innerHTML = '<div class="empty-state"><i class="bi bi-search"></i><p>No students match these filters.</p></div>';
     return;
@@ -3111,7 +3137,7 @@ function renderPayments() {
       const override = !!p?.override_allowed;
       const canView = status === "paid" || override;
       return `<tr data-student="${s.id}">
-        <td data-label="Student"><span class="avatar-chip" style="width:26px;height:26px;font-size:0.6rem;margin-right:7px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name} ${s.surname || ""}</td>
+        <td data-label="Student">${avatarHtml(s, studentPhotoUrls[s.photo_path], { size: 26, style: "margin-right:7px;vertical-align:middle;" })}${s.full_name} ${s.surname || ""}</td>
         <td data-label="Expected"><input type="number" min="0" step="0.01" class="score-input pay-expected" value="${expected}" /></td>
         <td data-label="Paid"><input type="number" min="0" step="0.01" class="score-input pay-paid" value="${paid}" /></td>
         <td data-label="Balance">${naira(balance)}</td>
@@ -3278,6 +3304,8 @@ function renderRevenue() {
     <div class="stat-card"><div class="stat-icon-chip chip-purple"><i class="bi bi-receipt"></i></div><div class="stat-card-body"><span class="stat-label">Expected</span><span class="stat-value">${naira(expected)}</span></div></div>
     <div class="stat-card"><div class="stat-icon-chip chip-sky"><i class="bi bi-percent"></i></div><div class="stat-card-body"><span class="stat-label">Collection rate</span><span class="stat-value">${rate}%</span></div></div>`;
 
+  autoFitFigures(document.getElementById("revenueSummary"));
+
   if (!scoped.length) {
     document.getElementById("revenueCharts").innerHTML =
       '<div class="empty-state"><i class="bi bi-graph-up"></i><p>No payment records yet. Enter fees on the Payments page and they will show up here.</p></div>';
@@ -3380,7 +3408,7 @@ async function loadPrincipalComments() {
         <tbody>
           ${students.map((s) => `
             <tr>
-              <td><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+              <td>${avatarHtml(s, studentPhotoUrls[s.photo_path], { size: 28, style: "margin-right:8px;vertical-align:middle;" })}${s.full_name}</td>
               <td><input type="text" class="principal-comment-input" data-student="${s.id}" value="${commentByStudent[s.id] || ""}" placeholder="Leave blank to use the automatic comment" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border-c);font-size:0.85rem;" /></td>
             </tr>`).join("")}
         </tbody>
