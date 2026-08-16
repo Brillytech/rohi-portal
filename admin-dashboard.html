@@ -45,6 +45,7 @@
       <button class="nav-item" data-view="revenue"><i class="bi bi-graph-up-arrow"></i> Revenue</button>
       <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
       <button class="nav-item" data-view="website"><i class="bi bi-globe2"></i> Website</button>
+      <button class="nav-item" data-view="storage"><i class="bi bi-hdd-stack-fill"></i> Storage</button>
       <button class="nav-item" data-view="settings"><i class="bi bi-gear-fill"></i> Settings</button>
     </nav>
 
@@ -776,6 +777,41 @@
         </div>
       </section>
 
+      <!-- STORAGE -->
+      <section class="view" id="view-storage">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Storage usage</h2>
+              <p>Photos, timetables, exam images and website media, measured against the 1&nbsp;GB included in the plan.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-hdd-stack-fill"></i></div>
+          </div>
+          <div id="storageTotal"></div>
+          <div id="storageBuckets"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Reclaimable space</h2>
+              <p>Files whose record is gone — a deleted exam's question images, a replaced news cover, a leaver's photo. They cost space but nothing points at them any more.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-recycle"></i></div>
+          </div>
+          <div id="storageOrphans">
+            <div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Checking…</p></div>
+          </div>
+          <div class="row-actions" style="margin-top:1rem;">
+            <button type="button" class="approve-btn" id="storageRescanBtn"><i class="bi bi-arrow-clockwise"></i> Re-scan</button>
+            <button type="button" class="primary-btn" id="storageReconcileBtn" disabled>
+              <span class="btn-text">Delete reclaimable files</span>
+            </button>
+          </div>
+          <div id="storageResult"></div>
+        </div>
+      </section>
+
       <!-- SETTINGS -->
       <section class="view" id="view-settings">
         <div class="panel">
@@ -1160,6 +1196,13 @@ function switchView(name) {
 }
 
 navItems.forEach((n) => n.addEventListener("click", () => switchView(n.dataset.view)));
+
+// The storage scan walks storage.objects, so it runs on demand rather than on
+// every dashboard load.
+let storageLoaded = false;
+navItems.forEach((n) => n.addEventListener("click", () => {
+  if (n.dataset.view === "storage" && !storageLoaded) { storageLoaded = true; loadStorage(); }
+}));
 const QUICK_ACTION_TARGETS = {
   registerStudent: "studentFullName",
   addTeacher: "teacherFullName",
@@ -2318,8 +2361,14 @@ function renderStudents(list) {
   container.querySelectorAll(".delete-student-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!(await appConfirm("Remove this student's portal profile? This removes their portal access record but not their login account itself."))) return;
+      const gone = allStudents.find((s) => s.id === btn.dataset.id);
       const { error } = await supabaseClient.from("profiles").delete().eq("id", btn.dataset.id);
       if (!error) {
+        // The delete trigger queues this too; removing it now just keeps the
+        // cleanup queue from growing for the common case.
+        if (gone && gone.photo_path) {
+          await supabaseClient.storage.from("student-photos").remove([gone.photo_path]);
+        }
         logActivity(`Removed a student record`);
         loadStudents();
       } else {
@@ -4189,8 +4238,13 @@ function renderPublicPosts() {
   wrap.querySelectorAll(".del-pp-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!(await appConfirm("Delete this public post? It will disappear from the website on the next build."))) return;
+      const post = publicPosts.find((p) => p.id === btn.dataset.id);
       const { error } = await supabaseClient.from("public_announcements").delete().eq("id", btn.dataset.id);
       if (error) return reportDbError(error, "Could not delete the post");
+      // Cover paths are timestamped, so nothing else would ever reclaim this.
+      if (post && post.cover_image_path) {
+        await supabaseClient.storage.from("site-media").remove([post.cover_image_path]);
+      }
       logActivity("Deleted a public news post");
       loadPublicPosts();
     });
@@ -4403,6 +4457,199 @@ document.getElementById("galFiles").addEventListener("change", async (e) => {
 });
 
 resetPostForm();
+
+/* ==========================================================================
+   STORAGE
+
+   Two questions this panel answers: how much room is left, and what can be
+   safely thrown away.
+
+   Deletion has to run from here rather than in SQL: removing a row from
+   storage.objects only drops the metadata and leaves the file itself behind,
+   still counting against the quota. The database finds and queues; this code
+   deletes through the storage API and then marks the queue rows cleared.
+   ========================================================================== */
+const STORAGE_QUOTA_BYTES = 1073741824; // 1 GB
+const BUCKET_LABELS = {
+  "student-photos": "Student passport photos",
+  "timetables": "Class timetables",
+  "exam-images": "Exam question images",
+  "site-media": "Website media (gallery & news)",
+};
+
+function formatBytes(n) {
+  const b = Number(n) || 0;
+  if (b < 1024) return `${b} B`;
+  const units = ["KB", "MB", "GB"];
+  let v = b / 1024, i = 0;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(v >= 100 ? 0 : 1)} ${units[i]}`;
+}
+
+let reclaimable = []; // [{ bucket, path, size_bytes, reason }]
+
+async function loadStorage() {
+  const totalBox = document.getElementById("storageTotal");
+  const bucketBox = document.getElementById("storageBuckets");
+
+  const { data: usage, error } = await supabaseClient.rpc("get_storage_usage");
+  if (error) return reportDbError(error, "Could not read storage usage");
+
+  const used = usage.reduce((n, u) => n + Number(u.total_bytes), 0);
+  const pct = Math.min(100, (used / STORAGE_QUOTA_BYTES) * 100);
+  const tone = pct >= 85 ? "danger" : pct >= 60 ? "warn" : "ok";
+
+  totalBox.innerHTML = `
+    <div class="storage-total">
+      <div class="storage-total-head">
+        <span><strong>${formatBytes(used)}</strong> of ${formatBytes(STORAGE_QUOTA_BYTES)} used</span>
+        <span class="storage-pct storage-${tone}">${pct.toFixed(1)}%</span>
+      </div>
+      <div class="storage-bar"><span class="storage-${tone}" style="width:${Math.max(pct, 0.5)}%"></span></div>
+    </div>`;
+
+  bucketBox.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table stacked-on-mobile">
+        <thead><tr><th>What it holds</th><th>Files</th><th>Size</th><th>Largest file</th><th>Visibility</th></tr></thead>
+        <tbody>${usage.map((u) => `
+          <tr>
+            <td data-label="What it holds"><strong>${escapeHtmlAdmin(BUCKET_LABELS[u.bucket] || u.bucket)}</strong><br>
+              <span class="empty-hint" style="padding:0;font-size:0.72rem;">${escapeHtmlAdmin(u.bucket)}</span></td>
+            <td data-label="Files">${u.object_count}</td>
+            <td data-label="Size">${formatBytes(u.total_bytes)}</td>
+            <td data-label="Largest file">${formatBytes(u.largest_bytes)}</td>
+            <td data-label="Visibility">
+              <span class="badge-pill badge-${u.is_public ? "class" : "published"}">${u.is_public ? "Public" : "Private"}</span>
+            </td>
+          </tr>`).join("")}</tbody>
+      </table>
+    </div>`;
+
+  await scanStorageOrphans();
+}
+
+async function scanStorageOrphans() {
+  const box = document.getElementById("storageOrphans");
+  const btn = document.getElementById("storageReconcileBtn");
+  box.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Checking…</p></div>';
+  btn.disabled = true;
+
+  // Two sources: rows the triggers queued when their owner disappeared, and a
+  // sweep for anything orphaned before those triggers existed.
+  const [{ data: queued, error: qErr }, { data: unref, error: uErr }] = await Promise.all([
+    supabaseClient.from("storage_orphans").select("*").is("deleted_at", null),
+    supabaseClient.rpc("find_unreferenced_objects"),
+  ]);
+  if (qErr) return reportDbError(qErr, "Could not read the cleanup queue");
+  if (uErr) return reportDbError(uErr, "Could not scan for unreferenced files");
+
+  // A file can appear in both lists; key on bucket+path so it is only counted
+  // and deleted once.
+  const merged = new Map();
+  (unref || []).forEach((o) => merged.set(`${o.bucket}|${o.path}`, {
+    bucket: o.bucket, path: o.path, size_bytes: Number(o.size_bytes) || 0, reason: "no longer referenced",
+  }));
+  (queued || []).forEach((o) => {
+    const key = `${o.bucket}|${o.path}`;
+    const existing = merged.get(key);
+    merged.set(key, {
+      bucket: o.bucket, path: o.path,
+      size_bytes: existing ? existing.size_bytes : 0,
+      reason: o.reason.replace(/_/g, " "),
+    });
+  });
+  reclaimable = [...merged.values()].sort((a, b) => b.size_bytes - a.size_bytes);
+
+  if (!reclaimable.length) {
+    box.innerHTML = '<div class="empty-state"><i class="bi bi-check2-circle"></i><p>Nothing to clean up — every stored file is still in use.</p></div>';
+    return;
+  }
+
+  const totalBytes = reclaimable.reduce((n, o) => n + o.size_bytes, 0);
+  const byBucket = {};
+  reclaimable.forEach((o) => {
+    byBucket[o.bucket] = byBucket[o.bucket] || { n: 0, b: 0 };
+    byBucket[o.bucket].n++; byBucket[o.bucket].b += o.size_bytes;
+  });
+
+  box.innerHTML = `
+    <p class="empty-hint" style="text-align:left;padding:0 0 0.75rem;">
+      <strong>${reclaimable.length} file${reclaimable.length === 1 ? "" : "s"}</strong>
+      totalling <strong>${formatBytes(totalBytes)}</strong> can be removed.
+    </p>
+    <div class="table-wrap">
+      <table class="data-table stacked-on-mobile">
+        <thead><tr><th>Where</th><th>Files</th><th>Size</th></tr></thead>
+        <tbody>${Object.entries(byBucket).map(([b, v]) => `
+          <tr>
+            <td data-label="Where">${escapeHtmlAdmin(BUCKET_LABELS[b] || b)}</td>
+            <td data-label="Files">${v.n}</td>
+            <td data-label="Size">${formatBytes(v.b)}</td>
+          </tr>`).join("")}</tbody>
+      </table>
+    </div>
+    <details class="result-rows-details" style="margin-top:0.75rem;">
+      <summary>Show the individual files</summary>
+      <div class="table-wrap">
+        <table class="data-table stacked-on-mobile">
+          <thead><tr><th>File</th><th>Size</th><th>Why it can go</th></tr></thead>
+          <tbody>${reclaimable.slice(0, 200).map((o) => `
+            <tr>
+              <td data-label="File" class="mono" style="font-size:0.72rem;">${escapeHtmlAdmin(o.bucket)}/${escapeHtmlAdmin(o.path)}</td>
+              <td data-label="Size">${o.size_bytes ? formatBytes(o.size_bytes) : "—"}</td>
+              <td data-label="Why it can go">${escapeHtmlAdmin(o.reason)}</td>
+            </tr>`).join("")}</tbody>
+        </table>
+        ${reclaimable.length > 200 ? `<p class="empty-hint" style="text-align:left;">…and ${reclaimable.length - 200} more.</p>` : ""}
+      </div>
+    </details>`;
+
+  btn.disabled = false;
+}
+
+document.getElementById("storageRescanBtn").addEventListener("click", loadStorage);
+
+document.getElementById("storageReconcileBtn").addEventListener("click", async () => {
+  if (!reclaimable.length) return;
+  const totalBytes = reclaimable.reduce((n, o) => n + o.size_bytes, 0);
+  const ok = await appConfirm(
+    `Permanently delete ${reclaimable.length} file(s), freeing about ${formatBytes(totalBytes)}?\n\n` +
+    `These files are no longer referenced by any student, exam, timetable, gallery photo or news post. ` +
+    `This cannot be undone.`
+  );
+  if (!ok) return;
+
+  const btn = document.getElementById("storageReconcileBtn");
+  const box = document.getElementById("storageResult");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Deleting...';
+
+  // Group by bucket; remove() takes a batch of paths per bucket. Chunked so a
+  // large backlog does not become one enormous request.
+  const byBucket = {};
+  reclaimable.forEach((o) => { (byBucket[o.bucket] = byBucket[o.bucket] || []).push(o.path); });
+
+  let removed = 0, failed = 0;
+  for (const [bucket, paths] of Object.entries(byBucket)) {
+    for (let i = 0; i < paths.length; i += 100) {
+      const chunk = paths.slice(i, i + 100);
+      const { error } = await supabaseClient.storage.from(bucket).remove(chunk);
+      if (error) { failed += chunk.length; continue; }
+      removed += chunk.length;
+      // Only mark the queue once storage confirms the files are gone.
+      await supabaseClient.rpc("mark_storage_orphans_deleted", { p_bucket: bucket, p_paths: chunk });
+    }
+  }
+
+  box.innerHTML = failed
+    ? `<div class="alert alert-danger">Removed ${removed} file(s); ${failed} could not be deleted. Re-scan to see what is left.</div>`
+    : `<div class="alert alert-success">Removed ${removed} file(s), freeing about ${formatBytes(totalBytes)}.</div>`;
+  logActivity(`Reclaimed ${removed} unused storage file(s)`);
+
+  btn.innerHTML = '<span class="btn-text">Delete reclaimable files</span>';
+  await loadStorage();
+});
 
 /* ==========================================================================
    SETTINGS + notification bell

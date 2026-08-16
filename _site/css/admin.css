@@ -1542,3 +1542,30 @@ html, body { max-width: 100%; overflow-x: hidden; }
   white-space: nowrap;
   vertical-align: middle;
 }
+
+/* ==========================================================================
+   Storage panel
+   ========================================================================== */
+.storage-total { margin-bottom: 1.25rem; }
+.storage-total-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px;
+  font-size: 0.88rem; color: var(--ink);
+}
+.storage-total-head strong { font-family: 'Sora', sans-serif; color: var(--purple-ink); font-size: 1.05rem; }
+.storage-pct { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem; }
+.storage-bar {
+  height: 12px; border-radius: 999px;
+  background: rgba(89, 6, 148, 0.09);
+  overflow: hidden;
+}
+.storage-bar > span {
+  display: block; height: 100%; border-radius: 999px;
+  transition: width 0.5s var(--ease, cubic-bezier(0.4,0,0.2,1));
+}
+.storage-bar > span.storage-ok     { background: linear-gradient(90deg, var(--purple-deep), #34b364); }
+.storage-bar > span.storage-warn   { background: linear-gradient(90deg, var(--orange), #e07600); }
+.storage-bar > span.storage-danger { background: linear-gradient(90deg, #d92d20, #b42318); }
+.storage-pct.storage-ok     { color: #1e7e3e; }
+.storage-pct.storage-warn   { color: #b45309; }
+.storage-pct.storage-danger { color: #b42318; }

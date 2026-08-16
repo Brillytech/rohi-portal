@@ -1913,8 +1913,15 @@ async function renderExams() {
   container.querySelectorAll(".delete-question-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!(await appConfirm("Delete this question?"))) return;
+      // Drop the image straight away. A trigger queues it for the admin sweep
+      // too, so a failure here is recoverable rather than a permanent leak.
+      const q = allExamQuestions.find((x) => x.id === btn.dataset.id);
       const { error } = await supabaseClient.from("exam_questions").delete().eq("id", btn.dataset.id);
-      if (!error) loadExams(); else showToast(error.message);
+      if (error) { showToast(error.message); return; }
+      if (q && q.image_url) {
+        await supabaseClient.storage.from("exam-images").remove([q.image_url]);
+      }
+      loadExams();
     });
   });
 
@@ -2098,10 +2105,31 @@ function wireQuestionForm(form, examId, existingQuestion) {
     if (!file) return;
     const previewBox = form.querySelector(".q-image-preview");
     previewBox.innerHTML = '<p class="empty-hint" style="padding:4px 0;">Uploading...</p>';
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    // Re-encode before upload: a phone photo of a diagram is 3-6 MB, and the
+    // bucket now caps at 2 MB. compressPhoto() also decodes through a canvas,
+    // so a file that is not really an image is rejected here rather than
+    // stored. Wider than a passport photo so graphs stay readable.
+    let toUpload;
+    try {
+      toUpload = await compressPhoto(file, { maxW: 1400, maxH: 1400, quality: 0.82 });
+    } catch (err) {
+      showToast(err.message);
+      previewBox.innerHTML = "";
+      return;
+    }
+
+    const previousPath = uploadedImagePath;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/\.[^.]+$/, "") + ".jpg";
     const path = `${examId}/${Date.now()}-${safeName}`;
-    const { error } = await supabaseClient.storage.from("exam-images").upload(path, file);
+    const { error } = await supabaseClient.storage
+      .from("exam-images").upload(path, toUpload, { contentType: "image/jpeg" });
     if (error) { showToast(error.message); previewBox.innerHTML = ""; return; }
+
+    // Paths are timestamped, so replacing an image would otherwise leave the
+    // old one behind forever.
+    if (previousPath && previousPath !== path) {
+      await supabaseClient.storage.from("exam-images").remove([previousPath]);
+    }
     uploadedImagePath = path;
     const url = await resolveImageUrl(path);
     previewBox.innerHTML = `<img src="${url}" style="max-width:200px;border-radius:8px;margin-top:8px;display:block;" />`;
