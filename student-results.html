@@ -28,7 +28,7 @@
 
         <div class="topbar-actions">
           <select id="termSelect"></select>
-          <button class="topbar-btn" onclick="window.print()">
+          <button class="topbar-btn" onclick="printReport()">
             <i class="bi bi-printer"></i> Print / Download PDF
           </button>
         </div>
@@ -438,6 +438,27 @@
 
     let currentProfile = null;
     let allTerms = [];
+    let loadedTerm = null;
+
+    /* Every browser's "Save as PDF" uses document.title as the default
+       filename, so the sheet was saving as "Student Results | Rohi Portal"
+       for every child. Swap in the student's own name for the duration of
+       the print, then put it back. */
+    function printReport() {
+      const original = document.title;
+      const parts = [currentProfile ? `${currentProfile.full_name}` : "Report card"];
+      if (currentProfile && currentProfile.class) parts.push(currentProfile.class);
+      if (loadedTerm) parts.push(`${loadedTerm.name} ${loadedTerm.session.replace("/", "-")}`);
+      parts.push("Report Card");
+      // Strip anything Windows/macOS reject in a filename.
+      document.title = parts.join(" - ").replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+
+      const restore = () => { document.title = original; window.removeEventListener("afterprint", restore); };
+      window.addEventListener("afterprint", restore);
+      window.print();
+      // Safari never fires afterprint on cancel; belt and braces.
+      setTimeout(restore, 8000);
+    }
     let allSubjects = [];
 
     async function guardAndInit() {
@@ -480,6 +501,7 @@
     async function loadResultsForTerm(termId) {
       const term = allTerms.find((t) => t.id === termId);
       if (!term) return;
+      loadedTerm = term; // drives the saved-PDF filename
 
       // Fetch the payment record alongside the results. The payment gate is
       // enforced in RLS, so an unsettled student simply gets zero rows back —

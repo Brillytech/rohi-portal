@@ -203,45 +203,66 @@
             </div>
             <div class="panel-header-icon"><i class="bi bi-pencil-square"></i></div>
           </div>
-          <form id="createExamForm" class="inline-form">
-            <div class="form-row">
-              <div class="field">
-                <label for="examTitle">Title</label>
-                <input type="text" id="examTitle" placeholder="e.g. Mid-term Test" required />
+          <form id="createExamForm" class="inline-form exam-builder">
+            <fieldset class="exam-fieldset">
+              <legend><span class="step-dot">1</span> The paper</legend>
+              <div class="form-row">
+                <div class="field field-wide">
+                  <label for="examTitle">Title</label>
+                  <input type="text" id="examTitle" placeholder="e.g. Third Term Mathematics CBT" required />
+                </div>
+                <div class="field">
+                  <label for="examSubject">Subject</label>
+                  <select id="examSubject" required></select>
+                </div>
+                <div class="field">
+                  <label for="examClass">Class</label>
+                  <select id="examClass" required></select>
+                </div>
+                <div class="field">
+                  <label for="examTerm">Term</label>
+                  <select id="examTerm" required></select>
+                </div>
               </div>
-              <div class="field">
-                <label for="examSubject">Subject</label>
-                <select id="examSubject" required></select>
+            </fieldset>
+
+            <fieldset class="exam-fieldset">
+              <legend><span class="step-dot">2</span> Scoring &amp; availability</legend>
+              <div class="form-row">
+                <div class="field">
+                  <label for="examDuration">Duration <span class="field-unit">minutes</span></label>
+                  <input type="number" id="examDuration" min="1" value="20" required />
+                </div>
+                <div class="field">
+                  <label for="examObjectiveMax">CBT score <span class="field-unit">out of</span></label>
+                  <input type="number" id="examObjectiveMax" min="1" value="40" required />
+                </div>
+                <div class="field">
+                  <label for="examAvailableFrom">Opens <span class="field-unit">optional</span></label>
+                  <input type="datetime-local" id="examAvailableFrom" />
+                </div>
+                <div class="field">
+                  <label for="examAvailableUntil">Closes <span class="field-unit">optional</span></label>
+                  <input type="datetime-local" id="examAvailableUntil" />
+                </div>
               </div>
-              <div class="field">
-                <label for="examClass">Class</label>
-                <select id="examClass" required></select>
-              </div>
-              <div class="field">
-                <label for="examTerm">Term</label>
-                <select id="examTerm" required></select>
-              </div>
-              <div class="field">
-                <label for="examDuration">Duration (minutes)</label>
-                <input type="number" id="examDuration" min="1" value="20" required />
-              </div>
-              <div class="field">
-                <label for="examObjectiveMax">CBT score (out of)</label>
-                <input type="number" id="examObjectiveMax" min="1" value="40" required />
-              </div>
-              <div class="field">
-                <label for="examAvailableFrom">Opens (optional)</label>
-                <input type="datetime-local" id="examAvailableFrom" />
-              </div>
-              <div class="field">
-                <label for="examAvailableUntil">Closes (optional)</label>
-                <input type="datetime-local" id="examAvailableUntil" />
-              </div>
-            </div>
-            <p class="empty-hint" style="text-align:left;padding:0 0 1rem;">When a student finishes this exam, their score is automatically scaled into this many points and filled into the CBT column of their result — no re-typing needed. Leave Opens/Closes blank for no time restriction.</p>
+              <p class="field-note">
+                <i class="bi bi-info-circle-fill"></i>
+                Whatever a student scores is scaled into this many points and filled straight into the
+                <strong>CBT column</strong> of their result — you never re-type it. Leave the dates blank
+                for no time limit.
+              </p>
+            </fieldset>
+
+            <div class="exam-summary" id="examSummary" hidden></div>
+
             <button type="submit" class="primary-btn" id="createExamBtn">
-              <span class="btn-text">Create exam</span>
+              <i class="bi bi-plus-circle-fill"></i><span class="btn-text">Create exam</span>
             </button>
+            <p class="field-note" style="margin-top:0.6rem;">
+              Creating saves it as a <strong>draft</strong>. Add your questions below, then publish when you're ready —
+              students only see it once it's published.
+            </p>
             <div id="createExamResult"></div>
                       <span class="draft-status"></span>
           </form>
@@ -707,6 +728,20 @@ async function loadTerms() {
 
 // ---- My subjects ----
 let mySubjects = [];
+let allSubjects = [];
+
+// Nursery / Kindergarten / Primary are taught by one class teacher who takes
+// every subject. Secondary stays subject-specialist. Mirrors
+// public.teaches_whole_class() in SQL, which is what actually authorises the
+// write — this only decides what the dropdowns offer.
+function isLowerSchoolLevel(level) {
+  return /^(nursery|kindergarten|kg|primary)/i.test(level || "");
+}
+
+function myWholeClassClasses() {
+  return allClasses.filter((c) =>
+    c.class_teacher_id === currentTeacher.id && isLowerSchoolLevel(c.level_key));
+}
 
 async function loadMySubjects() {
   const { data: assignments } = await supabaseClient
@@ -715,12 +750,24 @@ async function loadMySubjects() {
     .eq("teacher_id", currentTeacher.id);
   const subjectIds = (assignments || []).map((a) => a.subject_id);
 
-  if (!subjectIds.length) {
-    mySubjects = [];
-  } else {
-    const { data: subjects } = await supabaseClient.from("subjects").select("*").in("id", subjectIds).order("name");
-    mySubjects = subjects || [];
-  }
+  const { data: everySubject } = await supabaseClient.from("subjects").select("*").order("name");
+  allSubjects = everySubject || [];
+
+  const assigned = allSubjects.filter((s) => subjectIds.includes(s.id));
+
+  // Add the full curriculum of any lower-school class this teacher runs, so
+  // they do not need 13 subject_teachers rows before recording a single mark.
+  const wholeClass = [];
+  myWholeClassClasses().forEach((c) => {
+    const matches = categoryMatcherForClass(c.name);
+    if (!matches) return;
+    allSubjects.filter((s) => matches(s.category)).forEach((s) => wholeClass.push(s));
+  });
+
+  const seen = new Set();
+  mySubjects = [...assigned, ...wholeClass]
+    .filter((s) => (seen.has(s.id) ? false : seen.add(s.id)))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   renderMySubjects();
 
@@ -1363,6 +1410,8 @@ let allExams = [];
 let allExamQuestions = [];
 let allExamAttempts = [];
 let openExams = new Set();
+// Which exams currently have the "Add question" composer expanded.
+const openComposers = new Set();
 let editingQuestionId = null;
 let editingExamId = null;
 
@@ -1385,6 +1434,40 @@ async function loadExams() {
 
   renderExams();
 }
+
+/* A one-line plain-English restatement of the form, so the teacher can sanity
+   check what they are about to create without re-reading eight inputs. */
+function updateExamSummary() {
+  const box = document.getElementById("examSummary");
+  if (!box) return;
+  const title = document.getElementById("examTitle").value.trim();
+  const subjectSel = document.getElementById("examSubject");
+  const classSel = document.getElementById("examClass");
+  const subject = subjectSel.options[subjectSel.selectedIndex]?.text;
+  const className = classSel.value;
+  if (!title || !subject || !className) { box.hidden = true; return; }
+
+  const mins = document.getElementById("examDuration").value || "—";
+  const outOf = document.getElementById("examObjectiveMax").value || "—";
+  const from = document.getElementById("examAvailableFrom").value;
+  const until = document.getElementById("examAvailableUntil").value;
+  const pretty = (v) => new Date(v).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const window_ = from && until ? `open ${pretty(from)} → ${pretty(until)}`
+    : from ? `opens ${pretty(from)}`
+    : until ? `closes ${pretty(until)}`
+    : "available as soon as it is published";
+
+  box.hidden = false;
+  box.innerHTML = `<i class="bi bi-eye-fill"></i><span><strong>${escapeHtml(className)}</strong> will sit
+    <strong>${escapeHtml(title)}</strong> (${escapeHtml(subject)}) — ${mins} minutes, scored out of
+    ${outOf} into their CBT column, ${window_}.</span>`;
+}
+
+["examTitle", "examSubject", "examClass", "examTerm", "examDuration",
+ "examObjectiveMax", "examAvailableFrom", "examAvailableUntil"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener("input", updateExamSummary); el.addEventListener("change", updateExamSummary); }
+});
 
 document.getElementById("createExamForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1623,21 +1706,30 @@ async function renderExams() {
       ? questions.map((q, i) => {
         if (editingQuestionId === q.id) return questionFormHtml(exam.id, q);
         const imgUrl = resolvedUrls[q.id];
+        const opts = [["a", q.option_a], ["b", q.option_b], ["c", q.option_c], ["d", q.option_d]];
         return `
-        <div class="widget-list-item" style="align-items:flex-start;">
-          <div class="avatar-chip" style="border-radius:8px;">${i + 1}</div>
-          <div style="flex:1;min-width:0;">
-            <p class="widget-list-title katex-content">${escapeHtml(q.question_text)}</p>
-            ${imgUrl ? `<img src="${imgUrl}" style="max-width:260px;border-radius:10px;margin:6px 0;display:block;" />` : ""}
-            <p class="widget-list-meta katex-content">A) ${escapeHtml(q.option_a)} &nbsp; B) ${escapeHtml(q.option_b)} &nbsp; C) ${escapeHtml(q.option_c)} &nbsp; D) ${escapeHtml(q.option_d)} — correct: ${q.correct_option.toUpperCase()}</p>
+        <article class="q-card">
+          <div class="q-card-num">${i + 1}</div>
+          <div class="q-card-body">
+            <p class="q-card-text katex-content">${escapeHtml(q.question_text)}</p>
+            ${imgUrl ? `<img class="q-card-img" src="${imgUrl}" alt="" />` : ""}
+            <ul class="q-card-options">
+              ${opts.map(([letter, text]) => `
+                <li class="${letter === q.correct_option ? "is-correct" : ""}">
+                  <span class="q-opt-letter">${letter.toUpperCase()}</span>
+                  <span class="katex-content">${escapeHtml(text)}</span>
+                  ${letter === q.correct_option ? '<i class="bi bi-check-circle-fill"></i>' : ""}
+                </li>`).join("")}
+            </ul>
           </div>
-          <div class="row-actions">
-            <button class="approve-btn edit-question-btn" data-id="${q.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
-            <button class="approve-btn delete-btn delete-question-btn" data-id="${q.id}"><i class="bi bi-trash-fill"></i> Delete</button>
+          <div class="q-card-actions">
+            <button class="approve-btn edit-question-btn" data-id="${q.id}" title="Edit"><i class="bi bi-pencil-fill"></i></button>
+            <button class="approve-btn delete-btn delete-question-btn" data-id="${q.id}" title="Delete"><i class="bi bi-trash-fill"></i></button>
           </div>
-        </div>`;
+        </article>`;
       }).join("")
-      : '<p class="empty-hint">No questions added yet.</p>';
+      : `<div class="q-empty"><i class="bi bi-patch-question"></i>
+           <p>No questions yet. Add at least one before publishing.</p></div>`;
 
     const attemptsHtml = attempts.length
       ? `
@@ -1668,9 +1760,20 @@ async function renderExams() {
         <div class="class-group-body${isOpen ? " open" : ""}">
           ${metaOrEditForm}
           ${attemptsHtml}
-          <div class="widget-list" style="margin-bottom:1rem;">${questionsHtml}</div>
 
-          ${questionFormHtml(exam.id, null)}
+          <div class="q-list-head">
+            <h4>Questions <span>${questions.length}</span></h4>
+            <button type="button" class="approve-btn toggle-add-question-btn" data-exam="${exam.id}">
+              <i class="bi bi-plus-lg"></i> Add question
+            </button>
+          </div>
+          <div class="q-list">${questionsHtml}</div>
+
+          <!-- Kept out of the way until asked for: an always-open composer
+               buried the question list under a screen of empty inputs. -->
+          <div class="q-composer${openComposers.has(exam.id) ? " open" : ""}" data-exam="${exam.id}">
+            ${questionFormHtml(exam.id, null)}
+          </div>
 
           <div style="background:rgba(255,255,255,0.35);padding:1rem;border-radius:12px;margin-bottom:1rem;">
             <p class="empty-hint" style="text-align:left;padding:0 0 0.5rem;font-weight:600;color:var(--purple-ink);">Bulk add questions from a spreadsheet</p>
@@ -1684,6 +1787,9 @@ async function renderExams() {
             <div class="bulk-question-result"></div>
           </div>
 
+          ${exam.status === "draft" && !questions.length
+            ? `<p class="field-note" style="margin-bottom:0.6rem;"><i class="bi bi-exclamation-triangle-fill"></i> Add at least one question before this can be published.</p>`
+            : ""}
           <div class="row-actions">
             <button type="button" class="approve-btn edit-exam-btn" data-id="${exam.id}"><i class="bi bi-pencil-fill"></i> Edit exam</button>
             ${exam.status === "draft"
@@ -1696,6 +1802,25 @@ async function renderExams() {
   }).join("");
 
   container.querySelectorAll(".katex-content").forEach((el) => renderMath(el));
+
+  container.querySelectorAll(".toggle-add-question-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.exam;
+      const composer = container.querySelector(`.q-composer[data-exam="${id}"]`);
+      const nowOpen = !composer.classList.contains("open");
+      composer.classList.toggle("open", nowOpen);
+      if (nowOpen) {
+        openComposers.add(id);
+        composer.querySelector("textarea, input")?.focus();
+        composer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } else {
+        openComposers.delete(id);
+      }
+      btn.innerHTML = nowOpen
+        ? '<i class="bi bi-x-lg"></i> Close'
+        : '<i class="bi bi-plus-lg"></i> Add question';
+    });
+  });
 
   container.querySelectorAll(".exam-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => {

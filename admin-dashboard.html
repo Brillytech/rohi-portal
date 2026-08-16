@@ -3174,9 +3174,6 @@ document.getElementById("addResultForm").addEventListener("submit", async (e) =>
 // straight in the table; this view reports how complete the marking is and
 // publishes a whole class/term in one action.
 let completionData = [];
-// Remembers which classes had their individual result rows expanded, so a
-// re-render after an edit does not collapse what the admin was looking at.
-const showAllResults = new Set();
 // Same idea for the per-student progress table inside each class group.
 const showStudentProgress = new Set();
 let completionResults = [];
@@ -3301,7 +3298,7 @@ function openStudentResultsModal(studentId, groupName) {
     body.innerHTML = `
       <div class="table-wrap">
         <table class="data-table stacked-on-mobile">
-          <thead><tr><th>Subject</th><th>Test 1</th><th>Test 2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>
+          <thead><tr><th>Subject</th><th>Test 1</th><th>Test 2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
           <tbody>${subjects.map((sub) => {
             const r = bySubject[sub.id];
             if (!r) {
@@ -3310,10 +3307,29 @@ function openStudentResultsModal(studentId, groupName) {
                 <td data-label="Test 1">—</td><td data-label="Test 2">—</td>
                 <td data-label="CBT">—</td><td data-label="Exam">—</td><td data-label="Total">—</td>
                 <td data-label="Status"><span class="empty-hint" style="padding:0;">Not entered</span></td>
+                <td></td>
               </tr>`;
             }
             const total = r.test1_score + r.test2_score + r.cbt_score + r.exam_score;
-            return `<tr>
+
+            // Editing lives here now rather than in a flat list of every row in
+            // the class — that list was hundreds of rows long and unusable.
+            if (editingResultId === r.id) {
+              return `<tr data-result="${r.id}">
+                <td data-label="Subject">${sub.name}</td>
+                <td data-label="Test 1"><input type="number" min="0" step="0.5" class="score-input edit-result-test1" value="${r.test1_score}" /></td>
+                <td data-label="Test 2"><input type="number" min="0" step="0.5" class="score-input edit-result-test2" value="${r.test2_score}" /></td>
+                <td data-label="CBT"><input type="number" min="0" step="0.5" class="score-input edit-result-cbt" value="${r.cbt_score}" /></td>
+                <td data-label="Exam"><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
+                <td data-label="Total">—</td>
+                <td data-label="Status">${r.published ? "published" : "saved"}</td>
+                <td class="row-actions">
+                  <button class="approve-btn modal-save-result-btn" data-id="${r.id}">Save</button>
+                  <button class="approve-btn modal-cancel-result-btn">Cancel</button>
+                </td>
+              </tr>`;
+            }
+            return `<tr data-result="${r.id}">
               <td data-label="Subject">${sub.name}</td>
               <td data-label="Test 1">${r.test1_score}</td>
               <td data-label="Test 2">${r.test2_score}</td>
@@ -3321,13 +3337,74 @@ function openStudentResultsModal(studentId, groupName) {
               <td data-label="Exam">${r.exam_score}</td>
               <td data-label="Total">${total} (${gradeFor(total)})</td>
               <td data-label="Status"><span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span></td>
+              <td class="row-actions">
+                <button class="approve-btn modal-edit-result-btn" data-id="${r.id}" title="Edit"><i class="bi bi-pencil-fill"></i></button>
+                <button class="approve-btn delete-btn modal-delete-result-btn" data-id="${r.id}" title="Delete"><i class="bi bi-trash-fill"></i></button>
+              </td>
             </tr>`;
           }).join("")}</tbody>
         </table>
       </div>`;
   }
 
+  wireStudentResultsModalActions(studentId, groupName);
   document.getElementById("studentResultsModalBackdrop").classList.add("show");
+}
+
+/* Edit/delete a single subject row from inside the breakdown. After any
+   change the term data is reloaded and the modal re-rendered in place, so the
+   admin stays on the student they were looking at. */
+function wireStudentResultsModalActions(studentId, groupName) {
+  const body = document.getElementById("studentResultsBody");
+
+  const reopen = async () => {
+    await loadCompletion();
+    openStudentResultsModal(studentId, groupName);
+  };
+
+  body.querySelectorAll(".modal-edit-result-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingResultId = btn.dataset.id;
+      openStudentResultsModal(studentId, groupName);
+    });
+  });
+
+  body.querySelectorAll(".modal-cancel-result-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingResultId = null;
+      openStudentResultsModal(studentId, groupName);
+    });
+  });
+
+  body.querySelectorAll(".modal-save-result-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const test1 = parseFloat(row.querySelector(".edit-result-test1").value) || 0;
+      const test2 = parseFloat(row.querySelector(".edit-result-test2").value) || 0;
+      const cbt = parseFloat(row.querySelector(".edit-result-cbt").value) || 0;
+      const exam = parseFloat(row.querySelector(".edit-result-exam").value) || 0;
+      if (test1 + test2 + cbt + exam > 100) { showToast("Test 1 + Test 2 + CBT + Exam can't add up to more than 100."); return; }
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const { error } = await supabaseClient.from("results")
+        .update({ test1_score: test1, test2_score: test2, cbt_score: cbt, exam_score: exam })
+        .eq("id", btn.dataset.id);
+      if (error) { showToast(error.message); btn.disabled = false; btn.textContent = "Save"; return; }
+      logActivity("Updated a result");
+      editingResultId = null;
+      reopen();
+    });
+  });
+
+  body.querySelectorAll(".modal-delete-result-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await appConfirm("Delete this subject's result for this student?"))) return;
+      const { error } = await supabaseClient.from("results").delete().eq("id", btn.dataset.id);
+      if (error) { showToast(error.message); return; }
+      logActivity("Deleted a result");
+      reopen();
+    });
+  });
 }
 
 document.getElementById("studentResultsCloseBtn").addEventListener("click", () => {
@@ -3358,44 +3435,6 @@ function renderCompletion() {
     const pct = expected > 0 ? Math.min(100, Math.round((entered / expected) * 100)) : 0;
 
     const rows = completionResults.filter((r) => (r.class_at_entry || "Unassigned") === groupName);
-    const rowsHtml = rows.map((r) => {
-      const student = allStudents.find((s) => s.id === r.student_id);
-      const subject = allSubjects.find((s) => s.id === r.subject_id);
-      const total = r.test1_score + r.test2_score + r.cbt_score + r.exam_score;
-
-      if (editingResultId === r.id) {
-        return `<tr>
-          <td data-label="Student">${student ? student.full_name : "—"}</td>
-          <td data-label="Subject">${subject ? subject.name : "—"}</td>
-          <td data-label="Test 1"><input type="number" min="0" step="0.5" class="score-input edit-result-test1" value="${r.test1_score}" /></td>
-          <td data-label="Test 2"><input type="number" min="0" step="0.5" class="score-input edit-result-test2" value="${r.test2_score}" /></td>
-          <td data-label="CBT"><input type="number" min="0" step="0.5" class="score-input edit-result-cbt" value="${r.cbt_score}" /></td>
-          <td data-label="Exam"><input type="number" min="0" step="0.5" class="score-input edit-result-exam" value="${r.exam_score}" /></td>
-          <td data-label="Total">—</td>
-          <td data-label="Status">${r.published ? "published" : "saved"}</td>
-          <td data-label="" class="row-actions">
-            <button class="approve-btn save-result-btn" data-id="${r.id}">Save</button>
-            <button class="approve-btn cancel-result-btn">Cancel</button>
-          </td>
-        </tr>`;
-      }
-
-      return `<tr>
-        <td data-label="Student">${student ? student.full_name : "—"}</td>
-        <td data-label="Subject">${subject ? subject.name : "—"}</td>
-        <td data-label="Test 1">${r.test1_score}</td>
-        <td data-label="Test 2">${r.test2_score}</td>
-        <td data-label="CBT">${r.cbt_score}</td>
-        <td data-label="Exam">${r.exam_score}</td>
-        <td data-label="Total">${total} (${gradeFor(total)})</td>
-        <td data-label="Status"><span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span></td>
-        <td data-label="" class="row-actions">
-          <button class="approve-btn edit-result-btn" data-id="${r.id}"><i class="bi bi-pencil-fill"></i> Edit</button>
-          <button class="approve-btn delete-btn delete-result-btn" data-id="${r.id}"><i class="bi bi-trash-fill"></i> Delete</button>
-        </td>
-      </tr>`;
-    }).join("");
-
     const groupEl = document.createElement("div");
     groupEl.className = "class-group";
     groupEl.innerHTML = `
@@ -3423,17 +3462,6 @@ function renderCompletion() {
           ${published > 0 ? `<button type="button" class="approve-btn delete-btn unpublish-class-btn" data-group="${groupName}">Unpublish ${groupName}</button>` : ""}
         </div>
         ${studentProgressRowsHtml(groupName)}
-        ${rows.length ? `
-          <details class="result-rows-details"${showAllResults.has(groupName) ? " open" : ""} data-all-results="${groupName}">
-            <summary>Show the ${rows.length} individual result row${rows.length === 1 ? "" : "s"} for ${groupName}</summary>
-            <div class="table-wrap">
-              <table class="data-table stacked-on-mobile">
-                <thead><tr><th>Student</th><th>Subject</th><th>Test1</th><th>Test2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th><th></th></tr></thead>
-                <tbody>${rowsHtml}</tbody>
-              </table>
-            </div>
-          </details>`
-        : '<p class="empty-hint" style="text-align:left;padding:0;">No results entered for this class yet.</p>'}
       </div>`;
     container.appendChild(groupEl);
   });
@@ -3447,15 +3475,7 @@ function renderCompletion() {
     });
   });
 
-  // Two <details> per class now, so key the remembered state off which one it
-  // is rather than off the shared class name.
-  container.querySelectorAll("details[data-all-results]").forEach((d) => {
-    const group = d.dataset.allResults;
-    d.addEventListener("toggle", () => {
-      if (d.open) showAllResults.add(group); else showAllResults.delete(group);
-    });
-  });
-
+  // One <details> per class: the per-student progress table.
   container.querySelectorAll("details[data-student-progress]").forEach((d) => {
     const group = d.dataset.studentProgress;
     d.addEventListener("toggle", () => {
@@ -3514,49 +3534,6 @@ function renderCompletion() {
     });
   });
 
-  container.querySelectorAll(".edit-result-btn").forEach((btn) => {
-    btn.addEventListener("click", () => { editingResultId = btn.dataset.id; renderCompletion(); });
-  });
-
-  container.querySelectorAll(".cancel-result-btn").forEach((btn) => {
-    btn.addEventListener("click", () => { editingResultId = null; renderCompletion(); });
-  });
-
-  container.querySelectorAll(".save-result-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const row = btn.closest("tr");
-      const test1 = parseFloat(row.querySelector(".edit-result-test1").value) || 0;
-      const test2 = parseFloat(row.querySelector(".edit-result-test2").value) || 0;
-      const cbt = parseFloat(row.querySelector(".edit-result-cbt").value) || 0;
-      const exam = parseFloat(row.querySelector(".edit-result-exam").value) || 0;
-      if (test1 + test2 + cbt + exam > 100) { showToast("Test 1 + Test 2 + CBT + Exam can't add up to more than 100."); return; }
-      btn.disabled = true;
-      btn.textContent = "Saving...";
-      const { error } = await supabaseClient.from("results").update({ test1_score: test1, test2_score: test2, cbt_score: cbt, exam_score: exam }).eq("id", btn.dataset.id);
-      if (!error) {
-        logActivity(`Updated a result`);
-        editingResultId = null;
-        loadCompletion();
-      } else {
-        showToast(error.message);
-        btn.disabled = false;
-        btn.textContent = "Save";
-      }
-    });
-  });
-
-  container.querySelectorAll(".delete-result-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!(await appConfirm("Delete this result?"))) return;
-      const { error } = await supabaseClient.from("results").delete().eq("id", btn.dataset.id);
-      if (!error) {
-        logActivity(`Deleted a result`);
-        loadCompletion();
-      } else {
-        showToast(error.message);
-      }
-    });
-  });
 }
 
 // ---- Payments ----
