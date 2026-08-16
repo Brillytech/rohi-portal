@@ -1531,3 +1531,14 @@ html, body { max-width: 100%; overflow-x: hidden; }
 }
 .q-empty i { font-size: 1.6rem; color: var(--border-c); display: block; margin-bottom: 7px; }
 .q-empty p { margin: 0; font-size: 0.83rem; }
+
+/* Roster download sits inside a group header; keep it from inheriting the
+   header's flex sizing and stop clicks bubbling into the accordion toggle. */
+.roster-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}

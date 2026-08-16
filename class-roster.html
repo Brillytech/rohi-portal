@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class Roster | Rohi Portal</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="css/class-roster.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Screen-only controls; hidden when printing -->
+  <header class="roster-topbar">
+    <a class="topbar-btn ghost" id="backLink" href="admin-dashboard.html">
+      <i class="bi bi-arrow-left"></i> Back
+    </a>
+    <div class="roster-topbar-title">
+      <strong id="topbarClass">Class roster</strong>
+      <small id="topbarMeta">Loading…</small>
+    </div>
+    <label class="blank-rows-control">
+      Blank rows
+      <input type="number" id="blankRows" min="0" max="30" value="5" />
+    </label>
+    <button class="topbar-btn" id="printBtn">
+      <i class="bi bi-printer"></i> Print / Download PDF
+    </button>
+  </header>
+
+  <main class="roster-main">
+    <div class="roster-state" id="rosterState">
+      <i class="bi bi-hourglass-split"></i>
+      <p>Loading the roster…</p>
+    </div>
+
+    <div class="sheet" id="printArea" style="display:none;">
+
+      <!-- ── Letterhead ──────────────────────────────────────── -->
+      <header class="letterhead">
+        <div class="lh-crest">
+          <img src="img/rohilo.jpg" alt="Rohi Schools crest" />
+        </div>
+        <div class="lh-body">
+          <h1>ROHI SCHOOLS</h1>
+          <p>B4/9 Federal Housing Estate, Olomore, Abeokuta, Ogun State.</p>
+          <p><span class="lh-strong">Phone:</span> 07031362416 &nbsp;·&nbsp;
+             <span class="lh-strong">Email:</span> rohicollegeogunradio@gmail.com</p>
+        </div>
+        <div class="lh-seal">
+          <span>CLASS</span>
+          <strong id="sealClass">—</strong>
+        </div>
+      </header>
+
+      <div class="roster-title">CLASS ROSTER</div>
+
+      <!-- ── Meta strip ──────────────────────────────────────── -->
+      <table class="meta-table">
+        <tbody>
+          <tr>
+            <th>Class</th><td id="metaClass">—</td>
+            <th>Arm</th><td id="metaArm">—</td>
+            <th>Session</th><td id="metaSession">—</td>
+          </tr>
+          <tr>
+            <th>Term</th><td id="metaTerm">—</td>
+            <th>Class teacher</th><td id="metaTeacher">—</td>
+            <th>Students</th><td id="metaCount">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ── Roster table ────────────────────────────────────── -->
+      <table class="roster-table">
+        <thead id="rosterHead"></thead>
+        <tbody id="rosterBody"></tbody>
+      </table>
+
+      <!-- ── Footer ──────────────────────────────────────────── -->
+      <footer class="roster-foot">
+        <div class="sign-row">
+          <div class="sign-slot"><span class="sign-line"></span><small>Class teacher's signature</small></div>
+          <div class="sign-slot"><span class="sign-line"></span><small>Head teacher's signature</small></div>
+          <div class="sign-slot"><span class="sign-line"></span><small>Date</small></div>
+        </div>
+        <p class="foot-note" id="footNote">—</p>
+      </footer>
+    </div>
+  </main>
+
+  <script src="js/portal-utils.js"></script>
+  <script>
+    const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const params = new URLSearchParams(location.search);
+    const CLASS_NAME = params.get("class") || "";
+    const TERM_ID = params.get("term") || "";
+
+    let roster = [];
+    let isAdmin = false;
+    let ctx = { className: CLASS_NAME, arm: "—", session: "—", term: "—", teacher: "—" };
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function showState(icon, text, sub) {
+      document.getElementById("printArea").style.display = "none";
+      document.getElementById("rosterState").style.display = "block";
+      document.getElementById("rosterState").innerHTML =
+        `<i class="bi ${icon}"></i><p>${esc(text)}</p>${sub ? `<small>${esc(sub)}</small>` : ""}`;
+    }
+
+    async function init() {
+      if (!CLASS_NAME) return showState("bi-exclamation-triangle", "No class specified.",
+        "Open this page from the Students list in the dashboard.");
+
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { window.location.href = "portal.html"; return; }
+
+      const { data: me } = await supabaseClient
+        .from("profiles").select("id, full_name, role").eq("id", session.user.id).single();
+      if (!me || (me.role !== "admin" && me.role !== "teacher")) {
+        window.location.href = "portal.html";
+        return;
+      }
+      isAdmin = me.role === "admin";
+      document.getElementById("backLink").href = isAdmin ? "admin-dashboard.html" : "teacher-dashboard.html";
+
+      const [{ data: cls }, { data: term }] = await Promise.all([
+        supabaseClient.from("classes").select("*").eq("name", CLASS_NAME).maybeSingle(),
+        TERM_ID
+          ? supabaseClient.from("terms").select("*").eq("id", TERM_ID).maybeSingle()
+          : supabaseClient.from("terms").select("*").eq("is_current", true).maybeSingle(),
+      ]);
+
+      ctx.arm = (cls && cls.arm) || "—";
+      ctx.session = term ? term.session : "—";
+      ctx.term = term ? term.name : "—";
+
+      if (cls && cls.class_teacher_id) {
+        const { data: names } = await supabaseClient
+          .rpc("get_teacher_names", { p_teacher_ids: [cls.class_teacher_id] });
+        if (names && names.length) ctx.teacher = names[0].full_name;
+      }
+
+      // Admins read profiles directly (they may see portal numbers). Teachers
+      // go through the roster RPC, which deliberately withholds portal_number
+      // because it doubles as the student's login password.
+      if (isAdmin) {
+        const { data, error } = await supabaseClient
+          .from("profiles")
+          .select("id, full_name, surname, portal_number, gender, class")
+          .eq("role", "student").eq("class", CLASS_NAME);
+        if (error) return showState("bi-exclamation-triangle", "Could not load the roster.", error.message);
+        roster = data || [];
+      } else {
+        const { data, error } = await supabaseClient
+          .rpc("get_students_in_classes", { p_classes: [CLASS_NAME] });
+        if (error) return showState("bi-exclamation-triangle", "Could not load the roster.", error.message);
+        roster = data || [];
+      }
+
+      if (!roster.length) {
+        return showState("bi-people", `No students are enrolled in ${CLASS_NAME}.`,
+          "Register students to this class first, then come back.");
+      }
+
+      // Surname first: a register is read and called alphabetically by surname.
+      roster.sort((a, b) =>
+        (a.surname || "").localeCompare(b.surname || "") ||
+        (a.full_name || "").localeCompare(b.full_name || ""));
+
+      render();
+    }
+
+    function render() {
+      document.getElementById("rosterState").style.display = "none";
+      document.getElementById("printArea").style.display = "block";
+
+      document.getElementById("topbarClass").textContent = `${CLASS_NAME} roster`;
+      document.getElementById("topbarMeta").textContent =
+        `${ctx.term} · ${ctx.session} · ${roster.length} student${roster.length === 1 ? "" : "s"}`;
+      document.getElementById("sealClass").textContent = CLASS_NAME;
+      document.getElementById("metaClass").textContent = CLASS_NAME;
+      document.getElementById("metaArm").textContent = ctx.arm;
+      document.getElementById("metaSession").textContent = ctx.session;
+      document.getElementById("metaTerm").textContent = ctx.term;
+      document.getElementById("metaTeacher").textContent = ctx.teacher;
+      document.getElementById("metaCount").textContent = roster.length;
+
+      const cols = isAdmin
+        ? ["S/No", "Surname", "First / Other names", "Portal number", "Gender", "Signature"]
+        : ["S/No", "Surname", "First / Other names", "Gender", "Signature"];
+      document.getElementById("rosterHead").innerHTML =
+        `<tr>${cols.map((c, i) => `<th class="col-${i}">${c}</th>`).join("")}</tr>`;
+
+      const body = roster.map((s, i) => `
+        <tr>
+          <td class="num">${i + 1}</td>
+          <td class="strong">${esc(s.surname || "—")}</td>
+          <td>${esc(s.full_name || "—")}</td>
+          ${isAdmin ? `<td class="mono">${esc(s.portal_number || "—")}</td>` : ""}
+          <td class="num">${s.gender ? esc(s.gender) : "—"}</td>
+          <td class="sig-cell"></td>
+        </tr>`).join("");
+
+      // Blank rows so the register can be added to by hand after printing.
+      const blanks = Math.max(0, Math.min(30, Number(document.getElementById("blankRows").value) || 0));
+      const blankHtml = Array.from({ length: blanks }, (_, k) => `
+        <tr class="blank-row">
+          <td class="num">${roster.length + k + 1}</td>
+          <td></td><td></td>${isAdmin ? "<td></td>" : ""}<td></td><td class="sig-cell"></td>
+        </tr>`).join("");
+
+      document.getElementById("rosterBody").innerHTML = body + blankHtml;
+
+      document.getElementById("footNote").textContent =
+        `Generated ${new Date().toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}`
+        + (isAdmin ? "" : " · Portal numbers are omitted from the staff copy; ask the school office if you need them.");
+    }
+
+    document.getElementById("blankRows").addEventListener("input", () => { if (roster.length) render(); });
+
+    /* Browsers name the saved PDF after document.title. */
+    document.getElementById("printBtn").addEventListener("click", () => {
+      const original = document.title;
+      document.title = `Class roster - ${CLASS_NAME} - ${ctx.term} ${String(ctx.session).replace("/", "-")}`
+        .replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+      const restore = () => { document.title = original; window.removeEventListener("afterprint", restore); };
+      window.addEventListener("afterprint", restore);
+      window.print();
+      setTimeout(restore, 8000);
+    });
+
+    init();
+  </script>
+</body>
+</html>

@@ -1149,7 +1149,12 @@ async function loadMyStudents() {
       <div class="class-group">
         <div class="class-group-header" style="cursor:default;">
           <span class="class-group-name"><i class="bi bi-people-fill"></i> ${c.name}</span>
-          <span class="class-group-count">${studentsInClass.length} student${studentsInClass.length === 1 ? "" : "s"}</span>
+          <span class="class-group-count">
+            <a class="approve-btn roster-link" href="class-roster.html?class=${encodeURIComponent(c.name)}${currentTermId ? `&term=${currentTermId}` : ""}" target="_blank" rel="noopener">
+              <i class="bi bi-file-earmark-arrow-down"></i> Roster
+            </a>
+            &nbsp;${studentsInClass.length} student${studentsInClass.length === 1 ? "" : "s"}
+          </span>
         </div>
         <div class="class-group-body open">
           <table class="data-table stacked-on-mobile">

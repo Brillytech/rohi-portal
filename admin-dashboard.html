@@ -2199,10 +2199,18 @@ function renderStudents(list) {
       })
       .join("");
 
+    // "Graduated" / "Left School" are holding buckets, not real classes, so
+    // there is no register to print for them.
+    const isRealClass = allClasses.some((c) => c.name === groupName);
     groupEl.innerHTML = `
       <button type="button" class="class-group-header" data-group="${groupName}">
         <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${groupName}</span>
-        <span class="class-group-count">${visibleCount} student${visibleCount === 1 ? "" : "s"}</span>
+        <span class="class-group-count">
+          ${isRealClass ? `<a class="approve-btn roster-link" href="class-roster.html?class=${encodeURIComponent(groupName)}${currentTermId ? `&term=${currentTermId}` : ""}" target="_blank" rel="noopener" onclick="event.stopPropagation();">
+            <i class="bi bi-file-earmark-arrow-down"></i> Roster
+          </a>&nbsp;` : ""}
+          ${visibleCount} student${visibleCount === 1 ? "" : "s"}
+        </span>
       </button>
       <div class="class-group-body${isOpen ? " open" : ""}">
         <table class="data-table">
