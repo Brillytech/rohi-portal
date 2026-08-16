@@ -364,20 +364,31 @@
           <div class="panel-header-flex">
             <div class="panel-header">
               <h2>Bulk import students</h2>
-              <p>Upload a CSV with columns <strong>full_name, surname, class</strong> — each row gets registered and given its own portal number automatically.</p>
+              <p>Upload a CSV with columns <strong>full_name, surname, class</strong>. Every row is checked
+                against your real classes first — nothing is registered until you have seen the preview.</p>
             </div>
             <div class="panel-header-icon"><i class="bi bi-cloud-upload-fill"></i></div>
           </div>
-          <a href="data:text/csv;charset=utf-8,full_name,surname,class%0AAdeyemi Oluwaseun,Adeyemi,JSS2%0A" download="rohi-portal-student-template.csv" class="template-link">
+
+          <!-- The class column must match a real class. Registration creates
+               login accounts and consumes portal numbers, so the accepted names
+               are listed here rather than left to guesswork. -->
+          <div class="class-key" id="bulkClassKey"></div>
+
+          <a href="#" download="rohi-portal-student-template.csv" class="template-link" id="bulkTemplateLink">
             <i class="bi bi-download"></i> Download CSV template
           </a>
           <div class="bulk-upload-row">
             <input type="file" id="bulkCsvInput" accept=".csv" />
-            <button type="button" class="primary-btn" id="bulkUploadBtn">
-              <span class="btn-text">Upload & register</span>
+            <button type="button" class="approve-btn" id="bulkCheckBtn">
+              <i class="bi bi-search"></i> Check file
+            </button>
+            <button type="button" class="primary-btn" id="bulkUploadBtn" disabled>
+              <span class="btn-text">Register students</span>
             </button>
           </div>
           <div id="bulkProgress"></div>
+          <div id="bulkPreviewWrap"></div>
           <div id="bulkResultsWrap"></div>
         </div>
 
@@ -1624,6 +1635,8 @@ async function loadClasses() {
   }
 
   renderClasses();
+  // Class chips + CSV template are generated from the real class list.
+  refreshBulkTemplate();
 }
 
 let editingClassId = null;
@@ -2461,72 +2474,243 @@ async function registerOneStudent(full_name, surname, className) {
   return json;
 }
 
-document.getElementById("bulkUploadBtn").addEventListener("click", () => {
-  const fileInput = document.getElementById("bulkCsvInput");
-  const file = fileInput.files[0];
-  const progressBox = document.getElementById("bulkProgress");
-  const resultsWrap = document.getElementById("bulkResultsWrap");
-  resultsWrap.innerHTML = "";
+/* ==========================================================================
+   BULK IMPORT
 
-  if (!file) {
-    showToast("Choose a CSV file first.");
+   The class column has to match a real class exactly, because whatever it
+   contains is written straight into profiles.class and becomes that student's
+   class permanently. A typo here is how the phantom "JSS2 A" class came about
+   — 33 students filed under a class that existed nowhere in the classes table.
+
+   Registration is irreversible: it creates auth accounts and consumes portal
+   numbers from a counter. So the file is validated in full and previewed
+   before a single account is created.
+   ========================================================================== */
+
+// "JSS3 Red", "jss3 red", "JSS3red" and "JSS3  RED" all collapse to one key,
+// so an import is never rejected over spacing or capitalisation.
+function classKey(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function resolveClassName(raw) {
+  const key = classKey(raw);
+  if (!key) return { ok: false, error: "No class given" };
+
+  const exact = allClasses.find((c) => classKey(c.name) === key);
+  if (exact) return { ok: true, name: exact.name };
+
+  // A bare level like "JSS2" is ambiguous when JSS2 Red and JSS2 Blue both
+  // exist — name the options rather than guessing one.
+  const sameLevel = allClasses.filter((c) => classKey(c.level_key) === key);
+  if (sameLevel.length === 1) return { ok: true, name: sameLevel[0].name };
+  if (sameLevel.length > 1) {
+    return { ok: false, error: 'Needs an arm — did you mean ' + sameLevel.map((c) => c.name).join(" or ") + "?" };
+  }
+
+  // Also catches the reverse mistake: an arm typed onto a class that does not
+  // have arms, e.g. "JSS3 Red" when JSS3 is a single undivided class.
+  const near = allClasses.filter((c) =>
+    classKey(c.name).startsWith(key) ||
+    key.startsWith(classKey(c.name)) ||
+    key.startsWith(classKey(c.level_key)));
+
+  return {
+    ok: false,
+    error: near.length
+      ? 'Not a class — did you mean ' + near.slice(0, 3).map((c) => c.name).join(" or ") + "?"
+      : "Not one of your classes",
+  };
+}
+
+// Built from the real class list, so the template can never suggest a class
+// that does not exist. Shows one class with an arm and one without, because
+// both shapes are in use.
+function refreshBulkTemplate() {
+  const keyBox = document.getElementById("bulkClassKey");
+  const link = document.getElementById("bulkTemplateLink");
+  if (!keyBox || !link) return;
+
+  const usable = allClasses.filter((c) => c.name !== "Graduated" && c.name !== "Left School");
+  if (!usable.length) {
+    keyBox.innerHTML = '<p class="empty-hint" style="padding:0;text-align:left;">Add your classes first — the import checks against them.</p>';
     return;
   }
+
+  const withArm = usable.find((c) => c.arm);
+  const withoutArm = usable.find((c) => !c.arm);
+
+  keyBox.innerHTML =
+    '<p class="class-key-label">Type the class exactly as it appears here:</p>' +
+    '<div class="class-key-chips">' +
+    usable.map((c) => '<span class="class-key-chip' + (c.arm ? " has-arm" : "") + '">' + escapeHtmlAdmin(c.name) + "</span>").join("") +
+    "</div>" +
+    (withArm
+      ? '<p class="class-key-note">Classes split into arms need the arm — <strong>' +
+        escapeHtmlAdmin(withArm.name) + "</strong>, not just <strong>" + escapeHtmlAdmin(withArm.level_key) +
+        "</strong>. Capitalisation and spacing are forgiven.</p>"
+      : '<p class="class-key-note">Capitalisation and spacing are forgiven.</p>');
+
+  const exampleA = withArm || usable[0];
+  const exampleB = withoutArm || usable[usable.length - 1];
+  const rows = [
+    "full_name,surname,class",
+    "Adeyemi Oluwaseun,ADEYEMI," + exampleA.name,
+    "Ngozi Chidinma,OKAFOR," + exampleB.name,
+  ].join("\n");
+  link.href = "data:text/csv;charset=utf-8," + encodeURIComponent(rows + "\n");
+}
+
+let bulkChecked = [];
+
+document.getElementById("bulkCheckBtn").addEventListener("click", () => {
+  const fileInput = document.getElementById("bulkCsvInput");
+  const file = fileInput.files[0];
+  const previewWrap = document.getElementById("bulkPreviewWrap");
+  const uploadBtn = document.getElementById("bulkUploadBtn");
+  document.getElementById("bulkResultsWrap").innerHTML = "";
+  bulkChecked = [];
+  uploadBtn.disabled = true;
+
+  if (!file) { showToast("Choose a CSV file first."); return; }
 
   Papa.parse(file, {
     header: true,
     skipEmptyLines: true,
-    complete: async (parsed) => {
-      const rows = parsed.data.filter((r) => r.full_name && r.surname && r.class);
-      if (!rows.length) {
-        showToast("No valid rows found. Make sure your CSV has full_name, surname, and class columns filled in.");
+    transformHeader: (h) => h.trim().toLowerCase(),
+    complete: (parsed) => {
+      const raw = parsed.data.filter((r) =>
+        (r.full_name || "").trim() || (r.surname || "").trim() || (r.class || "").trim());
+
+      if (!raw.length) {
+        previewWrap.innerHTML =
+          '<div class="alert alert-danger">No rows found. The first line must be <strong>full_name,surname,class</strong>.</div>';
         return;
       }
 
-      const btn = document.getElementById("bulkUploadBtn");
-      btn.disabled = true;
-      const results = [];
+      const seen = new Set();
+      bulkChecked = raw.map((r, i) => {
+        const full_name = (r.full_name || "").trim();
+        const surname = (r.surname || "").trim();
+        const rawClass = (r.class || "").trim();
+        const row = { line: i + 2, full_name: full_name, surname: surname, rawClass: rawClass, className: null, ok: false, error: "" };
 
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        progressBox.innerHTML = `<p class="empty-hint">Registering ${i + 1} of ${rows.length}...</p>`;
-        try {
-          const json = await registerOneStudent(row.full_name.trim(), row.surname.trim(), row.class.trim());
-          results.push({ full_name: json.full_name, surname: json.surname, class: row.class.trim(), portal_number: json.portal_number, status: "Registered" });
-        } catch (err) {
-          results.push({ full_name: row.full_name, surname: row.surname, class: row.class, portal_number: "—", status: `Failed: ${err.message}` });
-        }
-      }
+        if (!full_name || !surname) { row.error = "Missing name or surname"; return row; }
 
-      progressBox.innerHTML = "";
-      btn.disabled = false;
-      fileInput.value = "";
-      loadStudents();
-      loadOverview();
-      logActivity(`Bulk-registered ${results.filter((r) => r.status === "Registered").length} of ${results.length} students`);
+        const resolved = resolveClassName(rawClass);
+        if (!resolved.ok) { row.error = resolved.error; return row; }
+        row.className = resolved.name;
 
-      const successCount = results.filter((r) => r.status === "Registered").length;
-      const csvRows = ["full_name,surname,class,portal_number,status"]
-        .concat(results.map((r) => `"${r.full_name}","${r.surname}","${r.class}","${r.portal_number}","${r.status}"`));
-      const csvBlob = "data:text/csv;charset=utf-8," + encodeURIComponent(csvRows.join("\n"));
+        // The same person twice in one file would burn two portal numbers.
+        const dupKey = full_name.toLowerCase() + "|" + surname.toLowerCase();
+        if (seen.has(dupKey)) { row.error = "Duplicate of an earlier row in this file"; return row; }
+        seen.add(dupKey);
 
-      resultsWrap.innerHTML = `
-        <div class="alert ${successCount === results.length ? "alert-success" : "alert-danger"}">
-          ${successCount} of ${results.length} students registered successfully.
-        </div>
-        <a href="${csvBlob}" download="rohi-portal-bulk-results.csv" class="template-link" style="margin-bottom:0.75rem;">
-          <i class="bi bi-download"></i> Download portal numbers (CSV)
-        </a>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Full name</th><th>Surname</th><th>Class</th><th>Portal number</th><th>Status</th></tr></thead>
-            <tbody>
-              ${results.map((r) => `<tr><td>${r.full_name}</td><td>${r.surname}</td><td>${r.class}</td><td class="mono">${r.portal_number}</td><td>${r.status}</td></tr>`).join("")}
-            </tbody>
-          </table>
-        </div>`;
+        const existing = allStudents.find((s) =>
+          (s.full_name || "").toLowerCase() === full_name.toLowerCase() &&
+          (s.surname || "").toLowerCase() === surname.toLowerCase());
+        if (existing) { row.error = "Already registered as " + existing.portal_number; return row; }
+
+        row.ok = true;
+        return row;
+      });
+
+      const good = bulkChecked.filter((r) => r.ok);
+      const bad = bulkChecked.filter((r) => !r.ok);
+      const byClass = {};
+      good.forEach((r) => { byClass[r.className] = (byClass[r.className] || 0) + 1; });
+
+      previewWrap.innerHTML =
+        '<div class="alert ' + (bad.length ? "alert-danger" : "alert-success") + '">' +
+          good.length + " row" + (good.length === 1 ? "" : "s") + " ready to register" +
+          (bad.length ? ", " + bad.length + " need" + (bad.length === 1 ? "s" : "") + " fixing first" : "") +
+        ".</div>" +
+        (good.length
+          ? '<p class="empty-hint" style="text-align:left;padding:0 0 0.6rem;">Will be placed in: ' +
+            Object.keys(byClass).map((c) => "<strong>" + escapeHtmlAdmin(c) + "</strong> (" + byClass[c] + ")").join(" · ") +
+            "</p>"
+          : "") +
+        '<div class="table-wrap"><table class="data-table stacked-on-mobile">' +
+        "<thead><tr><th>Line</th><th>Name</th><th>Surname</th><th>Class in file</th><th>Will become</th><th>Status</th></tr></thead><tbody>" +
+        bulkChecked.map((r) =>
+          "<tr>" +
+          '<td data-label="Line">' + r.line + "</td>" +
+          '<td data-label="Name">' + escapeHtmlAdmin(r.full_name || "—") + "</td>" +
+          '<td data-label="Surname">' + escapeHtmlAdmin(r.surname || "—") + "</td>" +
+          '<td data-label="Class in file">' + escapeHtmlAdmin(r.rawClass || "—") + "</td>" +
+          '<td data-label="Will become">' + (r.ok ? escapeHtmlAdmin(r.className) : "—") + "</td>" +
+          '<td data-label="Status">' + (r.ok
+            ? '<span class="badge-pill badge-published">Ready</span>'
+            : '<span class="badge-pill badge-submitted">' + escapeHtmlAdmin(r.error) + "</span>") + "</td>" +
+          "</tr>").join("") +
+        "</tbody></table></div>";
+
+      uploadBtn.disabled = good.length === 0;
+      uploadBtn.querySelector(".btn-text").textContent =
+        good.length ? "Register " + good.length + " student" + (good.length === 1 ? "" : "s") : "Register students";
     },
   });
+});
+
+document.getElementById("bulkUploadBtn").addEventListener("click", async () => {
+  const good = bulkChecked.filter((r) => r.ok);
+  if (!good.length) { showToast("Check the file first."); return; }
+
+  const skipped = bulkChecked.length - good.length;
+  const confirmed = await appConfirm(
+    "Register " + good.length + " student" + (good.length === 1 ? "" : "s") + "?" +
+    (skipped ? "\n\n" + skipped + " row(s) with problems will be skipped." : "") +
+    "\n\nEach one gets a login account and a portal number. This cannot be undone from here."
+  );
+  if (!confirmed) return;
+
+  const fileInput = document.getElementById("bulkCsvInput");
+  const progressBox = document.getElementById("bulkProgress");
+  const resultsWrap = document.getElementById("bulkResultsWrap");
+  const btn = document.getElementById("bulkUploadBtn");
+  btn.disabled = true;
+  resultsWrap.innerHTML = "";
+
+  const results = [];
+  for (let i = 0; i < good.length; i++) {
+    const row = good[i];
+    progressBox.innerHTML = '<p class="empty-hint">Registering ' + (i + 1) + " of " + good.length + "...</p>";
+    try {
+      // The resolved canonical name is sent, never the raw text from the file.
+      const json = await registerOneStudent(row.full_name, row.surname, row.className);
+      results.push({ full_name: json.full_name, surname: json.surname, class: row.className, portal_number: json.portal_number, status: "Registered" });
+    } catch (err) {
+      results.push({ full_name: row.full_name, surname: row.surname, class: row.className, portal_number: "—", status: "Failed: " + err.message });
+    }
+  }
+
+  progressBox.innerHTML = "";
+  fileInput.value = "";
+  document.getElementById("bulkPreviewWrap").innerHTML = "";
+  bulkChecked = [];
+  btn.querySelector(".btn-text").textContent = "Register students";
+  await loadStudents();
+  loadOverview();
+  logActivity("Bulk-registered " + results.filter((r) => r.status === "Registered").length + " of " + results.length + " students");
+
+  const successCount = results.filter((r) => r.status === "Registered").length;
+  const csvRows = ["full_name,surname,class,portal_number,status"]
+    .concat(results.map((r) => '"' + r.full_name + '","' + r.surname + '","' + r.class + '","' + r.portal_number + '","' + r.status + '"'));
+  const csvBlob = "data:text/csv;charset=utf-8," + encodeURIComponent(csvRows.join("\n"));
+
+  resultsWrap.innerHTML =
+    '<div class="alert ' + (successCount === results.length ? "alert-success" : "alert-danger") + '">' +
+      successCount + " of " + results.length + " students registered successfully." +
+    "</div>" +
+    '<a href="' + csvBlob + '" download="rohi-portal-bulk-results.csv" class="template-link" style="margin-bottom:0.75rem;">' +
+      '<i class="bi bi-download"></i> Download portal numbers (CSV)</a>' +
+    '<div class="table-wrap"><table class="data-table">' +
+    "<thead><tr><th>Full name</th><th>Surname</th><th>Class</th><th>Portal number</th><th>Status</th></tr></thead><tbody>" +
+    results.map((r) =>
+      "<tr><td>" + escapeHtmlAdmin(r.full_name) + "</td><td>" + escapeHtmlAdmin(r.surname) +
+      "</td><td>" + escapeHtmlAdmin(r.class) + '</td><td class="mono">' + escapeHtmlAdmin(r.portal_number) +
+      "</td><td>" + escapeHtmlAdmin(r.status) + "</td></tr>").join("") +
+    "</tbody></table></div>";
 });
 
 // ---- Teachers ----

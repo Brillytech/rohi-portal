@@ -1569,3 +1569,47 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .storage-pct.storage-ok     { color: #1e7e3e; }
 .storage-pct.storage-warn   { color: #b45309; }
 .storage-pct.storage-danger { color: #b42318; }
+
+/* ==========================================================================
+   Bulk import — class key
+
+   The class column has to match a real class exactly, so the accepted names
+   are shown rather than described.
+   ========================================================================== */
+.class-key {
+  background: rgba(89, 6, 148, 0.04);
+  border: 1px solid rgba(89, 6, 148, 0.12);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+.class-key-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--purple-ink);
+}
+.class-key-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.class-key-chip {
+  font-family: 'Courier New', monospace;
+  font-size: 0.76rem;
+  background: #fff;
+  border: 1px solid var(--border-c);
+  border-radius: 7px;
+  padding: 3px 9px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+/* Arm classes are the ones people get wrong, so they read differently. */
+.class-key-chip.has-arm {
+  border-color: rgba(89, 6, 148, 0.35);
+  color: var(--purple-deep);
+  font-weight: 700;
+}
+.class-key-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.class-key-note strong { color: var(--purple-ink); font-family: 'Courier New', monospace; }
