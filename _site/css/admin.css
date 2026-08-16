@@ -1673,3 +1673,25 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .sidebar-brand { margin-bottom: 1rem; }
   .nav-item { padding: 9px 12px; font-size: 0.84rem; }
 }
+
+/* A class named in the CSV that does not exist yet and will be created.
+   Distinct from success/danger so it reads as "something will be added",
+   not "everything is fine" or "something is wrong". */
+.alert-new-class {
+  background: rgba(0, 191, 255, 0.08);
+  border: 1px solid rgba(0, 191, 255, 0.35);
+  color: var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.55;
+}
+.alert-new-class > i { color: #0090c0; margin-top: 2px; }
+.alert-new-class strong { color: var(--purple-ink); }
+.new-class-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

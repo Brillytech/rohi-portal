@@ -2477,14 +2477,21 @@ async function registerOneStudent(full_name, surname, className) {
 /* ==========================================================================
    BULK IMPORT
 
-   The class column has to match a real class exactly, because whatever it
-   contains is written straight into profiles.class and becomes that student's
-   class permanently. A typo here is how the phantom "JSS2 A" class came about
-   — 33 students filed under a class that existed nowhere in the classes table.
+   Whatever the class column contains is written into profiles.class and
+   becomes that student's class permanently, so it has to end up matching a
+   real row in the classes table. The phantom "JSS2 A" class — 33 students
+   filed under a class that existed nowhere — came from this path.
 
-   Registration is irreversible: it creates auth accounts and consumes portal
-   numbers from a counter. So the file is validated in full and previewed
-   before a single account is created.
+   But rejecting an unknown class is the wrong cure. Promoting JSS2 Red into
+   JSS3 Red is a normal thing to do, and the arm class simply may not exist
+   yet. So an unknown class that names a real level plus an arm is offered as
+   a NEW CLASS to create, rather than blocked. The class gets properly created
+   in the classes table, which is exactly what prevents a phantom.
+
+   Only genuine nonsense — a level that does not exist at all — is refused.
+
+   Registration is irreversible (auth accounts, portal numbers), so the file
+   is validated and previewed in full before anything is created.
    ========================================================================== */
 
 // "JSS3 Red", "jss3 red", "JSS3red" and "JSS3  RED" all collapse to one key,
@@ -2493,39 +2500,62 @@ function classKey(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// "red" -> "Red", "OGUN radio" -> "Ogun Radio". Keeps new arms consistent
+// with the existing Red / Blue naming.
+function titleCaseArm(text) {
+  return String(text || "").trim().split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
+ * Resolves a CSV class cell to either an existing class or a proposed new one.
+ * -> { ok:true, name, isNew:false }
+ * -> { ok:true, name, isNew:true, levelKey, arm }   needs creating first
+ * -> { ok:false, error }
+ */
 function resolveClassName(raw) {
   const key = classKey(raw);
   if (!key) return { ok: false, error: "No class given" };
 
+  // 1. Already a real class.
   const exact = allClasses.find((c) => classKey(c.name) === key);
-  if (exact) return { ok: true, name: exact.name };
+  if (exact) return { ok: true, name: exact.name, isNew: false };
 
-  // A bare level like "JSS2" is ambiguous when JSS2 Red and JSS2 Blue both
-  // exist — name the options rather than guessing one.
+  // 2. A bare level that maps to exactly one class, e.g. "JSS3" -> JSS3.
   const sameLevel = allClasses.filter((c) => classKey(c.level_key) === key);
-  if (sameLevel.length === 1) return { ok: true, name: sameLevel[0].name };
+  if (sameLevel.length === 1) return { ok: true, name: sameLevel[0].name, isNew: false };
   if (sameLevel.length > 1) {
-    return { ok: false, error: 'Needs an arm — did you mean ' + sameLevel.map((c) => c.name).join(" or ") + "?" };
+    return { ok: false, error: "Needs an arm — " + sameLevel.map((c) => c.name).join(" or ") };
   }
 
-  // Also catches the reverse mistake: an arm typed onto a class that does not
-  // have arms, e.g. "JSS3 Red" when JSS3 is a single undivided class.
-  const near = allClasses.filter((c) =>
-    classKey(c.name).startsWith(key) ||
-    key.startsWith(classKey(c.name)) ||
-    key.startsWith(classKey(c.level_key)));
+  // 3. A known level with something after it: a new arm of an existing level.
+  //    Longest level first, so "Primary 1" wins over any shorter prefix.
+  const levels = [...new Set(allClasses.map((c) => c.level_key).filter(Boolean))]
+    .sort((a, b) => classKey(b).length - classKey(a).length);
 
-  return {
-    ok: false,
-    error: near.length
-      ? 'Not a class — did you mean ' + near.slice(0, 3).map((c) => c.name).join(" or ") + "?"
-      : "Not one of your classes",
-  };
+  for (const level of levels) {
+    const lk = classKey(level);
+    if (lk && key.startsWith(lk) && key.length > lk.length) {
+      // The key is the reliable source for the arm. Slicing the raw text by
+      // the level's length only works when the file used the same spacing —
+      // "primary4gold" would otherwise lose a letter and become "Old".
+      const keyTail = key.slice(lk.length);
+      const rawTail = String(raw).trim().slice(level.length).trim();
+      // Prefer the raw text when it agrees, since it keeps multi-word spacing
+      // like "Ogun Radio" that the key has flattened.
+      const tail = classKey(rawTail) === keyTail ? rawTail : keyTail;
+      const arm = titleCaseArm(tail.replace(/[^A-Za-z0-9 ]+/g, " "));
+      if (!arm) break;
+      return { ok: true, name: level + " " + arm, isNew: true, levelKey: level, arm: arm };
+    }
+  }
+
+  return { ok: false, error: 'No level called "' + String(raw).trim() + '" — check the spelling' };
 }
 
 // Built from the real class list, so the template can never suggest a class
-// that does not exist. Shows one class with an arm and one without, because
-// both shapes are in use.
+// that does not exist. One example with an arm, one without.
 function refreshBulkTemplate() {
   const keyBox = document.getElementById("bulkClassKey");
   const link = document.getElementById("bulkTemplateLink");
@@ -2541,15 +2571,14 @@ function refreshBulkTemplate() {
   const withoutArm = usable.find((c) => !c.arm);
 
   keyBox.innerHTML =
-    '<p class="class-key-label">Type the class exactly as it appears here:</p>' +
+    '<p class="class-key-label">Your classes — type any of these exactly:</p>' +
     '<div class="class-key-chips">' +
     usable.map((c) => '<span class="class-key-chip' + (c.arm ? " has-arm" : "") + '">' + escapeHtmlAdmin(c.name) + "</span>").join("") +
     "</div>" +
-    (withArm
-      ? '<p class="class-key-note">Classes split into arms need the arm — <strong>' +
-        escapeHtmlAdmin(withArm.name) + "</strong>, not just <strong>" + escapeHtmlAdmin(withArm.level_key) +
-        "</strong>. Capitalisation and spacing are forgiven.</p>"
-      : '<p class="class-key-note">Capitalisation and spacing are forgiven.</p>');
+    '<p class="class-key-note">Capitalisation and spacing are forgiven. ' +
+    "<strong>Need a new arm?</strong> Just type it — a class like " +
+    escapeHtmlAdmin((withoutArm || usable[0]).level_key) + " Red" +
+    " is offered as a new class to create when you check the file.</p>";
 
   const exampleA = withArm || usable[0];
   const exampleB = withoutArm || usable[usable.length - 1];
@@ -2562,6 +2591,7 @@ function refreshBulkTemplate() {
 }
 
 let bulkChecked = [];
+let bulkNewClasses = []; // [{ name, levelKey, arm, count }]
 
 document.getElementById("bulkCheckBtn").addEventListener("click", () => {
   const fileInput = document.getElementById("bulkCsvInput");
@@ -2570,6 +2600,7 @@ document.getElementById("bulkCheckBtn").addEventListener("click", () => {
   const uploadBtn = document.getElementById("bulkUploadBtn");
   document.getElementById("bulkResultsWrap").innerHTML = "";
   bulkChecked = [];
+  bulkNewClasses = [];
   uploadBtn.disabled = true;
 
   if (!file) { showToast("Choose a CSV file first."); return; }
@@ -2589,17 +2620,28 @@ document.getElementById("bulkCheckBtn").addEventListener("click", () => {
       }
 
       const seen = new Set();
+      const newClassMap = {};
+
       bulkChecked = raw.map((r, i) => {
         const full_name = (r.full_name || "").trim();
         const surname = (r.surname || "").trim();
         const rawClass = (r.class || "").trim();
-        const row = { line: i + 2, full_name: full_name, surname: surname, rawClass: rawClass, className: null, ok: false, error: "" };
+        const row = { line: i + 2, full_name: full_name, surname: surname, rawClass: rawClass,
+                      className: null, isNew: false, ok: false, error: "" };
 
         if (!full_name || !surname) { row.error = "Missing name or surname"; return row; }
 
         const resolved = resolveClassName(rawClass);
         if (!resolved.ok) { row.error = resolved.error; return row; }
         row.className = resolved.name;
+        row.isNew = !!resolved.isNew;
+
+        if (resolved.isNew) {
+          if (!newClassMap[resolved.name]) {
+            newClassMap[resolved.name] = { name: resolved.name, levelKey: resolved.levelKey, arm: resolved.arm, count: 0 };
+          }
+          newClassMap[resolved.name].count++;
+        }
 
         // The same person twice in one file would burn two portal numbers.
         const dupKey = full_name.toLowerCase() + "|" + surname.toLowerCase();
@@ -2615,16 +2657,36 @@ document.getElementById("bulkCheckBtn").addEventListener("click", () => {
         return row;
       });
 
+      bulkNewClasses = Object.keys(newClassMap).map((k) => newClassMap[k]);
+
       const good = bulkChecked.filter((r) => r.ok);
       const bad = bulkChecked.filter((r) => !r.ok);
       const byClass = {};
       good.forEach((r) => { byClass[r.className] = (byClass[r.className] || 0) + 1; });
+
+      // A level that already has an armless class will end up with both, which
+      // is usually not intended — say so rather than let it happen silently.
+      const armWarnings = bulkNewClasses
+        .map((nc) => allClasses.find((c) => c.level_key === nc.levelKey && !c.arm))
+        .filter(Boolean);
 
       previewWrap.innerHTML =
         '<div class="alert ' + (bad.length ? "alert-danger" : "alert-success") + '">' +
           good.length + " row" + (good.length === 1 ? "" : "s") + " ready to register" +
           (bad.length ? ", " + bad.length + " need" + (bad.length === 1 ? "s" : "") + " fixing first" : "") +
         ".</div>" +
+        (bulkNewClasses.length
+          ? '<div class="alert alert-new-class"><i class="bi bi-plus-circle-fill"></i> ' +
+            "<strong>" + bulkNewClasses.length + " new class" + (bulkNewClasses.length === 1 ? "" : "es") +
+            "</strong> will be created first: " +
+            bulkNewClasses.map((nc) => "<strong>" + escapeHtmlAdmin(nc.name) + "</strong> (" + nc.count + ")").join(", ") +
+            (armWarnings.length
+              ? "<br><span class=\"new-class-note\">Note: " +
+                armWarnings.map((c) => "<strong>" + escapeHtmlAdmin(c.name) + "</strong>").join(", ") +
+                " already exists without an arm, so that level will have both. Retire the old one in Classes if you don't want it.</span>"
+              : "") +
+            "</div>"
+          : "") +
         (good.length
           ? '<p class="empty-hint" style="text-align:left;padding:0 0 0.6rem;">Will be placed in: ' +
             Object.keys(byClass).map((c) => "<strong>" + escapeHtmlAdmin(c) + "</strong> (" + byClass[c] + ")").join(" · ") +
@@ -2640,7 +2702,9 @@ document.getElementById("bulkCheckBtn").addEventListener("click", () => {
           '<td data-label="Class in file">' + escapeHtmlAdmin(r.rawClass || "—") + "</td>" +
           '<td data-label="Will become">' + (r.ok ? escapeHtmlAdmin(r.className) : "—") + "</td>" +
           '<td data-label="Status">' + (r.ok
-            ? '<span class="badge-pill badge-published">Ready</span>'
+            ? (r.isNew
+                ? '<span class="badge-pill badge-class">Ready · new class</span>'
+                : '<span class="badge-pill badge-published">Ready</span>')
             : '<span class="badge-pill badge-submitted">' + escapeHtmlAdmin(r.error) + "</span>") + "</td>" +
           "</tr>").join("") +
         "</tbody></table></div>";
@@ -2658,9 +2722,13 @@ document.getElementById("bulkUploadBtn").addEventListener("click", async () => {
 
   const skipped = bulkChecked.length - good.length;
   const confirmed = await appConfirm(
-    "Register " + good.length + " student" + (good.length === 1 ? "" : "s") + "?" +
+    (bulkNewClasses.length
+      ? "Create " + bulkNewClasses.length + " new class" + (bulkNewClasses.length === 1 ? "" : "es") + " (" +
+        bulkNewClasses.map((c) => c.name).join(", ") + ") and register "
+      : "Register ") +
+    good.length + " student" + (good.length === 1 ? "" : "s") + "?" +
     (skipped ? "\n\n" + skipped + " row(s) with problems will be skipped." : "") +
-    "\n\nEach one gets a login account and a portal number. This cannot be undone from here."
+    "\n\nEach student gets a login account and a portal number. This cannot be undone from here."
   );
   if (!confirmed) return;
 
@@ -2670,6 +2738,23 @@ document.getElementById("bulkUploadBtn").addEventListener("click", async () => {
   const btn = document.getElementById("bulkUploadBtn");
   btn.disabled = true;
   resultsWrap.innerHTML = "";
+
+  // Classes first — a student cannot be placed in a class that is not there,
+  // and creating it here is what stops the value becoming a phantom.
+  for (const nc of bulkNewClasses) {
+    progressBox.innerHTML = '<p class="empty-hint">Creating class ' + escapeHtmlAdmin(nc.name) + "...</p>";
+    const { error } = await supabaseClient.from("classes")
+      .insert({ name: nc.name, level_key: nc.levelKey, arm: nc.arm, class_teacher_id: null });
+    if (error) {
+      progressBox.innerHTML = "";
+      btn.disabled = false;
+      resultsWrap.innerHTML = '<div class="alert alert-danger">Could not create class ' +
+        escapeHtmlAdmin(nc.name) + ": " + escapeHtmlAdmin(error.message) + ". Nothing was registered.</div>";
+      return;
+    }
+    logActivity("Created class <strong>" + nc.name + "</strong> from a CSV import");
+  }
+  if (bulkNewClasses.length) await loadClasses();
 
   const results = [];
   for (let i = 0; i < good.length; i++) {
@@ -2688,6 +2773,7 @@ document.getElementById("bulkUploadBtn").addEventListener("click", async () => {
   fileInput.value = "";
   document.getElementById("bulkPreviewWrap").innerHTML = "";
   bulkChecked = [];
+  bulkNewClasses = [];
   btn.querySelector(".btn-text").textContent = "Register students";
   await loadStudents();
   loadOverview();
