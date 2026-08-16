@@ -753,17 +753,13 @@
             </div>
             <div class="panel-header-icon"><i class="bi bi-images"></i></div>
           </div>
+          <!-- One album at a time. All three stacked fully expanded was up to
+               36 thumbnails in a single endless column. -->
+          <div class="album-tabs" id="albumTabs" role="tablist"></div>
+
           <div class="form-row" style="margin-bottom:1rem;">
-            <div class="field">
-              <label for="galAlbum">Album</label>
-              <select id="galAlbum">
-                <option value="class-projects">Class Projects</option>
-                <option value="cultural-day">Cultural Day</option>
-                <option value="daily-moments">Daily Moments</option>
-              </select>
-            </div>
             <div class="field" style="flex:2 1 260px;">
-              <label for="galFiles">Add photos</label>
+              <label for="galFiles">Add photos to <strong id="galAlbumName">this album</strong></label>
               <input type="file" id="galFiles" accept="image/*" multiple />
               <small class="field-hint" id="galCapHint"></small>
             </div>
@@ -4257,34 +4253,51 @@ async function loadGallery() {
   updateCapHint();
 }
 
+// Which album the tabs, the uploader and the grid are all pointed at.
+let currentAlbum = Object.keys(GALLERY_ALBUMS)[0];
+
 function updateCapHint() {
-  const album = document.getElementById("galAlbum").value;
-  const used = galleryRows.filter((r) => r.album === album).length;
+  const used = galleryRows.filter((r) => r.album === currentAlbum).length;
   const left = GALLERY_CAP - used;
+  document.getElementById("galAlbumName").textContent = GALLERY_ALBUMS[currentAlbum];
   document.getElementById("galCapHint").textContent =
-    `${used} of ${GALLERY_CAP} used in ${GALLERY_ALBUMS[album]}` + (left > 0 ? ` — room for ${left} more.` : " — remove one before adding another.");
+    `${used} of ${GALLERY_CAP} used in ${GALLERY_ALBUMS[currentAlbum]}` + (left > 0 ? ` — room for ${left} more.` : " — remove one before adding another.");
 }
-document.getElementById("galAlbum").addEventListener("change", updateCapHint);
+
+function renderAlbumTabs() {
+  const tabs = document.getElementById("albumTabs");
+  tabs.innerHTML = Object.entries(GALLERY_ALBUMS).map(([key, label]) => {
+    const n = galleryRows.filter((r) => r.album === key).length;
+    return `<button type="button" role="tab" class="album-tab${key === currentAlbum ? " is-active" : ""}"
+              data-album="${key}" aria-selected="${key === currentAlbum}">
+              ${label} <span class="album-tab-count${n >= GALLERY_CAP ? " is-full" : ""}">${n}/${GALLERY_CAP}</span>
+            </button>`;
+  }).join("");
+
+  tabs.querySelectorAll(".album-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentAlbum = btn.dataset.album;
+      renderGallery();
+      updateCapHint();
+    });
+  });
+}
 
 function renderGallery() {
+  renderAlbumTabs();
   const wrap = document.getElementById("galleryGrid");
-  wrap.innerHTML = Object.entries(GALLERY_ALBUMS).map(([key, label]) => {
-    const imgs = galleryRows.filter((r) => r.album === key);
-    return `
-      <div class="gallery-album">
-        <div class="gallery-album-head">
-          <h3>${label}</h3>
-          <span class="badge-pill badge-${imgs.length >= GALLERY_CAP ? "class" : "published"}">${imgs.length}/${GALLERY_CAP}</span>
-        </div>
-        ${imgs.length ? `<div class="admin-gallery-grid">
-          ${imgs.map((r) => `
-            <figure class="admin-gallery-item">
-              <img src="${publicSiteMediaUrl(r.thumb_path)}" alt="${escapeHtmlAdmin(r.alt_text || "")}" loading="lazy" />
-              <button type="button" class="gal-del" data-id="${r.id}" title="Remove"><i class="bi bi-trash-fill"></i></button>
-            </figure>`).join("")}
-        </div>` : '<p class="empty-hint" style="text-align:left;padding:0.3rem 0;">No photos in this album yet.</p>'}
-      </div>`;
-  }).join("");
+  const imgs = galleryRows.filter((r) => r.album === currentAlbum);
+
+  wrap.innerHTML = imgs.length
+    ? `<div class="admin-gallery-grid">
+        ${imgs.map((r) => `
+          <figure class="admin-gallery-item">
+            <img src="${publicSiteMediaUrl(r.thumb_path)}" alt="${escapeHtmlAdmin(r.alt_text || "")}" loading="lazy" />
+            <button type="button" class="gal-del" data-id="${r.id}" title="Remove"><i class="bi bi-trash-fill"></i></button>
+          </figure>`).join("")}
+      </div>`
+    : `<div class="q-empty"><i class="bi bi-images"></i>
+         <p>No photos in ${GALLERY_ALBUMS[currentAlbum]} yet. Add some above.</p></div>`;
 
   wrap.querySelectorAll(".gal-del").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -4303,7 +4316,7 @@ function renderGallery() {
 document.getElementById("galFiles").addEventListener("change", async (e) => {
   const files = [...e.target.files];
   if (!files.length) return;
-  const album = document.getElementById("galAlbum").value;
+  const album = currentAlbum;
   const box = document.getElementById("galUploadResult");
   const used = galleryRows.filter((r) => r.album === album).length;
 

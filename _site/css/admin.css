@@ -1471,3 +1471,63 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .pref-row strong { display: block; font-size: 0.86rem; color: var(--purple-ink); }
 .pref-row small { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
 .pref-row input:disabled + span { opacity: 0.55; }
+
+/* ==========================================================================
+   Homepage gallery — album tabs
+
+   Previously all three albums rendered fully expanded at once, which is up to
+   36 thumbnails in one endless column. One album at a time instead, with the
+   tab doubling as the upload target so there is a single control.
+   ========================================================================== */
+.album-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border-c);
+  padding-bottom: 0.7rem;
+}
+.album-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--border-c);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.album-tab:hover { border-color: var(--purple-deep); color: var(--purple-ink); }
+.album-tab.is-active {
+  background: linear-gradient(135deg, var(--purple-deep), var(--purple-dark));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 5px 16px rgba(89, 6, 148, 0.25);
+}
+.album-tab-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.07);
+  color: inherit;
+}
+.album-tab.is-active .album-tab-count { background: rgba(255, 255, 255, 0.22); }
+.album-tab-count.is-full { background: rgba(255, 140, 0, 0.18); color: #b56200; }
+.album-tab.is-active .album-tab-count.is-full { background: rgba(255, 255, 255, 0.28); color: #fff; }
+
+/* Shared empty state (also used by the gallery when an album has no photos). */
+.q-empty {
+  text-align: center;
+  padding: 1.75rem 1rem;
+  border: 1px dashed var(--border-c);
+  border-radius: 13px;
+  color: var(--muted);
+}
+.q-empty i { font-size: 1.6rem; color: var(--border-c); display: block; margin-bottom: 7px; }
+.q-empty p { margin: 0; font-size: 0.83rem; }
