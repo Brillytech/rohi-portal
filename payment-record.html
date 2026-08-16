@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Record | Rohi Portal</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="css/class-roster.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <header class="roster-topbar">
+    <a class="topbar-btn ghost" href="admin-dashboard.html"><i class="bi bi-arrow-left"></i> Back</a>
+    <div class="roster-topbar-title">
+      <strong id="topbarClass">Payment record</strong>
+      <small id="topbarMeta">Loading…</small>
+    </div>
+    <label class="blank-rows-control">
+      Show
+      <select id="filterSelect">
+        <option value="">All students</option>
+        <option value="owing">Owing only</option>
+        <option value="partial">Part payment only</option>
+        <option value="paid">Cleared only</option>
+      </select>
+    </label>
+    <button class="topbar-btn" id="printBtn"><i class="bi bi-printer"></i> Print / Download PDF</button>
+  </header>
+
+  <main class="roster-main">
+    <div class="roster-state" id="state">
+      <i class="bi bi-hourglass-split"></i>
+      <p>Loading the payment record…</p>
+    </div>
+
+    <div class="sheet" id="printArea" style="display:none;">
+
+      <header class="letterhead">
+        <div class="lh-crest"><img src="img/rohilo.jpg" alt="Rohi Schools crest" /></div>
+        <div class="lh-body">
+          <h1>ROHI SCHOOLS</h1>
+          <p>B4/9 Federal Housing Estate, Olomore, Abeokuta, Ogun State.</p>
+          <p><span class="lh-strong">Phone:</span> 07031362416 &nbsp;·&nbsp;
+             <span class="lh-strong">Email:</span> rohicollegeogunradio@gmail.com</p>
+        </div>
+        <div class="lh-seal"><span>CLASS</span><strong id="sealClass">—</strong></div>
+      </header>
+
+      <div class="roster-title">FEE PAYMENT RECORD</div>
+
+      <table class="meta-table">
+        <tbody>
+          <tr>
+            <th>Class</th><td id="metaClass">—</td>
+            <th>Session</th><td id="metaSession">—</td>
+            <th>Term</th><td id="metaTerm">—</td>
+          </tr>
+          <tr>
+            <th>Students</th><td id="metaCount">—</td>
+            <th>Expected</th><td id="metaExpected">—</td>
+            <th>Collected</th><td id="metaCollected">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="roster-table">
+        <thead>
+          <tr>
+            <th>S/No</th><th>Surname</th><th>First / Other names</th>
+            <th class="amt">Expected</th><th class="amt">Paid</th><th class="amt">Balance</th>
+            <th>Status</th><th>Remark</th>
+          </tr>
+        </thead>
+        <tbody id="recordBody"></tbody>
+        <tfoot id="recordFoot"></tfoot>
+      </table>
+
+      <footer class="roster-foot">
+        <div class="sign-row">
+          <div class="sign-slot"><span class="sign-line"></span><small>Bursar's signature</small></div>
+          <div class="sign-slot"><span class="sign-line"></span><small>Head teacher's signature</small></div>
+          <div class="sign-slot"><span class="sign-line"></span><small>Date</small></div>
+        </div>
+        <p class="foot-note" id="footNote">—</p>
+      </footer>
+    </div>
+  </main>
+
+  <script src="js/portal-utils.js"></script>
+  <script>
+    const SUPABASE_URL = "https://qxlskkxtvucebacqdivi.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const params = new URLSearchParams(location.search);
+    const CLASS_NAME = params.get("class") || "";
+    const TERM_ID = params.get("term") || "";
+
+    let rows = [], ctx = { session: "—", term: "—" };
+
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const naira = (n) => "₦" + (Number(n) || 0).toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const LABEL = { paid: "Cleared", partial: "Part payment", owing: "Owing" };
+
+    function showState(icon, text, sub) {
+      document.getElementById("printArea").style.display = "none";
+      document.getElementById("state").style.display = "block";
+      document.getElementById("state").innerHTML =
+        `<i class="bi ${icon}"></i><p>${esc(text)}</p>${sub ? `<small>${esc(sub)}</small>` : ""}`;
+    }
+
+    async function init() {
+      if (!CLASS_NAME) return showState("bi-exclamation-triangle", "No class specified.",
+        "Open this from the Payments list in the admin dashboard.");
+
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { window.location.href = "portal.html"; return; }
+
+      const { data: me } = await supabaseClient
+        .from("profiles").select("role").eq("id", session.user.id).single();
+      // Fee records are admin-only in RLS; a teacher would just get zero rows,
+      // so say why rather than render an empty sheet.
+      if (!me || me.role !== "admin") {
+        return showState("bi-shield-lock", "Admins only.",
+          "Fee records are restricted to the school office.");
+      }
+
+      const { data: term } = TERM_ID
+        ? await supabaseClient.from("terms").select("*").eq("id", TERM_ID).maybeSingle()
+        : await supabaseClient.from("terms").select("*").eq("is_current", true).maybeSingle();
+      if (term) { ctx.session = term.session; ctx.term = term.name; }
+
+      const [{ data: students }, { data: payments }] = await Promise.all([
+        supabaseClient.from("profiles")
+          .select("id, full_name, surname, portal_number")
+          .eq("role", "student").eq("class", CLASS_NAME),
+        term
+          ? supabaseClient.from("payments").select("*").eq("term_id", term.id)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      if (!students || !students.length) {
+        return showState("bi-people", `No students are enrolled in ${CLASS_NAME}.`);
+      }
+
+      const byStudent = Object.fromEntries((payments || []).map((p) => [p.student_id, p]));
+
+      // Every student appears whether or not a payment row exists — a missing
+      // record is exactly what the office needs to chase, so it must not be
+      // silently absent from the sheet.
+      rows = students.map((s) => {
+        const p = byStudent[s.id];
+        const expected = Number(p?.amount_expected || 0);
+        const paid = Number(p?.amount_paid || 0);
+        return {
+          surname: s.surname || "—",
+          name: s.full_name || "—",
+          expected, paid,
+          balance: Math.max(expected - paid, 0),
+          status: p?.status || "owing",
+          override: !!p?.override_allowed,
+          hasRecord: !!p,
+        };
+      }).sort((a, b) => a.surname.localeCompare(b.surname) || a.name.localeCompare(b.name));
+
+      render();
+    }
+
+    function render() {
+      const filter = document.getElementById("filterSelect").value;
+      const shown = filter ? rows.filter((r) => r.status === filter) : rows;
+
+      document.getElementById("state").style.display = "none";
+      document.getElementById("printArea").style.display = "block";
+
+      const t = shown.reduce((a, r) => {
+        a.expected += r.expected; a.paid += r.paid; a.balance += r.balance;
+        if (r.status === "paid") a.cleared++;
+        return a;
+      }, { expected: 0, paid: 0, balance: 0, cleared: 0 });
+
+      document.getElementById("topbarClass").textContent = `${CLASS_NAME} payment record`;
+      document.getElementById("topbarMeta").textContent =
+        `${ctx.term} · ${ctx.session} · ${shown.length} student${shown.length === 1 ? "" : "s"} · ${naira(t.balance)} outstanding`;
+      document.getElementById("sealClass").textContent = CLASS_NAME;
+      document.getElementById("metaClass").textContent = CLASS_NAME;
+      document.getElementById("metaSession").textContent = ctx.session;
+      document.getElementById("metaTerm").textContent = ctx.term;
+      document.getElementById("metaCount").textContent =
+        `${shown.length}${filter ? ` (${LABEL[filter].toLowerCase()} only, of ${rows.length})` : ""}`;
+      document.getElementById("metaExpected").textContent = naira(t.expected);
+      document.getElementById("metaCollected").textContent = naira(t.paid);
+
+      document.getElementById("recordBody").innerHTML = shown.length
+        ? shown.map((r, i) => `
+          <tr>
+            <td class="num">${i + 1}</td>
+            <td class="strong">${esc(r.surname)}</td>
+            <td>${esc(r.name)}</td>
+            <td class="amt">${r.hasRecord ? naira(r.expected) : "—"}</td>
+            <td class="amt">${r.hasRecord ? naira(r.paid) : "—"}</td>
+            <td class="amt${r.balance > 0 ? " owing" : ""}">${r.hasRecord ? naira(r.balance) : "—"}</td>
+            <td>${r.hasRecord ? LABEL[r.status] : "No record"}${r.override ? " *" : ""}</td>
+            <td class="sig-cell"></td>
+          </tr>`).join("")
+        : `<tr><td colspan="8" style="text-align:center;padding:1rem;">No students match this filter.</td></tr>`;
+
+      document.getElementById("recordFoot").innerHTML = shown.length ? `
+        <tr class="total-row">
+          <td colspan="3">TOTAL — ${shown.length} student${shown.length === 1 ? "" : "s"}, ${t.cleared} cleared</td>
+          <td class="amt">${naira(t.expected)}</td>
+          <td class="amt">${naira(t.paid)}</td>
+          <td class="amt${t.balance > 0 ? " owing" : ""}">${naira(t.balance)}</td>
+          <td colspan="2"></td>
+        </tr>` : "";
+
+      const overrides = shown.filter((r) => r.override).length;
+      document.getElementById("footNote").textContent =
+        `Generated ${new Date().toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}`
+        + (overrides ? ` · * ${overrides} student${overrides === 1 ? "" : "s"} granted a result-access override despite an outstanding balance` : "");
+    }
+
+    document.getElementById("filterSelect").addEventListener("change", () => { if (rows.length) render(); });
+
+    document.getElementById("printBtn").addEventListener("click", () => {
+      const original = document.title;
+      document.title = `Payment record - ${CLASS_NAME} - ${ctx.term} ${String(ctx.session).replace("/", "-")}`
+        .replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+      const restore = () => { document.title = original; window.removeEventListener("afterprint", restore); };
+      window.addEventListener("afterprint", restore);
+      window.print();
+      setTimeout(restore, 8000);
+    });
+
+    init();
+  </script>
+</body>
+</html>

@@ -14,6 +14,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("student-results.html");
   eleventyConfig.addPassthroughCopy("take-exam.html");
   eleventyConfig.addPassthroughCopy("class-roster.html");
+  eleventyConfig.addPassthroughCopy("payment-record.html");
 
   // ✅ Date filter for Nunjucks: {{ post.date | date("MMMM dd, yyyy") }}
   eleventyConfig.addFilter("date", (dateObj, format = "MMMM dd, yyyy") => {

@@ -3671,7 +3671,13 @@ function renderPayments() {
       <div class="class-group">
         <button type="button" class="class-group-header payment-group-header" data-group="${groupName}">
           <span class="class-group-name"><i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${groupName}</span>
-          <span class="class-group-count">${cTotals.cleared}/${inClass.length} cleared · ${naira(cTotals.paid)} of ${naira(cTotals.expected)}</span>
+          <span class="class-group-count">
+            <a class="approve-btn roster-link" href="payment-record.html?class=${encodeURIComponent(groupName)}&term=${termId}"
+               target="_blank" rel="noopener" onclick="event.stopPropagation();">
+              <i class="bi bi-file-earmark-arrow-down"></i> Record
+            </a>&nbsp;
+            ${cTotals.cleared}/${inClass.length} cleared · ${naira(cTotals.paid)} of ${naira(cTotals.expected)}
+          </span>
         </button>
         <div class="class-group-body${isOpen ? " open" : ""}">
           <div class="bulk-fee-row">

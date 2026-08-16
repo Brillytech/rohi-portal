@@ -293,3 +293,20 @@ body {
   .sign-row { flex-direction: column; gap: 0.8rem; }
   .roster-topbar { flex-wrap: wrap; gap: 8px; padding: 0.7rem 1rem; }
 }
+
+/* ---------- Money columns (payment record) ---------- */
+.roster-table th.amt, .roster-table td.amt { text-align: right; white-space: nowrap; }
+.roster-table td.amt.owing { color: #b42318; font-weight: 700; }
+.roster-table tfoot .total-row td {
+  background: #f5f1fb;
+  font-weight: 700;
+  color: var(--purple-ink);
+  border-top: 2px solid var(--purple-deep);
+}
+@media print {
+  .roster-table tfoot .total-row td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .roster-table tfoot { display: table-footer-group; }
+}
