@@ -909,3 +909,21 @@ html, body { max-width: 100%; overflow-x: hidden; }
   white-space: nowrap;
   vertical-align: middle;
 }
+
+/* Explains where a lower-school teacher's subjects came from — they arrive
+   from being class teacher, not from a per-subject assignment. */
+.whole-class-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(89, 6, 148, 0.06);
+  border: 1px solid rgba(89, 6, 148, 0.15);
+  border-radius: 12px;
+  padding: 11px 14px;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.whole-class-note i { color: var(--purple-deep); margin-top: 2px; }
+.whole-class-note strong { color: var(--purple-ink); }

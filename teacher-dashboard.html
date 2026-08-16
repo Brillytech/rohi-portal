@@ -151,9 +151,10 @@
             </div>
             <div class="panel-header-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
           </div>
+          <div id="wholeClassBanner" hidden></div>
           <div class="table-wrap">
             <table class="data-table" id="subjectsTable">
-              <thead><tr><th>Subject</th><th>Level / track</th></tr></thead>
+              <thead><tr><th>Subject</th><th>Level / track</th><th>How you got it</th></tr></thead>
               <tbody></tbody>
             </table>
             <div class="empty-state" id="subjectsEmptyHint"><i class="bi bi-journal-x"></i><p>No subjects assigned yet.</p></div>
@@ -848,7 +849,46 @@ function renderMySubjects() {
   }
   emptyHint.style.display = "none";
 
-  tbody.innerHTML = mySubjects.map((s) => `<tr><td>${s.name}</td><td>${s.category || "General"}</td></tr>`).join("");
+  // In Nursery / Kindergarten / Primary one class teacher takes the whole
+  // curriculum, so those subjects arrive without a subject_teachers row. Say
+  // where they came from, or the list looks like it assigned itself.
+  const wholeClasses = myWholeClassClasses();
+  const wholeClassSubjectIds = new Set();
+  wholeClasses.forEach((c) => {
+    const matches = categoryMatcherForClass(c.name);
+    if (matches) allSubjects.filter((s) => matches(s.category)).forEach((s) => wholeClassSubjectIds.add(s.id));
+  });
+
+  const banner = document.getElementById("wholeClassBanner");
+  if (banner) {
+    if (wholeClasses.length) {
+      banner.hidden = false;
+      banner.innerHTML = wholeClasses.map((c) => {
+        const matches = categoryMatcherForClass(c.name);
+        const n = matches ? allSubjects.filter((s) => matches(s.category)).length : 0;
+        return `<div class="whole-class-note">
+          <i class="bi bi-mortarboard-fill"></i>
+          <span>You are the class teacher for <strong>${escapeHtml(c.name)}</strong>, so you take
+          <strong>all ${n} of its subjects</strong> — no separate assignment needed. Marks, register
+          and remarks for this class are all yours.</span>
+        </div>`;
+      }).join("");
+    } else {
+      banner.hidden = true;
+      banner.innerHTML = "";
+    }
+  }
+
+  tbody.innerHTML = mySubjects.map((s) => {
+    const whole = wholeClassSubjectIds.has(s.id);
+    return `<tr>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${escapeHtml(s.category || "General")}</td>
+      <td>${whole
+        ? '<span class="badge-pill badge-class">as class teacher</span>'
+        : '<span class="badge-pill badge-published">assigned</span>'}</td>
+    </tr>`;
+  }).join("");
 
   overviewList.innerHTML = mySubjects.slice(0, 5).map((s) => `
     <div class="widget-list-item">

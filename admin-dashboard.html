@@ -1605,9 +1605,21 @@ function renderClasses() {
           <button class="approve-btn cancel-class-btn">Cancel</button>
         </td>`;
     } else {
+      // Nursery / Kindergarten / Primary are taught wholly by their class
+      // teacher, so assigning one there hands over the entire curriculum.
+      // That is a much bigger grant than on a secondary class — say so.
+      const isWholeClass = /^(nursery|kindergarten|kg|primary)/i.test(c.level_key || "");
+      const curriculumCount = isWholeClass
+        ? allSubjects.filter((s) => subjectCategoriesForLevel(c.level_key).includes(s.category)).length
+        : 0;
       tr.innerHTML = `
-        <td>${c.name}</td>
-        <td>${teacher ? teacher.full_name : '<span class="empty-hint" style="padding:0;display:inline;">Unassigned</span>'}</td>
+        <td>${c.name}${isWholeClass
+          ? `<br><span class="empty-hint" style="padding:0;display:inline;font-size:0.72rem;">
+               <i class="bi bi-mortarboard-fill"></i> class teacher takes all ${curriculumCount} subjects</span>`
+          : ""}</td>
+        <td>${teacher
+          ? teacher.full_name
+          : `<span class="empty-hint" style="padding:0;display:inline;">Unassigned${isWholeClass ? " — nobody can mark this class" : ""}</span>`}</td>
         <td>${studentCount}</td>
         <td class="row-actions">
           <button class="approve-btn edit-class-btn" data-id="${c.id}">${teacher ? "Edit" : "Assign / Edit"}</button>
@@ -1852,6 +1864,9 @@ async function loadSubjects() {
     : '<p class="empty-hint" style="padding:0;">Add subjects first, then they\'ll appear here to pick from.</p>';
 
   renderSubjects();
+  // The classes table quotes each lower-school class's curriculum size, which
+  // is only knowable once subjects are in — and loadClasses() runs first.
+  if (allClasses.length) renderClasses();
 }
 
 const CATEGORY_ORDER = [
