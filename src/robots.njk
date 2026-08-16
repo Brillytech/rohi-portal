@@ -1,0 +1,29 @@
+---
+permalink: /robots.txt
+eleventyExcludeFromCollections: true
+---
+# Rohi Group of Schools
+# The marketing site is fully indexable. The portal is a private application
+# living at the same origin, so it is listed out explicitly below — those pages
+# render nothing without a session, but they should never surface in search.
+
+User-agent: *
+Allow: /
+
+# Portal / staff application
+Disallow: /portal.html
+Disallow: /student.html
+Disallow: /student-results.html
+Disallow: /teacher-dashboard.html
+Disallow: /admin-dashboard.html
+Disallow: /take-exam.html
+Disallow: /class-roster.html
+Disallow: /payment-record.html
+
+# Legacy Netlify CMS panel left over from the previous build
+Disallow: /admin/
+
+# Form success page — no value in search results
+Disallow: /thank-you/
+
+Sitemap: {{ site.url }}/sitemap.xml

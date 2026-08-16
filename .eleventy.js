@@ -16,6 +16,19 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("class-roster.html");
   eleventyConfig.addPassthroughCopy("payment-record.html");
 
+  // PWA files for the PORTAL only. sw-portal.js must sit at the site root or
+  // its scope could not cover the portal pages, which also live at the root.
+  eleventyConfig.addPassthroughCopy("portal.webmanifest");
+  eleventyConfig.addPassthroughCopy("sw-portal.js");
+  eleventyConfig.addPassthroughCopy("portal-offline.html");
+  eleventyConfig.addPassthroughCopy("favicon.ico");
+
+  // ISO yyyy-mm-dd, for <lastmod> in sitemap.xml
+  eleventyConfig.addFilter("htmlDateString", (dateObj) => {
+    const d = dateObj ? new Date(dateObj) : new Date();
+    return isNaN(d) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
+  });
+
   // ✅ Date filter for Nunjucks: {{ post.date | date("MMMM dd, yyyy") }}
   eleventyConfig.addFilter("date", (dateObj, format = "MMMM dd, yyyy") => {
     if (!dateObj) return "";

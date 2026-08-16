@@ -1,0 +1,18 @@
+---
+permalink: /sitemap.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{%- set priorities = { "/": "1.0", "/about/": "0.8", "/contact/": "0.8", "/news/": "0.7" } -%}
+{%- for item in collections.all -%}
+{%- if item.url and not item.data.eleventyExcludeFromCollections -%}
+  <url>
+    <loc>{{ site.url }}{{ item.url }}</loc>
+    <lastmod>{{ (item.data.post.publish_at if item.data.post else item.date) | htmlDateString }}</lastmod>
+    <changefreq>{{ "weekly" if item.url == "/" or item.url == "/news/" else "monthly" }}</changefreq>
+    <priority>{{ priorities[item.url] | default("0.6") }}</priority>
+  </url>
+{%- endif -%}
+{%- endfor %}
+</urlset>

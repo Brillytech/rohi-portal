@@ -910,3 +910,97 @@ body:not(.has-hero) main { padding-top: var(--nav-h); }
   .nav-toggle, .nav-panel-close, .footer-socials a, .lightbox-close { min-width: 44px; min-height: 44px; }
   .segmented-btn { min-height: 40px; }
 }
+
+/* ==========================================================================
+   SCROLL REVEAL + MOTION POLISH
+
+   CSS-first: elements start in their revealed state and are only hidden once
+   JS confirms IntersectionObserver support (html.js-reveal). If the script
+   fails or is blocked, every section is simply visible — content is never
+   trapped behind an animation that never runs.
+
+   Replaces the data-aos attributes that were on about/contact without the AOS
+   library ever being loaded, so none of them had been animating at all.
+   ========================================================================== */
+.js-reveal .reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
+}
+.js-reveal .reveal.is-in {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+/* Directional variants */
+.js-reveal .reveal-left  { transform: translateX(-22px); }
+.js-reveal .reveal-right { transform: translateX(22px); }
+.js-reveal .reveal-zoom  { transform: scale(0.965); }
+.js-reveal .reveal-left.is-in,
+.js-reveal .reveal-right.is-in,
+.js-reveal .reveal-zoom.is-in { transform: none; }
+
+/* Children stagger in sequence — set on a grid wrapper. Capped at 8 so a long
+   gallery never leaves the last tiles waiting a second and a half. */
+.js-reveal .reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+.js-reveal .reveal-stagger.is-in > * { opacity: 1; transform: none; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(1) { transition-delay: 0ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(2) { transition-delay: 70ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(3) { transition-delay: 140ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(4) { transition-delay: 210ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(5) { transition-delay: 280ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(6) { transition-delay: 350ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(7) { transition-delay: 420ms; }
+.js-reveal .reveal-stagger.is-in > *:nth-child(n+8) { transition-delay: 490ms; }
+
+/* Page-load settle: only the first screenful, so navigation feels immediate. */
+@keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+body { animation: pageIn 0.35s var(--ease) both; }
+
+/* ---------- Hover depth ---------- */
+.pillar { transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.25s var(--ease); }
+.pillar:hover { transform: translateY(-4px); box-shadow: 0 16px 38px rgba(89,6,148,0.12); }
+.pillar-icon { transition: transform 0.3s var(--ease); }
+.pillar:hover .pillar-icon { transform: scale(1.08) rotate(-4deg); }
+
+.news-card:hover .news-readmore i { transform: translateX(4px); }
+.gallery-item { transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease); }
+.gallery-item:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(15,23,42,0.16); }
+
+/* Visible keyboard focus — was relying on the browser default. */
+a:focus-visible, button:focus-visible, .btn-primary-solid:focus-visible, .btn-ghost:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   REDUCED MOTION
+   One global switch. Previously only the hero honoured this.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal .reveal,
+  .js-reveal .reveal-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  body { animation: none; }
+  .pillar:hover,
+  .gallery-item:hover { transform: none; }
+  .pillar:hover .pillar-icon { transform: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

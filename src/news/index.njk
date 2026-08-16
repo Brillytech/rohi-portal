@@ -7,7 +7,7 @@ permalink: /news/
 
 <header class="section section-brand" style="padding-bottom:var(--sp-6)">
   <div class="container-wide">
-    <div class="section-head center">
+    <div class="section-head center reveal">
       <span class="eyebrow">Newsroom</span>
       <h1>News &amp; Updates</h1>
       <p class="section-lede">Announcements, events and milestones from across Rohi Group of Schools.</p>
@@ -41,7 +41,7 @@ permalink: /news/
       </a>
 
       {% if announcements.length > 1 %}
-        <div class="news-grid">
+        <div class="news-grid reveal-stagger">
           {% for post in announcements.slice(1) %}
             <a class="news-card" href="{{ post.url }}">
               <div class="news-card-media">

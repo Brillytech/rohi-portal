@@ -19,4 +19,31 @@ function publicMediaUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/site-media/${path}`;
 }
 
-module.exports = { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, publicMediaUrl };
+// ---------------------------------------------------------------------------
+// Canonical site identity. Every absolute URL on the public site — og:url,
+// canonical, sitemap entries, the robots.txt Sitemap line and the schema.org
+// block — derives from `url`, so changing domain is a one-line edit here.
+// ---------------------------------------------------------------------------
+const url = "https://rohischools.com";
+
+const school = {
+  name: "Rohi Group of Schools",
+  shortName: "Rohi Schools",
+  legalName: "Rohi Group of Schools",
+  tagline: "Raising principled leaders through sound education.",
+  description:
+    "Rohi Group of Schools, Abeokuta — a Kindergarten to Senior Secondary school in Ogun State " +
+    "offering strong academics, character formation and practical skills across two campuses.",
+  founded: "2007",
+  street: "B4/9 Federal Housing Estate, Olomore",
+  city: "Abeokuta",
+  region: "Ogun State",
+  country: "NG",
+  phone: ["+2348032408415", "+2347031362416"],
+  email: "rohicollegeogunradio@gmail.com",
+  facebook: "https://www.facebook.com/profile.php?id=100063597926687",
+  whatsapp: "https://wa.me/2347031362416",
+  ogImage: "/img/og-image.png",
+};
+
+module.exports = { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, publicMediaUrl, url, school };
