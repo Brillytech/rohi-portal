@@ -927,3 +927,53 @@ html, body { max-width: 100%; overflow-x: hidden; }
 }
 .whole-class-note i { color: var(--purple-deep); margin-top: 2px; }
 .whole-class-note strong { color: var(--purple-ink); }
+
+/* ==========================================================================
+   SIDEBAR SCROLLING
+
+   Same fix as the admin panel. The nav is a flex child with flex:1, and a
+   flex item's default min-height:auto stops it shrinking below its content —
+   so it overflowed the column instead of scrolling, carrying the logout
+   button past the bottom of the screen. On phones 100vh also measures taller
+   than the visible area because the address bar is excluded, which hid the
+   last items even when they nominally fitted.
+   ========================================================================== */
+.sidebar {
+  height: 100vh;      /* fallback */
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.sidebar-brand { flex: none; }
+
+.sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;                    /* the fix */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.28) transparent;
+}
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.22);
+  border-radius: 999px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+
+.logout-btn {
+  flex: none;
+  margin-top: 0.75rem;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  justify-content: center;
+}
+
+@media (max-height: 560px) {
+  .sidebar { padding-top: 1rem; padding-bottom: 1rem; }
+  .sidebar-brand { margin-bottom: 1rem; }
+  .nav-item { padding: 9px 12px; font-size: 0.84rem; }
+}

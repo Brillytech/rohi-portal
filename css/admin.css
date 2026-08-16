@@ -1613,3 +1613,63 @@ html, body { max-width: 100%; overflow-x: hidden; }
   color: var(--muted);
 }
 .class-key-note strong { color: var(--purple-ink); font-family: 'Courier New', monospace; }
+
+/* ==========================================================================
+   SIDEBAR SCROLLING
+
+   The nav outgrew the viewport once Storage and Settings were added (12 items
+   now). Two separate faults were pushing the logout button off the bottom:
+
+   1. .sidebar-nav is a flex child with flex:1, but a flex item's default
+      min-height:auto refuses to shrink below its content. So the nav grew to
+      fit all 12 items, the column overflowed 100vh, and nothing had overflow-y
+      to scroll it. min-height:0 is what actually lets it shrink and scroll.
+
+   2. On phones, 100vh is taller than the visible area because the browser's
+      address bar is excluded from the measurement — so even a nav that fits
+      "100vh" had its last items and the logout button hidden under the chrome.
+      100dvh tracks the real visible height.
+   ========================================================================== */
+.sidebar {
+  height: 100vh;      /* fallback for older browsers */
+  height: 100dvh;
+  overflow: hidden;   /* the nav scrolls, not the whole panel */
+}
+
+.sidebar-brand { flex: none; }
+
+.sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;                    /* the fix — without this it cannot shrink */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Room so the last item never sits flush against the logout button. */
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.28) transparent;
+}
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.22);
+  border-radius: 999px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+
+/* Logout stays pinned to the bottom and is never scrolled away. The top
+   border reads as the edge of the scrolling region. */
+.logout-btn {
+  flex: none;
+  margin-top: 0.75rem;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  justify-content: center;
+}
+
+/* Short landscape phones: reclaim vertical space so the nav still fits. */
+@media (max-height: 560px) {
+  .sidebar { padding-top: 1rem; padding-bottom: 1rem; }
+  .sidebar-brand { margin-bottom: 1rem; }
+  .nav-item { padding: 9px 12px; font-size: 0.84rem; }
+}

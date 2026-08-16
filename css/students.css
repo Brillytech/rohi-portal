@@ -620,3 +620,53 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .student-view { display: none; }
 .student-view.active { display: block; animation: studentViewIn 0.25s ease; }
 @keyframes studentViewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================================================
+   SIDEBAR SCROLLING
+
+   Matches the admin and teacher panels: the link list scrolls, the logout
+   button stays pinned to the bottom instead of scrolling away with it.
+
+   Bootstrap's .offcanvas-body already scrolls as a whole, which meant a short
+   phone in landscape pushed Logout out of reach. Making the body a flex column
+   with min-height:0 on the scrolling child keeps it in place. min-height:0 is
+   required because a flex item otherwise refuses to shrink below its content.
+   ========================================================================== */
+.student-sidebar .offcanvas-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;          /* the link list scrolls, not the panel */
+}
+
+.student-sidebar .student-mini-profile { flex: none; }
+
+.student-sidebar .sidebar-links {
+  flex: 1 1 auto;
+  min-height: 0;             /* lets it shrink so it can scroll */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.28) transparent;
+}
+.student-sidebar .sidebar-links::-webkit-scrollbar { width: 6px; }
+.student-sidebar .sidebar-links::-webkit-scrollbar-track { background: transparent; }
+.student-sidebar .sidebar-links::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.22);
+  border-radius: 999px;
+}
+
+/* .mt-auto already pushes this down; flex:none stops it being squeezed. */
+.student-sidebar .mt-auto {
+  flex: none;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  margin-top: 0.75rem;
+  padding-top: 0.85rem;
+}
+
+@media (max-height: 560px) {
+  .student-mini-profile { padding: 0.5rem 0.25rem 0.75rem; }
+  .student-mini-avatar { font-size: 1.8rem; }
+  .sidebar-links .nav-link { padding: 9px 12px; font-size: 0.84rem; }
+}
