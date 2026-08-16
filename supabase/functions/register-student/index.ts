@@ -1,5 +1,6 @@
 // supabase/functions/register-student/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdmin } from "../_shared/requireAdmin.ts";
 
 Deno.serve(async (req) => {
   const corsHeaders = {
@@ -26,6 +27,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Creating students burns portal numbers and makes real auth accounts —
+    // admins only.
+    const denied = await requireAdmin(req, supabaseAdmin);
+    if (denied) return denied;
 
     const year = new Date().getFullYear().toString().slice(-2); // e.g. "26"
 

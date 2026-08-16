@@ -389,11 +389,20 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4bHNra3h0dnVjZWJhY3FkaXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzcwNDQsImV4cCI6MjA5OTgxMzA0NH0.9yO82WLR9SzMmTv8GPlb2C4oDALqpdAm6tGvys-2gX0";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    /* Everything below builds markup with innerHTML, and several of the values
+       come from other users — a class teacher writes announcement titles and
+       bodies and exam titles, and those land in every student's browser. Any
+       dynamic value interpolated into a template MUST go through this. */
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
     function showToast(message) {
       const stack = document.getElementById("toastStack");
       const toast = document.createElement("div");
       toast.className = "mini-toast";
-      toast.innerHTML = `<i class="bi bi-info-circle-fill"></i><span>${message}</span>`;
+      toast.innerHTML = `<i class="bi bi-info-circle-fill"></i><span>${esc(message)}</span>`;
       stack.appendChild(toast);
       setTimeout(() => toast.classList.add("show"), 10);
       setTimeout(() => {
@@ -597,7 +606,7 @@
         .from("class_timetables").select("*").eq("class_name", className).maybeSingle();
 
       if (!data) {
-        wrap.innerHTML = `<div class="list-empty"><i class="bi bi-calendar3"></i>Your class teacher hasn't uploaded a timetable for ${className} yet.</div>`;
+        wrap.innerHTML = `<div class="list-empty"><i class="bi bi-calendar3"></i>Your class teacher hasn't uploaded a timetable for ${esc(className)} yet.</div>`;
         return;
       }
 
@@ -612,7 +621,7 @@
         <p class="widget-list-meta mb-2">Updated ${new Date(data.uploaded_at).toLocaleDateString()}</p>
         ${isPdf
           ? `<a class="action-link" href="${url}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Open timetable (PDF)</a>`
-          : `<img src="${url}" alt="Timetable for ${className}" style="max-width:100%;border-radius:12px;border:1px solid var(--border-c);" />`}
+          : `<img src="${url}" alt="Timetable for ${esc(className)}" style="max-width:100%;border-radius:12px;border:1px solid var(--border-c);" />`}
         <div class="mt-2"><a class="action-link" href="${url}" target="_blank" rel="noopener">Open full size <i class="bi bi-box-arrow-up-right"></i></a></div>`;
     }
 
@@ -630,7 +639,7 @@
         .order("attendance_date", { ascending: false });
 
       if (error) {
-        wrap.innerHTML = `<div class="list-empty"><i class="bi bi-person-check"></i>${error.message}</div>`;
+        wrap.innerHTML = `<div class="list-empty"><i class="bi bi-person-check"></i>${esc(error.message)}</div>`;
         return;
       }
       if (!data || !data.length) {
@@ -673,7 +682,7 @@
       }
 
       wrap.innerHTML = '<div class="subject-chip-list">' +
-        matched.map((s) => `<span class="subject-chip">${s.name}<small>${s.category || "General"}</small></span>`).join("") +
+        matched.map((s) => `<span class="subject-chip">${esc(s.name)}<small>${esc(s.category || "General")}</small></span>`).join("") +
         "</div>";
     }
 
@@ -693,7 +702,7 @@
           <div class="activity-item">
             <div class="activity-icon"><i class="bi bi-clipboard-check"></i></div>
             <div>
-              <h6>${subject ? subject.name : "A subject"} — ${total} (${gradeFor(total)})</h6>
+              <h6>${esc(subject ? subject.name : "A subject")} — ${total} (${gradeFor(total)})</h6>
               <p>Published ${timeAgo(r.updated_at)}</p>
             </div>
           </div>`;
@@ -715,8 +724,8 @@
         <div class="notice-item">
           <span class="notice-dot"></span>
           <div>
-            <h6>${a.title}</h6>
-            <p>${a.body}</p>
+            <h6>${esc(a.title)}</h6>
+            <p>${esc(a.body)}</p>
           </div>
         </div>`).join("");
     }
@@ -756,8 +765,8 @@
             <div class="d-flex gap-3">
               <div class="activity-icon"><i class="bi bi-pencil-square"></i></div>
               <div>
-                <h6>${exam.title}</h6>
-                <p>${metaLine}</p>
+                <h6>${esc(exam.title)}</h6>
+                <p>${esc(metaLine)}</p>
               </div>
             </div>
             ${rightSide}

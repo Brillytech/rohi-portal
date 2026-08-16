@@ -1,5 +1,6 @@
 // supabase/functions/register-teacher/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdmin } from "../_shared/requireAdmin.ts";
 
 Deno.serve(async (req) => {
   const corsHeaders = {
@@ -25,6 +26,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // This endpoint mints role='teacher' accounts, so the caller must be an
+    // admin. Without this, the public anon key was enough to create staff.
+    const denied = await requireAdmin(req, supabaseAdmin);
+    if (denied) return denied;
 
     const sharedPassword = Deno.env.get("TEACHER_SHARED_PASSWORD");
     if (!sharedPassword) {
