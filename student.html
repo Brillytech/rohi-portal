@@ -28,24 +28,28 @@
       <div class="d-flex align-items-center gap-3 ms-auto">
         <span id="clock" class="topbar-clock d-none d-md-inline"></span>
         <span class="topbar-badge d-none d-sm-inline">Student Portal</span>
-        <button class="topbar-icon coming-soon-btn" type="button" title="Notifications">
-          <i class="bi bi-bell"></i>
-        </button>
-        <button class="topbar-icon coming-soon-btn" type="button" title="Settings">
-          <i class="bi bi-gear"></i>
-        </button>
+        <div class="bell-wrap">
+          <button class="topbar-icon bell-btn" type="button" title="Notifications" id="bellBtn">
+            <i class="bi bi-bell"></i>
+            <span class="bell-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="bell-panel" id="bellPanel" hidden>
+            <div class="bell-panel-head">Notifications</div>
+            <div id="bellList"></div>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
 
   <!-- Sidebar -->
-  <div class="offcanvas offcanvas-start student-sidebar" tabindex="-1" id="sidebar">
+  <div class="offcanvas-lg offcanvas-start student-sidebar" tabindex="-1" id="sidebar">
     <div class="offcanvas-header border-bottom">
       <div>
         <h5 class="offcanvas-title mb-0">Student Menu</h5>
         <small class="text-white-50">Rohi School Portal</small>
       </div>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"></button>
     </div>
 
     <div class="offcanvas-body d-flex flex-column">
@@ -61,25 +65,31 @@
 
       <ul class="nav flex-column sidebar-links mt-2">
         <li class="nav-item">
-          <a href="#" class="nav-link active">
+          <a href="#" class="nav-link active" data-view="dashboard">
             <i class="bi bi-speedometer2"></i>
             <span>Dashboard</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#mySubjects" class="nav-link" data-bs-dismiss="offcanvas">
+          <a href="#" class="nav-link" data-view="subjects">
             <i class="bi bi-book"></i>
             <span>Subjects</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link coming-soon-btn">
+          <a href="#" class="nav-link" data-view="timetable">
             <i class="bi bi-calendar3"></i>
             <span>Timetable</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#myExams" class="nav-link" data-bs-dismiss="offcanvas">
+          <a href="#" class="nav-link" data-view="attendance">
+            <i class="bi bi-person-check"></i>
+            <span>Attendance</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" data-view="exams">
             <i class="bi bi-pen"></i>
             <span>Take Exam</span>
           </a>
@@ -91,7 +101,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a href="#myProfile" class="nav-link" data-bs-dismiss="offcanvas">
+          <a href="#" class="nav-link" data-view="profile">
             <i class="bi bi-person-vcard"></i>
             <span>Profile</span>
           </a>
@@ -110,8 +120,9 @@
   <main class="student-main">
     <div class="container-fluid px-3 px-lg-4 py-4">
 
+      <section class="student-view active" id="view-dashboard">
       <!-- Welcome -->
-      <section class="welcome-card">
+      <section class="welcome-card" id="dashboardTop">
         <div class="row align-items-center g-4">
           <div class="col-lg-8">
             <div class="welcome-text">
@@ -135,7 +146,6 @@
           </div>
         </div>
       </section>
-
       <!-- Stats / Main Actions -->
       <section class="row g-4 mb-4">
         <div class="col-md-6 col-xl-4">
@@ -146,7 +156,7 @@
             <div class="action-content">
               <h5>Subjects</h5>
               <p>Check your registered subjects for this term.</p>
-              <a href="#mySubjects" class="action-link">View Subjects <i class="bi bi-arrow-right"></i></a>
+              <a href="#" class="action-link" data-view="subjects">View Subjects <i class="bi bi-arrow-right"></i></a>
             </div>
           </div>
         </div>
@@ -159,7 +169,7 @@
             <div class="action-content">
               <h5>Take Exam</h5>
               <p>Access CBT exams your teachers have published for your class.</p>
-              <a href="#myExams" class="action-link">View Exams <i class="bi bi-arrow-right"></i></a>
+              <a href="#" class="action-link" data-view="exams">View Exams <i class="bi bi-arrow-right"></i></a>
             </div>
           </div>
         </div>
@@ -177,37 +187,6 @@
           </div>
         </div>
       </section>
-
-      <!-- My Subjects -->
-      <section class="row g-4 mb-4" id="mySubjects">
-        <div class="col-12">
-          <div class="portal-card section-card">
-            <div class="section-header">
-              <h5 class="mb-1">My Subjects</h5>
-              <p class="mb-0">Subjects offered at your class level, grouped by track.</p>
-            </div>
-            <div id="subjectsWrap">
-              <div class="list-empty"><i class="bi bi-journal-x"></i>Loading your subjects...</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Exams -->
-      <section class="row g-4 mb-4" id="myExams">
-        <div class="col-12">
-          <div class="portal-card section-card">
-            <div class="section-header">
-              <h5 class="mb-1">Exams</h5>
-              <p class="mb-0">Published CBT exams for your class. Each one can only be taken once.</p>
-            </div>
-            <div class="activity-list" id="examsList">
-              <div class="list-empty"><i class="bi bi-pencil-square"></i>Loading exams...</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Quick Access + Notices -->
       <section class="row g-4 mb-4">
         <div class="col-xl-8">
@@ -218,12 +197,12 @@
             </div>
 
             <div class="quick-actions-grid">
-              <a href="#myProfile" class="quick-action-btn"><i class="bi bi-person-vcard"></i><span>Profile Details</span></a>
-              <a href="#" class="quick-action-btn coming-soon-btn"><i class="bi bi-calendar-week"></i><span>View Timetable</span></a>
-              <a href="#mySubjects" class="quick-action-btn"><i class="bi bi-journal-text"></i><span>Registered Subjects</span></a>
-              <a href="#myExams" class="quick-action-btn"><i class="bi bi-check2-square"></i><span>Start Exam</span></a>
+              <a href="#" class="quick-action-btn" data-view="profile"><i class="bi bi-person-vcard"></i><span>Profile Details</span></a>
+              <a href="#" class="quick-action-btn" data-view="timetable"><i class="bi bi-calendar-week"></i><span>View Timetable</span></a>
+              <a href="#" class="quick-action-btn" data-view="subjects"><i class="bi bi-journal-text"></i><span>Registered Subjects</span></a>
+              <a href="#" class="quick-action-btn" data-view="exams"><i class="bi bi-check2-square"></i><span>Start Exam</span></a>
               <a href="student-results.html" class="quick-action-btn"><i class="bi bi-clipboard-data"></i><span>Check Results</span></a>
-              <a href="#" class="quick-action-btn coming-soon-btn"><i class="bi bi-person-check"></i><span>Attendance</span></a>
+              <a href="#" class="quick-action-btn" data-view="attendance"><i class="bi bi-person-check"></i><span>Attendance</span></a>
             </div>
           </div>
         </div>
@@ -240,7 +219,6 @@
           </div>
         </div>
       </section>
-
       <!-- Extra Section -->
       <section class="row g-4">
         <div class="col-xl-7">
@@ -283,7 +261,72 @@
           </div>
         </div>
       </section>
-
+      </section>
+      <section class="student-view" id="view-subjects">
+      <!-- My Subjects -->
+      <section class="row g-4 mb-4" id="mySubjects">
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">My Subjects</h5>
+              <p class="mb-0">Subjects offered at your class level, grouped by track.</p>
+            </div>
+            <div id="subjectsWrap">
+              <div class="list-empty"><i class="bi bi-journal-x"></i>Loading your subjects...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </section>
+      <section class="student-view" id="view-timetable">
+      <!-- Timetable -->
+      <section class="row g-4 mb-4" id="myTimetable">
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">Timetable</h5>
+              <p class="mb-0">The current timetable for your class, uploaded by your class teacher.</p>
+            </div>
+            <div id="timetableWrap">
+              <div class="list-empty"><i class="bi bi-calendar3"></i>Loading timetable...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </section>
+      <section class="student-view" id="view-attendance">
+      <!-- Attendance -->
+      <section class="row g-4 mb-4" id="myAttendance">
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">Attendance</h5>
+              <p class="mb-0">Your record for the current term, from your class teacher's daily register.</p>
+            </div>
+            <div id="attendanceWrap">
+              <div class="list-empty"><i class="bi bi-person-check"></i>Loading attendance...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </section>
+      <section class="student-view" id="view-exams">
+      <!-- Exams -->
+      <section class="row g-4 mb-4" id="myExams">
+        <div class="col-12">
+          <div class="portal-card section-card">
+            <div class="section-header">
+              <h5 class="mb-1">Exams</h5>
+              <p class="mb-0">Published CBT exams for your class. Each one can only be taken once.</p>
+            </div>
+            <div class="activity-list" id="examsList">
+              <div class="list-empty"><i class="bi bi-pencil-square"></i>Loading exams...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </section>
+      <section class="student-view" id="view-profile">
       <!-- Profile -->
       <section class="row g-4 mt-1" id="myProfile">
         <div class="col-12">
@@ -331,6 +374,7 @@
           </div>
         </div>
       </section>
+      </section>
 
     </div>
   </main>
@@ -358,10 +402,61 @@
       }, 3200);
     }
 
+    /* ---- Sidebar navigation ----------------------------------------------
+       Below 992px the sidebar is a Bootstrap offcanvas, which locks body
+       scrolling while it is open. A native "#section" jump therefore either
+       does nothing or is undone the moment the panel closes, which is why
+       these links looked broken on a phone. Close first, scroll after.
+    ---------------------------------------------------------------------- */
+    const sidebarEl = document.getElementById("sidebar");
+
+    function closeSidebarThen(run) {
+      const instance = window.bootstrap ? bootstrap.Offcanvas.getInstance(sidebarEl) : null;
+      if (!instance || !sidebarEl.classList.contains("show")) { run(); return; }
+      sidebarEl.addEventListener("hidden.bs.offcanvas", run, { once: true });
+      instance.hide();
+    }
+
+    /* One pane at a time, the same shape as the teacher and admin panels.
+       The dashboard used to be one long scroll with anchor jumps, which is
+       what made "the nav does nothing" so easy to hit: on a phone the panel
+       closed and the jump was swallowed. Switching panes has no scroll to
+       lose. */
+    const VIEW_TITLES = {
+      dashboard: "Dashboard", subjects: "My Subjects", timetable: "Timetable",
+      attendance: "Attendance", exams: "Take Exam", profile: "Profile",
+    };
+
+    function switchView(view) {
+      if (!VIEW_TITLES[view]) return;
+      document.querySelectorAll(".student-view").forEach((v) => {
+        v.classList.toggle("active", v.id === "view-" + view);
+      });
+      document.querySelectorAll(".sidebar-links .nav-link[data-view]").forEach((l) => {
+        l.classList.toggle("active", l.dataset.view === view);
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      try { history.replaceState(null, "", "#" + view); } catch (e) {}
+    }
+
+    document.querySelectorAll("[data-view]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        const view = el.dataset.view;
+        closeSidebarThen(() => switchView(view));
+      });
+    });
+
+    // Deep link support: #subjects, #attendance, ...
+    const initialView = (location.hash || "").replace("#", "");
+    if (VIEW_TITLES[initialView]) switchView(initialView);
+
     document.querySelectorAll(".coming-soon-btn").forEach((el) => {
       el.addEventListener("click", (e) => {
         e.preventDefault();
-        showToast("This feature is coming soon.");
+        // Toast renders over the page, so on mobile the panel has to go first
+        // or the message appears behind it.
+        closeSidebarThen(() => showToast("This feature is coming soon."));
       });
     });
 
@@ -463,6 +558,107 @@
       renderResults(results || [], subjects || []);
       renderNotices(announcements || [], profile.class);
       renderExams(exams || [], myAttempts || [], subjects || []);
+
+      myProfile = profile;
+      myTerm = currentTerm;
+      loadMyTimetable(profile.class);
+      loadMyAttendance(profile.id, currentTerm);
+
+      // Settings UI is admin-only; the row is still loaded because the bell
+      // reads its "seen" watermark from it.
+      mySettings = await loadUserSettings(supabaseClient, profile.id);
+      bell = installNotificationBell(
+        supabaseClient,
+        {
+          button: document.getElementById("bellBtn"),
+          panel: document.getElementById("bellPanel"),
+          list: document.getElementById("bellList"),
+          count: document.getElementById("bellCount"),
+        },
+        () => ({ profile: myProfile, settings: mySettings })
+      );
+      if (bell) bell.refresh();
+    }
+
+    let myProfile = null;
+    let myTerm = null;
+    let mySettings = null;
+    let bell = null;
+
+    /* ---- Timetable ---- */
+    async function loadMyTimetable(className) {
+      const wrap = document.getElementById("timetableWrap");
+      if (!className) {
+        wrap.innerHTML = '<div class="list-empty"><i class="bi bi-calendar3"></i>You are not assigned to a class yet.</div>';
+        return;
+      }
+
+      const { data } = await supabaseClient
+        .from("class_timetables").select("*").eq("class_name", className).maybeSingle();
+
+      if (!data) {
+        wrap.innerHTML = `<div class="list-empty"><i class="bi bi-calendar3"></i>Your class teacher hasn't uploaded a timetable for ${className} yet.</div>`;
+        return;
+      }
+
+      const url = await timetableSignedUrl(supabaseClient, data.file_path);
+      if (!url) {
+        wrap.innerHTML = '<div class="list-empty"><i class="bi bi-calendar3"></i>Could not open the timetable. Please try again later.</div>';
+        return;
+      }
+
+      const isPdf = (data.mime_type || "").includes("pdf");
+      wrap.innerHTML = `
+        <p class="widget-list-meta mb-2">Updated ${new Date(data.uploaded_at).toLocaleDateString()}</p>
+        ${isPdf
+          ? `<a class="action-link" href="${url}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Open timetable (PDF)</a>`
+          : `<img src="${url}" alt="Timetable for ${className}" style="max-width:100%;border-radius:12px;border:1px solid var(--border-c);" />`}
+        <div class="mt-2"><a class="action-link" href="${url}" target="_blank" rel="noopener">Open full size <i class="bi bi-box-arrow-up-right"></i></a></div>`;
+    }
+
+    /* ---- Attendance ---- */
+    async function loadMyAttendance(studentId, term) {
+      const wrap = document.getElementById("attendanceWrap");
+      if (!term) {
+        wrap.innerHTML = '<div class="list-empty"><i class="bi bi-person-check"></i>No academic term has been set up yet.</div>';
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("attendance").select("status, attendance_date")
+        .eq("student_id", studentId).eq("term_id", term.id)
+        .order("attendance_date", { ascending: false });
+
+      if (error) {
+        wrap.innerHTML = `<div class="list-empty"><i class="bi bi-person-check"></i>${error.message}</div>`;
+        return;
+      }
+      if (!data || !data.length) {
+        wrap.innerHTML = '<div class="list-empty"><i class="bi bi-person-check"></i>No attendance has been recorded for you this term yet.</div>';
+        return;
+      }
+
+      const present = data.filter((r) => r.status === "present" || r.status === "late").length;
+      const absent = data.filter((r) => r.status === "absent").length;
+      const late = data.filter((r) => r.status === "late").length;
+      const marked = data.length;
+      const pct = marked ? Math.round((present / marked) * 100) : 0;
+
+      wrap.innerHTML = `
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-lg-3"><div class="summary-box"><h3>${present}</h3><p>Days present</p></div></div>
+          <div class="col-6 col-lg-3"><div class="summary-box"><h3>${absent}</h3><p>Days absent</p></div></div>
+          <div class="col-6 col-lg-3"><div class="summary-box"><h3>${late}</h3><p>Times late</p></div></div>
+          <div class="col-6 col-lg-3"><div class="summary-box"><h3>${pct}%</h3><p>Attendance rate</p></div></div>
+        </div>
+        <p class="widget-list-meta mb-2">Register taken on ${marked} day${marked === 1 ? "" : "s"} this term${term.days_opened ? ` · term is ${term.days_opened} school days long` : ""}.</p>
+        <div class="activity-list">
+          ${data.slice(0, 10).map((r) => `
+            <div class="widget-list-item">
+              <span class="widget-list-title">${new Date(r.attendance_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</span>
+              <span class="badge-att badge-att-${r.status}">${r.status}</span>
+            </div>`).join("")}
+        </div>`;
     }
 
     function renderSubjects(allSubjects, className) {

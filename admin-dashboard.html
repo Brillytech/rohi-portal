@@ -38,6 +38,7 @@
       <button class="nav-item" data-view="revenue"><i class="bi bi-graph-up-arrow"></i> Revenue</button>
       <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
       <button class="nav-item" data-view="website"><i class="bi bi-globe2"></i> Website</button>
+      <button class="nav-item" data-view="settings"><i class="bi bi-gear-fill"></i> Settings</button>
     </nav>
 
     <button class="logout-btn" id="logoutBtn"><i class="bi bi-box-arrow-left"></i> Log out</button>
@@ -56,6 +57,16 @@
         <div class="search-results" id="searchResults"></div>
       </div>
       <div class="topbar-right">
+        <div class="bell-wrap">
+          <button type="button" class="bell-btn" id="bellBtn" aria-label="Notifications">
+            <i class="bi bi-bell"></i>
+            <span class="bell-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="bell-panel" id="bellPanel" hidden>
+            <div class="bell-panel-head">Notifications</div>
+            <div id="bellList"></div>
+          </div>
+        </div>
         <span class="admin-name" id="adminName">Admin</span>
         <div class="admin-avatar"><i class="bi bi-person-fill"></i></div>
       </div>
@@ -162,7 +173,7 @@
           <div class="panel-header-flex">
             <div class="panel-header">
               <h2>Add a class</h2>
-              <p>Only fill in "Arm / Branch" for classes that are split into streams (e.g. JSS1 A / JSS1 B) — leave it blank for classes with just one group.</p>
+              <p>Only set "Arm / Branch" for classes split into streams (e.g. JSS1 Red / JSS1 Blue) — leave it on "None" for classes with just one group. Pick "Other…" to type an arm that isn't Red or Blue.</p>
             </div>
             <div class="panel-header-icon"><i class="bi bi-plus-circle-fill"></i></div>
           </div>
@@ -174,7 +185,14 @@
               </div>
               <div class="field">
                 <label for="classArm">Arm / Branch (optional)</label>
-                <input type="text" id="classArm" placeholder="e.g. A, or Ogun Radio" />
+                <select id="classArm">
+                  <option value="">— None (single group) —</option>
+                  <option value="Red">Red</option>
+                  <option value="Blue">Blue</option>
+                  <option value="__other__">Other…</option>
+                </select>
+                <input type="text" id="classArmOther" placeholder="Type the arm, e.g. A or Ogun Radio"
+                       style="display:none;margin-top:8px;" />
               </div>
               <div class="field">
                 <label for="classTeacherSelect">Class teacher (optional)</label>
@@ -484,7 +502,7 @@
             <div id="addTermResult"></div>
                       <span class="draft-status"></span>
           </form>
-          <div class="term-pill-row" id="termPillRow" style="margin-top:1.1rem;"></div>
+          <div id="termPillRow" style="margin-top:1.1rem;"></div>
         </div>
 
         <div class="panel">
@@ -515,19 +533,19 @@
               </div>
               <div class="field">
                 <label for="resultTest1">Test 1 (out of 15)</label>
-                <input type="number" id="resultTest1" min="0" step="0.5" value="0" required />
+                <input type="number" id="resultTest1" min="0" step="0.5" placeholder="0" />
               </div>
               <div class="field">
                 <label for="resultTest2">Test 2 (out of 15)</label>
-                <input type="number" id="resultTest2" min="0" step="0.5" value="0" required />
+                <input type="number" id="resultTest2" min="0" step="0.5" placeholder="0" />
               </div>
               <div class="field">
                 <label for="resultCbt">CBT (out of 40)</label>
-                <input type="number" id="resultCbt" min="0" step="0.5" value="0" required />
+                <input type="number" id="resultCbt" min="0" step="0.5" placeholder="0" />
               </div>
               <div class="field">
                 <label for="resultExam">Exam (out of 30)</label>
-                <input type="number" id="resultExam" min="0" step="0.5" value="0" required />
+                <input type="number" id="resultExam" min="0" step="0.5" placeholder="0" />
               </div>
             </div>
             <p class="empty-hint" style="text-align:left;padding:0 0 1rem;">If the subject had a CBT exam, the CBT score is already filled in automatically — this form is mainly for Test 1, Test 2, and Exam.</p>
@@ -755,6 +773,55 @@
         </div>
       </section>
 
+      <!-- SETTINGS -->
+      <section class="view" id="view-settings">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Account</h2>
+              <p>Your sign-in details.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-person-badge-fill"></i></div>
+          </div>
+          <div id="settingsAccount"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Change password</h2>
+              <p>At least 8 characters. You stay signed in on this device.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-shield-lock-fill"></i></div>
+          </div>
+          <form id="changePasswordForm" class="inline-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="newPassword">New password</label>
+                <input type="password" id="newPassword" autocomplete="new-password" minlength="8" required />
+              </div>
+              <div class="field">
+                <label for="confirmPassword">Confirm new password</label>
+                <input type="password" id="confirmPassword" autocomplete="new-password" minlength="8" required />
+              </div>
+            </div>
+            <button type="submit" class="primary-btn" id="changePasswordBtn"><span class="btn-text">Update password</span></button>
+            <div id="changePasswordResult"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Notifications</h2>
+              <p>Which events show up in the bell.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-bell-fill"></i></div>
+          </div>
+          <div id="notificationPrefs"></div>
+        </div>
+      </section>
+
       <!-- ANNOUNCEMENTS -->
       <section class="view" id="view-announcements">
         <div class="panel">
@@ -856,6 +923,20 @@
     <div class="app-modal-actions" style="margin-top:1.25rem;">
       <button type="button" class="app-modal-cancel" id="studentProfileCancelBtn">Cancel</button>
       <button type="button" class="app-modal-confirm" id="studentProfileSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Per-student result breakdown (opened from Submission progress) -->
+<div class="app-modal-backdrop" id="studentResultsModalBackdrop">
+  <div class="app-modal" style="max-width:640px;">
+    <div class="panel-header" style="margin-bottom:0.9rem;">
+      <h2 style="margin:0;font-size:1.05rem;">Result breakdown — <span id="studentResultsName"></span></h2>
+      <p style="margin:2px 0 0;" id="studentResultsMeta"></p>
+    </div>
+    <div id="studentResultsBody"></div>
+    <div class="app-modal-actions" style="margin-top:1.25rem;">
+      <button type="button" class="app-modal-cancel" id="studentResultsCloseBtn">Close</button>
     </div>
   </div>
 </div>
@@ -1190,6 +1271,23 @@ async function guardAndInit() {
     const f = document.getElementById(id);
     if (f) autosaveForm(f, id, { statusEl: f.querySelector(".draft-status") });
   });
+  // A restored draft can put the arm select on "Other…", so re-run the reveal
+  // once the drafts above have been written back into the form.
+  syncClassArmOther();
+
+  mySettings = await loadUserSettings(supabaseClient, profile.id);
+  renderAdminSettings();
+  bell = installNotificationBell(
+    supabaseClient,
+    {
+      button: document.getElementById("bellBtn"),
+      panel: document.getElementById("bellPanel"),
+      list: document.getElementById("bellList"),
+      count: document.getElementById("bellCount"),
+    },
+    () => ({ profile: currentAdmin, settings: mySettings })
+  );
+  if (bell) bell.refresh();
   const announcementsPromise = loadAnnouncements(); // independent of everything below, runs concurrently
   await loadClasses();
   await loadSubjects();
@@ -1665,10 +1763,43 @@ document.getElementById("promoteAllBtn").addEventListener("click", async () => {
   }
 });
 
+// Arm/Branch is a dropdown of the two house colours the school actually uses,
+// with an "Other…" escape hatch that reveals a free-text box — older classes
+// use arms like "A" or a branch name, and those still need to be creatable.
+const ARM_OTHER = "__other__";
+
+function syncClassArmOther() {
+  const select = document.getElementById("classArm");
+  const other = document.getElementById("classArmOther");
+  if (!select || !other) return;
+  const isOther = select.value === ARM_OTHER;
+  other.style.display = isOther ? "" : "none";
+  if (!isOther) other.value = "";
+}
+
+// Reads the effective arm whichever way it was chosen.
+function selectedClassArm() {
+  const select = document.getElementById("classArm");
+  if (select.value === ARM_OTHER) return document.getElementById("classArmOther").value.trim();
+  return select.value.trim();
+}
+
+document.getElementById("classArm").addEventListener("change", () => {
+  syncClassArmOther();
+  if (document.getElementById("classArm").value === ARM_OTHER) {
+    document.getElementById("classArmOther").focus();
+  }
+});
+
 document.getElementById("addClassForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const levelKey = document.getElementById("className").value.trim();
-  const arm = document.getElementById("classArm").value.trim();
+  const arm = selectedClassArm();
+  if (document.getElementById("classArm").value === ARM_OTHER && !arm) {
+    document.getElementById("addClassResult").innerHTML =
+      `<div class="alert alert-danger">Type the arm name, or pick a different option.</div>`;
+    return;
+  }
   const name = arm ? `${levelKey} ${arm}` : levelKey;
   const teacherId = document.getElementById("classTeacherSelect").value || null;
   const btn = document.getElementById("addClassBtn");
@@ -1689,6 +1820,7 @@ document.getElementById("addClassForm").addEventListener("submit", async (e) => 
     resultBox.innerHTML = `<div class="alert alert-success">Class added.</div>`;
     logActivity(`Added class <strong>${name}</strong>`);
     document.getElementById("addClassForm").reset();
+    syncClassArmOther(); // reset() restores the select but leaves the revealed box showing
     loadClasses();
   } catch (err) {
     resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
@@ -2657,13 +2789,21 @@ async function loadTerms() {
 
 let editingTermId = null;
 
-function renderTermPills() {
-  const row = document.getElementById("termPillRow");
-  if (!allTerms.length) {
-    row.innerHTML = '<p class="empty-hint" style="padding:0;">No terms yet — add one above.</p>';
-    return;
-  }
-  row.innerHTML = allTerms.map((t) => {
+/* ---- Terms, grouped by session ------------------------------------------
+   Three terms a year means this list grows without bound, and an admin
+   almost always only touches the session they are in. Terms are grouped
+   under their session; the current session is expanded and everything older
+   sits behind one "Show past sessions" toggle. Both bits of state live
+   outside the render so an edit or a "set current" does not collapse what
+   the admin was looking at.
+-------------------------------------------------------------------------- */
+const openTermSessions = new Set();
+let showPastSessions = false;
+let termSessionsInitialised = false;
+
+const TERM_SEQUENCE = { "First Term": 1, "Second Term": 2, "Third Term": 3 };
+
+function termPillHtml(t) {
     if (editingTermId === t.id) {
       return `
         <div class="term-pill is-editing" style="flex-direction:column;align-items:stretch;border-radius:14px;padding:12px;gap:8px;width:100%;">
@@ -2691,12 +2831,81 @@ function renderTermPills() {
     }
     return `
     <div class="term-pill ${t.is_current ? "is-current" : ""}">
-      <span>${t.name} · ${t.session}${t.is_current ? " (current)" : ""}</span>
+      <span>${t.name}${t.is_current ? " (current)" : ""}</span>
       ${t.is_current ? "" : `<button type="button" class="set-current-term-btn" data-id="${t.id}">Set current</button>`}
       <button type="button" class="edit-term-btn" data-id="${t.id}"><i class="bi bi-pencil-fill"></i></button>
       <button type="button" class="delete-term-btn" data-id="${t.id}"><i class="bi bi-trash-fill"></i></button>
     </div>`;
-  }).join("");
+}
+
+function renderTermPills() {
+  const row = document.getElementById("termPillRow");
+  if (!allTerms.length) {
+    row.innerHTML = '<p class="empty-hint" style="padding:0;">No terms yet — add one above.</p>';
+    return;
+  }
+
+  const sessions = [...new Set(allTerms.map((t) => t.session))].sort().reverse();
+  const currentTerm = allTerms.find((t) => t.is_current);
+  // Fall back to the newest session when nothing is flagged current, so the
+  // page never opens with every group shut.
+  const currentSession = currentTerm ? currentTerm.session : sessions[0];
+
+  if (!termSessionsInitialised) {
+    openTermSessions.add(currentSession);
+    termSessionsInitialised = true;
+  }
+
+  const termsForSession = (s) => allTerms
+    .filter((t) => t.session === s)
+    .sort((a, b) => (TERM_SEQUENCE[a.name] || 99) - (TERM_SEQUENCE[b.name] || 99));
+
+  const sessionGroupHtml = (s) => {
+    const terms = termsForSession(s);
+    const isOpen = openTermSessions.has(s);
+    const isCurrent = s === currentSession;
+    return `
+      <div class="class-group">
+        <button type="button" class="class-group-header term-session-header" data-session="${s}">
+          <span class="class-group-name">
+            <i class="bi bi-chevron-${isOpen ? "down" : "right"}"></i> ${s}
+            ${isCurrent ? '<span class="badge-pill badge-published" style="margin-left:6px;">current session</span>' : ""}
+          </span>
+          <span class="class-group-count">${terms.length} term${terms.length === 1 ? "" : "s"}</span>
+        </button>
+        <div class="class-group-body${isOpen ? " open" : ""}">
+          <div class="term-pill-row" style="margin-bottom:0;">${terms.map(termPillHtml).join("")}</div>
+        </div>
+      </div>`;
+  };
+
+  const pastSessions = sessions.filter((s) => s !== currentSession);
+  row.innerHTML = sessionGroupHtml(currentSession) + (pastSessions.length ? `
+    <button type="button" id="togglePastSessionsBtn"
+            style="background:none;border:none;padding:6px 2px;color:var(--purple-deep);font-size:0.82rem;font-weight:600;cursor:pointer;">
+      <i class="bi bi-chevron-${showPastSessions ? "up" : "down"}"></i>
+      ${showPastSessions ? "Hide" : "Show"} past session${pastSessions.length === 1 ? "" : "s"} (${pastSessions.length})
+    </button>
+    <div id="pastSessionGroups"${showPastSessions ? "" : ' style="display:none;"'}>
+      ${pastSessions.map(sessionGroupHtml).join("")}
+    </div>` : "");
+
+  row.querySelectorAll(".term-session-header").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const s = btn.dataset.session;
+      if (openTermSessions.has(s)) openTermSessions.delete(s);
+      else openTermSessions.add(s);
+      renderTermPills();
+    });
+  });
+
+  const pastToggle = document.getElementById("togglePastSessionsBtn");
+  if (pastToggle) {
+    pastToggle.addEventListener("click", () => {
+      showPastSessions = !showPastSessions;
+      renderTermPills();
+    });
+  }
 
   row.querySelectorAll(".set-current-term-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -2895,10 +3104,12 @@ async function prefillResultForm() {
     .eq("student_id", studentId).eq("subject_id", subjectId).eq("term_id", termId)
     .maybeSingle();
 
-  document.getElementById("resultTest1").value = data ? data.test1_score : 0;
-  document.getElementById("resultTest2").value = data ? data.test2_score : 0;
-  document.getElementById("resultCbt").value = data ? data.cbt_score : 0;
-  document.getElementById("resultExam").value = data ? data.exam_score : 0;
+  // No saved result yet -> leave the boxes empty so the placeholder shows and
+  // there is no "0" to delete before typing. A blank box still saves as 0.
+  document.getElementById("resultTest1").value = data ? data.test1_score : "";
+  document.getElementById("resultTest2").value = data ? data.test2_score : "";
+  document.getElementById("resultCbt").value = data ? data.cbt_score : "";
+  document.getElementById("resultExam").value = data ? data.exam_score : "";
 }
 
 ["resultStudent", "resultSubject", "resultTerm"].forEach((id) => {
@@ -2966,6 +3177,8 @@ let completionData = [];
 // Remembers which classes had their individual result rows expanded, so a
 // re-render after an edit does not collapse what the admin was looking at.
 const showAllResults = new Set();
+// Same idea for the per-student progress table inside each class group.
+const showStudentProgress = new Set();
 let completionResults = [];
 
 async function loadCompletion() {
@@ -2983,6 +3196,143 @@ async function loadCompletion() {
 }
 
 document.getElementById("reviewTermFilter").addEventListener("change", loadCompletion);
+
+/* ---- Which subjects a class is expected to have ---------------------------
+   Mirrors public.subject_categories_for_level() so the per-student breakdown
+   counts against exactly the same denominator the class-level RPC uses.
+   Order matters: 'JSS%' has to be tested before 'SS%' or every JSS class
+   would match the senior branch, just as in the SQL.
+-------------------------------------------------------------------------- */
+function subjectCategoriesForLevel(levelKey) {
+  const lk = (levelKey || "").toLowerCase();
+  if (lk.startsWith("nursery")) return ["Nursery"];
+  if (lk.startsWith("kindergarten") || lk.startsWith("kg")) return ["Kindergarten"];
+  if (lk.startsWith("primary")) return ["Primary"];
+  if (lk.startsWith("jss")) return ["Junior Secondary"];
+  if (lk.startsWith("ss")) {
+    return [...new Set(allSubjects
+      .map((s) => s.category)
+      .filter((cat) => cat && cat.startsWith("Senior Secondary")))];
+  }
+  return [];
+}
+
+function expectedSubjectsForClass(className) {
+  const cls = allClasses.find((c) => c.name === className);
+  if (!cls) return [];
+  const cats = subjectCategoriesForLevel(cls.level_key);
+  return allSubjects
+    .filter((s) => cats.includes(s.category))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/* One row per student: how many of their class's subjects are marked so far.
+   The old view only listed result rows that already existed, so a student
+   whose Maths teacher had submitted looked like a student who takes one
+   subject. Starting from the expected subject list shows the gaps too. */
+function studentProgressRowsHtml(groupName) {
+  const students = allStudents
+    .filter((s) => (s.class || "Unassigned") === groupName)
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+  if (!students.length) return "";
+
+  const expectedSubjects = expectedSubjectsForClass(groupName);
+  const expectedCount = expectedSubjects.length;
+
+  const rows = students.map((s) => {
+    const mine = completionResults.filter((r) => r.student_id === s.id);
+    const entered = mine.length;
+    const published = mine.filter((r) => r.published).length;
+    const pct = expectedCount > 0 ? Math.min(100, Math.round((entered / expectedCount) * 100)) : 0;
+    return `<tr>
+      <td data-label="Student">${avatarHtml(s, studentPhotoUrls[s.photo_path], { size: 26, style: "margin-right:7px;vertical-align:middle;" })}${s.full_name}</td>
+      <td data-label="Entered">
+        <div class="completion-bar" style="margin-bottom:4px;"><span style="width:${pct}%"></span></div>
+        ${entered} of ${expectedCount || "?"} subject${expectedCount === 1 ? "" : "s"}
+      </td>
+      <td data-label="Published">${published}</td>
+      <td data-label="" class="row-actions">
+        <button class="approve-btn view-student-results-btn" data-id="${s.id}" data-group="${groupName}">
+          <i class="bi bi-eye-fill"></i> View
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
+
+  return `
+    <details class="result-rows-details"${showStudentProgress.has(groupName) ? " open" : ""} data-student-progress="${groupName}">
+      <summary>Per-student progress (${students.length} student${students.length === 1 ? "" : "s"})</summary>
+      <div class="table-wrap">
+        <table class="data-table stacked-on-mobile">
+          <thead><tr><th>Student</th><th>Subjects entered</th><th>Published</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </details>`;
+}
+
+/* ---- Per-student breakdown modal ---------------------------------------- */
+function openStudentResultsModal(studentId, groupName) {
+  const student = allStudents.find((s) => s.id === studentId);
+  if (!student) return;
+
+  const term = allTerms.find((t) => t.id === (document.getElementById("reviewTermFilter").value || currentTermId));
+  const expectedSubjects = expectedSubjectsForClass(groupName);
+  const mine = completionResults.filter((r) => r.student_id === studentId);
+  const bySubject = Object.fromEntries(mine.map((r) => [r.subject_id, r]));
+
+  // Anything recorded against a subject outside the expected list (a dropped
+  // or reassigned subject) still belongs in the breakdown — append it rather
+  // than silently hiding a real result.
+  const extra = mine
+    .filter((r) => !expectedSubjects.some((s) => s.id === r.subject_id))
+    .map((r) => allSubjects.find((s) => s.id === r.subject_id))
+    .filter(Boolean);
+  const subjects = [...expectedSubjects, ...extra];
+
+  document.getElementById("studentResultsName").textContent = student.full_name;
+  document.getElementById("studentResultsMeta").textContent =
+    `${groupName} · ${term ? `${term.name} · ${term.session}` : "this term"} — ${mine.length} of ${expectedSubjects.length || "?"} subjects entered`;
+
+  const body = document.getElementById("studentResultsBody");
+  if (!subjects.length) {
+    body.innerHTML = `<p class="empty-hint" style="padding:0;text-align:left;">No curriculum subjects are mapped to ${groupName}, so there is nothing to compare against yet.</p>`;
+  } else {
+    body.innerHTML = `
+      <div class="table-wrap">
+        <table class="data-table stacked-on-mobile">
+          <thead><tr><th>Subject</th><th>Test 1</th><th>Test 2</th><th>CBT</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>${subjects.map((sub) => {
+            const r = bySubject[sub.id];
+            if (!r) {
+              return `<tr>
+                <td data-label="Subject">${sub.name}</td>
+                <td data-label="Test 1">—</td><td data-label="Test 2">—</td>
+                <td data-label="CBT">—</td><td data-label="Exam">—</td><td data-label="Total">—</td>
+                <td data-label="Status"><span class="empty-hint" style="padding:0;">Not entered</span></td>
+              </tr>`;
+            }
+            const total = r.test1_score + r.test2_score + r.cbt_score + r.exam_score;
+            return `<tr>
+              <td data-label="Subject">${sub.name}</td>
+              <td data-label="Test 1">${r.test1_score}</td>
+              <td data-label="Test 2">${r.test2_score}</td>
+              <td data-label="CBT">${r.cbt_score}</td>
+              <td data-label="Exam">${r.exam_score}</td>
+              <td data-label="Total">${total} (${gradeFor(total)})</td>
+              <td data-label="Status"><span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span></td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table>
+      </div>`;
+  }
+
+  document.getElementById("studentResultsModalBackdrop").classList.add("show");
+}
+
+document.getElementById("studentResultsCloseBtn").addEventListener("click", () => {
+  document.getElementById("studentResultsModalBackdrop").classList.remove("show");
+});
 
 function renderCompletion() {
   const container = document.getElementById("completionGroups");
@@ -3072,8 +3422,9 @@ function renderCompletion() {
           ${unpublished > 0 ? `<button type="button" class="approve-btn publish-class-btn" data-group="${groupName}">Publish all results for ${groupName}</button>` : ""}
           ${published > 0 ? `<button type="button" class="approve-btn delete-btn unpublish-class-btn" data-group="${groupName}">Unpublish ${groupName}</button>` : ""}
         </div>
+        ${studentProgressRowsHtml(groupName)}
         ${rows.length ? `
-          <details class="result-rows-details"${showAllResults.has(groupName) ? " open" : ""}>
+          <details class="result-rows-details"${showAllResults.has(groupName) ? " open" : ""} data-all-results="${groupName}">
             <summary>Show the ${rows.length} individual result row${rows.length === 1 ? "" : "s"} for ${groupName}</summary>
             <div class="table-wrap">
               <table class="data-table stacked-on-mobile">
@@ -3096,10 +3447,25 @@ function renderCompletion() {
     });
   });
 
-  container.querySelectorAll(".result-rows-details").forEach((d) => {
-    const group = d.closest(".class-group").querySelector(".class-group-header").dataset.group;
+  // Two <details> per class now, so key the remembered state off which one it
+  // is rather than off the shared class name.
+  container.querySelectorAll("details[data-all-results]").forEach((d) => {
+    const group = d.dataset.allResults;
     d.addEventListener("toggle", () => {
       if (d.open) showAllResults.add(group); else showAllResults.delete(group);
+    });
+  });
+
+  container.querySelectorAll("details[data-student-progress]").forEach((d) => {
+    const group = d.dataset.studentProgress;
+    d.addEventListener("toggle", () => {
+      if (d.open) showStudentProgress.add(group); else showStudentProgress.delete(group);
+    });
+  });
+
+  container.querySelectorAll(".view-student-results-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openStudentResultsModal(btn.dataset.id, btn.dataset.group);
     });
   });
 
@@ -3289,8 +3655,10 @@ function renderPayments() {
       const canView = status === "paid" || override;
       return `<tr data-student="${s.id}">
         <td data-label="Student">${avatarHtml(s, studentPhotoUrls[s.photo_path], { size: 26, style: "margin-right:7px;vertical-align:middle;" })}${s.full_name} ${s.surname || ""}</td>
-        <td data-label="Expected"><input type="number" min="0" step="0.01" class="score-input pay-expected" value="${expected}" /></td>
-        <td data-label="Paid"><input type="number" min="0" step="0.01" class="score-input pay-paid" value="${paid}" /></td>
+        <!-- A stored 0 means "not configured yet" (see the payments migration),
+             not a real figure, so it renders as an empty box too. -->
+        <td data-label="Expected"><input type="number" min="0" step="0.01" class="score-input pay-expected" placeholder="0" value="${Number(p?.amount_expected) > 0 ? p.amount_expected : ""}" /></td>
+        <td data-label="Paid"><input type="number" min="0" step="0.01" class="score-input pay-paid" placeholder="0" value="${Number(p?.amount_paid) > 0 ? p.amount_paid : ""}" /></td>
         <td data-label="Balance">${naira(balance)}</td>
         <td data-label="Status"><span class="badge-pill badge-pay-${status}">${PAYMENT_STATUS_LABELS[status]}</span></td>
         <td data-label="Can view results">
@@ -4009,6 +4377,80 @@ document.getElementById("galFiles").addEventListener("change", async (e) => {
 });
 
 resetPostForm();
+
+/* ==========================================================================
+   SETTINGS + notification bell
+   ========================================================================== */
+let mySettings = null;
+let bell = null;
+
+function renderAdminSettings() {
+  document.getElementById("settingsAccount").innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <tbody>
+          <tr><td><strong>Name</strong></td><td>${currentAdmin.full_name || "—"}</td></tr>
+          <tr><td><strong>Email</strong></td><td class="mono">${currentAdmin.email || "—"}</td></tr>
+          <tr><td><strong>Role</strong></td><td>Administrator</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  const prefs = [
+    { key: "notify_announcements", label: "New announcement", hint: "When an announcement is posted to everyone or to staff." },
+    { key: "notify_payments", label: "Payment recorded", hint: "Students only — an admin has no payment record, so this stays quiet.", disabled: true },
+  ];
+
+  document.getElementById("notificationPrefs").innerHTML = prefs.map((p) => `
+    <label class="pref-row">
+      <input type="checkbox" class="pref-toggle" data-key="${p.key}" ${mySettings[p.key] ? "checked" : ""} ${p.disabled ? "disabled" : ""} />
+      <span><strong>${p.label}</strong><small>${p.hint}</small></span>
+    </label>`).join("");
+
+  document.querySelectorAll(".pref-toggle").forEach((el) => {
+    el.addEventListener("change", async () => {
+      try {
+        mySettings = await saveUserSettings(supabaseClient, currentAdmin.id, { [el.dataset.key]: el.checked });
+        showToast("Preference saved.", "success");
+        if (bell) bell.refresh();
+      } catch (err) {
+        el.checked = !el.checked;
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+document.getElementById("changePasswordForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("changePasswordBtn");
+  const resultBox = document.getElementById("changePasswordResult");
+  const pw = document.getElementById("newPassword").value;
+  const confirmPw = document.getElementById("confirmPassword").value;
+  resultBox.innerHTML = "";
+
+  if (pw !== confirmPw) {
+    resultBox.innerHTML = `<div class="alert alert-danger">Those two passwords don't match.</div>`;
+    return;
+  }
+  if (pw.length < 8) {
+    resultBox.innerHTML = `<div class="alert alert-danger">Use at least 8 characters.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Updating...';
+  const { error } = await supabaseClient.auth.updateUser({ password: pw });
+  if (error) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+  } else {
+    resultBox.innerHTML = `<div class="alert alert-success">Password updated.</div>`;
+    document.getElementById("changePasswordForm").reset();
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<span class="btn-text">Update password</span>';
+});
+
 guardAndInit();
 </script>
 </body>

@@ -256,6 +256,187 @@ function draftStatus(el, text, tone = "saved") {
   el.className = `draft-status draft-${tone}` + (text ? " show" : "");
 }
 
+/* ==========================================================================
+   User settings + notification bell
+
+   There is no notifications table. Every event the bell reports already
+   exists as a row somewhere (announcements, payments) and RLS already
+   decides who is allowed to see it, so fanning out a copy per user would be
+   a second source of truth that can drift. Instead the bell queries those
+   tables and compares each row's timestamp against a per-user "seen"
+   watermark in user_settings.
+   ========================================================================== */
+const DEFAULT_USER_SETTINGS = {
+  notify_announcements: true,
+  notify_payments: true,
+  notifications_seen_at: new Date(0).toISOString(),
+};
+
+async function loadUserSettings(client, userId) {
+  const { data } = await client.from("user_settings").select("*").eq("user_id", userId).maybeSingle();
+  if (data) return data;
+  // First visit: create the row so preference writes are a plain update.
+  const seed = { user_id: userId, ...DEFAULT_USER_SETTINGS };
+  const { data: created } = await client.from("user_settings").insert(seed).select().maybeSingle();
+  return created || seed;
+}
+
+async function saveUserSettings(client, userId, patch) {
+  const { data, error } = await client
+    .from("user_settings").update(patch).eq("user_id", userId).select().maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Collects everything the bell should show, newest first.
+ * `role` decides which sources are even worth querying — a teacher has no
+ * payment record, so that query is skipped rather than returning nothing.
+ */
+async function fetchNotifications(client, profile, settings) {
+  const items = [];
+  const jobs = [];
+
+  if (settings.notify_announcements) {
+    jobs.push(
+      client.from("announcements")
+        .select("id, title, body, created_at")
+        .order("created_at", { ascending: false }).limit(15)
+        .then(({ data }) => {
+          (data || []).forEach((a) => items.push({
+            id: `announcement-${a.id}`,
+            icon: "bi-megaphone-fill",
+            title: a.title,
+            body: a.body,
+            at: a.created_at,
+          }));
+        })
+    );
+  }
+
+  if (settings.notify_payments && profile.role === "student") {
+    jobs.push(
+      client.from("payments")
+        .select("id, amount_expected, amount_paid, status, override_allowed, updated_at, term_id")
+        .eq("student_id", profile.id)
+        .order("updated_at", { ascending: false }).limit(10)
+        .then(({ data }) => {
+          (data || []).forEach((p) => {
+            const expected = Number(p.amount_expected || 0);
+            const paid = Number(p.amount_paid || 0);
+            const balance = Math.max(expected - paid, 0);
+            const cleared = p.status === "paid" || p.override_allowed;
+            items.push({
+              id: `payment-${p.id}-${p.updated_at}`,
+              icon: cleared ? "bi-check-circle-fill" : "bi-cash-coin",
+              title: cleared ? "Fees cleared" : "Payment updated",
+              body: cleared
+                ? "Your fees for this term are settled — your result is no longer locked."
+                : `₦${paid.toLocaleString("en-NG")} recorded${balance > 0 ? `, ₦${balance.toLocaleString("en-NG")} outstanding` : ""}.`,
+              at: p.updated_at,
+            });
+          });
+        })
+    );
+  }
+
+  await Promise.all(jobs);
+  items.sort((a, b) => new Date(b.at) - new Date(a.at));
+
+  const seenAt = new Date(settings.notifications_seen_at || 0);
+  items.forEach((i) => { i.unread = new Date(i.at) > seenAt; });
+  return items;
+}
+
+/**
+ * Wires a bell button + dropdown. The page supplies the elements and a
+ * `getContext()` returning { profile, settings }, because both are loaded
+ * during each dashboard's own auth bootstrap.
+ */
+function installNotificationBell(client, els, getContext) {
+  const { button, panel, list, count } = els;
+  if (!button || !panel || !list) return null;
+
+  function relative(dateStr) {
+    const mins = Math.round((Date.now() - new Date(dateStr).getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.round(hrs / 24);
+    if (days < 30) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString();
+  }
+
+  async function refresh() {
+    const ctx = getContext();
+    if (!ctx || !ctx.profile || !ctx.settings) return;
+    const items = await fetchNotifications(client, ctx.profile, ctx.settings);
+
+    const unread = items.filter((i) => i.unread).length;
+    if (count) {
+      count.textContent = unread > 9 ? "9+" : String(unread);
+      count.hidden = unread === 0;
+    }
+
+    list.innerHTML = items.length
+      ? items.map((i) => `
+        <div class="bell-item${i.unread ? " is-unread" : ""}">
+          <i class="bi ${i.icon}"></i>
+          <div>
+            <strong>${i.title}</strong>
+            <span>${i.body || ""}</span>
+            <small>${relative(i.at)}</small>
+          </div>
+        </div>`).join("")
+      : '<div class="bell-empty">Nothing new.</div>';
+  }
+
+  button.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    if (!opening) return;
+
+    await refresh();
+    // Opening the panel is the "read" action. Move the watermark, then clear
+    // the badge locally so it does not linger until the next poll.
+    const ctx = getContext();
+    if (ctx && ctx.profile && ctx.settings) {
+      const now = new Date().toISOString();
+      try {
+        await saveUserSettings(client, ctx.profile.id, { notifications_seen_at: now });
+        ctx.settings.notifications_seen_at = now;
+      } catch (err) { /* a failed watermark write must not break the panel */ }
+      if (count) count.hidden = true;
+      list.querySelectorAll(".bell-item.is-unread").forEach((el) => el.classList.remove("is-unread"));
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!panel.hidden && !panel.contains(e.target) && e.target !== button) panel.hidden = true;
+  });
+
+  return { refresh };
+}
+
+/* --------------------------------------------------------------------------
+   Timetables — shared between the teacher uploader and the student viewer.
+-------------------------------------------------------------------------- */
+const TIMETABLE_MAX_MB = 10;
+
+// Class names contain spaces ("JSS2 Red"); storage keys are much easier to
+// reason about without them.
+function timetableSlug(className) {
+  return (className || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+async function timetableSignedUrl(client, path, expiresIn = 3600) {
+  if (!path) return null;
+  const { data } = await client.storage.from("timetables").createSignedUrl(path, expiresIn);
+  return data ? data.signedUrl : null;
+}
+
 /* --------------------------------------------------------------------------
    autosaveForm — wires a whole <form> in one line.
 

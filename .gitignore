@@ -12,3 +12,6 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+# Local scratch scripts for driving the portal end-to-end.
+# Contains live admin credentials — must never be committed.
+_flow/

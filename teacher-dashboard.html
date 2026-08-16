@@ -36,6 +36,8 @@
       <button class="nav-item" data-view="results"><i class="bi bi-clipboard-check-fill"></i> Manage Results</button>
       <button class="nav-item" data-view="exams"><i class="bi bi-pencil-square"></i> Exams</button>
       <button class="nav-item" data-view="students"><i class="bi bi-people-fill"></i> Students</button>
+      <button class="nav-item" data-view="attendance"><i class="bi bi-person-check-fill"></i> Attendance</button>
+      <button class="nav-item" data-view="timetable"><i class="bi bi-calendar3"></i> Timetable</button>
       <button class="nav-item" data-view="remarks"><i class="bi bi-clipboard2-pulse-fill"></i> Remarks</button>
       <button class="nav-item" data-view="announcements"><i class="bi bi-megaphone-fill"></i> Announcements</button>
     </nav>
@@ -51,6 +53,16 @@
       <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
       <h1 id="viewTitle">Dashboard</h1>
       <div class="topbar-right">
+        <div class="bell-wrap">
+          <button type="button" class="bell-btn" id="bellBtn" aria-label="Notifications">
+            <i class="bi bi-bell"></i>
+            <span class="bell-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="bell-panel" id="bellPanel" hidden>
+            <div class="bell-panel-head">Notifications</div>
+            <div id="bellList"></div>
+          </div>
+        </div>
         <span class="admin-name" id="teacherName">Teacher</span>
         <div class="admin-avatar"><i class="bi bi-person-fill"></i></div>
       </div>
@@ -290,6 +302,75 @@
           <div id="remarksWrap">
             <div class="empty-state"><i class="bi bi-clipboard2-pulse"></i><p>Choose a class, student, and term to enter their remarks.</p></div>
           </div>
+        </div>
+      </section>
+
+      <!-- ATTENDANCE -->
+      <section class="view" id="view-attendance">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Daily register</h2>
+              <p>Mark the students in the class you're class teacher of. "Late" still counts as attending — it records punctuality, not absence.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-person-check-fill"></i></div>
+          </div>
+          <div class="form-row" style="margin-bottom:1.25rem;">
+            <div class="field">
+              <label for="attendanceClass">Class</label>
+              <select id="attendanceClass"><option value="">Select a class</option></select>
+            </div>
+            <div class="field">
+              <label for="attendanceTerm">Term</label>
+              <select id="attendanceTerm"><option value="">Select a term</option></select>
+            </div>
+            <div class="field">
+              <label for="attendanceDate">Date</label>
+              <input type="date" id="attendanceDate" />
+            </div>
+          </div>
+          <div id="attendanceWrap">
+            <div class="empty-state"><i class="bi bi-person-check"></i><p>Choose a class, term and date to take the register.</p></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Term summary</h2>
+              <p>Totals for the selected class and term. This is what feeds "days present" on the report card.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+          </div>
+          <div id="attendanceSummaryWrap">
+            <div class="empty-state"><i class="bi bi-bar-chart-line"></i><p>Choose a class and term above.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TIMETABLE -->
+      <section class="view" id="view-timetable">
+        <div class="panel">
+          <div class="panel-header-flex">
+            <div class="panel-header">
+              <h2>Class timetable</h2>
+              <p>Upload the timetable for your class as an image or PDF. Students in that class see it on their dashboard. Uploading again replaces the current one.</p>
+            </div>
+            <div class="panel-header-icon"><i class="bi bi-calendar3"></i></div>
+          </div>
+          <div class="form-row" style="margin-bottom:1.25rem;">
+            <div class="field">
+              <label for="timetableClass">Class</label>
+              <select id="timetableClass"><option value="">Select a class</option></select>
+            </div>
+            <div class="field">
+              <label for="timetableFile">Timetable file (image or PDF, max 10 MB)</label>
+              <input type="file" id="timetableFile" accept="image/*,application/pdf" />
+            </div>
+          </div>
+          <button type="button" class="primary-btn" id="uploadTimetableBtn"><span class="btn-text">Upload timetable</span></button>
+          <div id="timetableResult"></div>
+          <div id="timetableCurrent" style="margin-top:1.25rem;"></div>
         </div>
       </section>
 
@@ -554,7 +635,27 @@ async function guardAndInit() {
   loadOverview();
   loadMyStudents();
   loadExams();
+
+  setupAttendance();
+  setupTimetable();
+  // Settings UI is admin-only now; the row is still loaded because the bell
+  // reads its "seen" watermark from it.
+  mySettings = await loadUserSettings(supabaseClient, profile.id);
+  bell = installNotificationBell(
+    supabaseClient,
+    {
+      button: document.getElementById("bellBtn"),
+      panel: document.getElementById("bellPanel"),
+      list: document.getElementById("bellList"),
+      count: document.getElementById("bellCount"),
+    },
+    () => ({ profile: currentTeacher, settings: mySettings })
+  );
+  if (bell) bell.refresh();
 }
+
+let mySettings = null;
+let bell = null;
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   // Drafts are per-user, but on a shared staff phone the safest thing on an
@@ -795,13 +896,13 @@ async function loadResultEntry() {
     const total = r ? (r.test1_score + r.test2_score + r.cbt_score + r.exam_score) : 0;
     return `<tr data-student="${s.id}">
       <td data-label="Student"><span class="avatar-chip" style="width:28px;height:28px;font-size:0.65rem;margin-right:8px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
-      <td data-label="Test 1 (15)"><input type="number" class="score-input entry-test1" min="0" max="15" step="0.5" value="${r ? r.test1_score : 0}" ${isPublished ? "disabled" : ""} /></td>
-      <td data-label="Test 2 (15)"><input type="number" class="score-input entry-test2" min="0" max="15" step="0.5" value="${r ? r.test2_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td data-label="Test 1 (15)"><input type="number" class="score-input entry-test1" min="0" max="15" step="0.5" placeholder="0" value="${r ? r.test1_score : ""}" ${isPublished ? "disabled" : ""} /></td>
+      <td data-label="Test 2 (15)"><input type="number" class="score-input entry-test2" min="0" max="15" step="0.5" placeholder="0" value="${r ? r.test2_score : ""}" ${isPublished ? "disabled" : ""} /></td>
       <td data-label="CBT (40)">
-        <input type="number" class="score-input entry-cbt" min="0" max="40" step="0.5" value="${r ? r.cbt_score : 0}" ${isPublished ? "disabled" : ""} />
+        <input type="number" class="score-input entry-cbt" min="0" max="40" step="0.5" placeholder="0" value="${r ? r.cbt_score : ""}" ${isPublished ? "disabled" : ""} />
         ${r && r.cbt_score > 0 ? '<div class="widget-list-meta" style="margin-top:2px;">from CBT</div>' : ""}
       </td>
-      <td data-label="Exam (30)"><input type="number" class="score-input entry-exam" min="0" max="30" step="0.5" value="${r ? r.exam_score : 0}" ${isPublished ? "disabled" : ""} /></td>
+      <td data-label="Exam (30)"><input type="number" class="score-input entry-exam" min="0" max="30" step="0.5" placeholder="0" value="${r ? r.exam_score : ""}" ${isPublished ? "disabled" : ""} /></td>
       <td data-label="Total" class="entry-total">${total}</td>
       <td data-label="Status">${r
         ? `<span class="badge-pill badge-${r.published ? "published" : "submitted"}">${r.published ? "published" : "saved"}</span>`
@@ -1912,7 +2013,10 @@ async function loadRemarksWrap() {
       </div>
       <div class="field" style="max-width:220px;">
         <label>Days present this term</label>
-        <input type="number" id="daysPresent" min="0" value="${existing && existing.days_present != null ? existing.days_present : ""}" />
+        <input type="number" id="daysPresent" min="0" readonly
+               value="${existing && existing.days_present != null ? existing.days_present : ""}"
+               style="background:rgba(0,0,0,0.04);cursor:not-allowed;" />
+        <small class="empty-hint" style="padding:0;text-align:left;">Counted from the daily register — mark attendance to change it.</small>
       </div>
       <div class="field">
         <label>Your comment (optional — leave blank to use an automatic performance-based comment)</label>
@@ -1929,8 +2033,8 @@ async function loadRemarksWrap() {
     const psychomotorOut = {};
     document.querySelectorAll(".psychomotor-rating").forEach((sel) => { psychomotorOut[sel.dataset.skill] = parseInt(sel.value, 10); });
     const teacher_comment = document.getElementById("teacherComment").value.trim();
-    const daysPresentRaw = document.getElementById("daysPresent").value;
-    const days_present = daysPresentRaw === "" ? null : parseInt(daysPresentRaw, 10);
+    // days_present is deliberately NOT sent: the attendance trigger owns that
+    // column now, and writing it back here would fight the register.
     const btn = document.getElementById("saveRemarksBtn");
     const resultBox = document.getElementById("remarksResult");
     resultBox.innerHTML = "";
@@ -1938,7 +2042,7 @@ async function loadRemarksWrap() {
     btn.innerHTML = '<span class="spinner"></span>Saving...';
 
     const { error } = await supabaseClient.from("student_term_remarks").upsert({
-      student_id: studentId, term_id: termId, affective: affectiveOut, psychomotor: psychomotorOut, teacher_comment, days_present,
+      student_id: studentId, term_id: termId, affective: affectiveOut, psychomotor: psychomotorOut, teacher_comment,
     }, { onConflict: "student_id,term_id" });
 
     if (!error) {
@@ -1951,6 +2055,304 @@ async function loadRemarksWrap() {
   });
 }
 
+/* ==========================================================================
+   ATTENDANCE — daily register
+   ========================================================================== */
+const ATTENDANCE_STATUSES = [
+  { key: "present", label: "P", title: "Present" },
+  { key: "absent",  label: "A", title: "Absent" },
+  { key: "late",    label: "L", title: "Late" },
+];
+
+function myClassOptionsHtml() {
+  return allClasses
+    .filter((c) => c.class_teacher_id === currentTeacher.id)
+    .map((c) => `<option value="${c.name}">${c.name}</option>`)
+    .join("");
+}
+
+function setupAttendance() {
+  const classSel = document.getElementById("attendanceClass");
+  const termSel = document.getElementById("attendanceTerm");
+  const dateInput = document.getElementById("attendanceDate");
+
+  const classes = myClassOptionsHtml();
+  classSel.innerHTML = classes
+    ? '<option value="">Select a class</option>' + classes
+    : '<option value="">You are not a class teacher of any class</option>';
+  termSel.innerHTML = '<option value="">Select a term</option>' +
+    allTerms.map((t) => `<option value="${t.id}">${t.name} · ${t.session}</option>`).join("");
+  if (currentTermId) termSel.value = currentTermId;
+  // Default to today, in the browser's own date, not UTC.
+  dateInput.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+  [classSel, termSel, dateInput].forEach((el) => el.addEventListener("change", loadRegister));
+}
+
+async function loadRegister() {
+  const wrap = document.getElementById("attendanceWrap");
+  const className = document.getElementById("attendanceClass").value;
+  const termId = document.getElementById("attendanceTerm").value;
+  const date = document.getElementById("attendanceDate").value;
+
+  if (!className || !termId || !date) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-person-check"></i><p>Choose a class, term and date to take the register.</p></div>';
+    loadAttendanceSummary();
+    return;
+  }
+
+  wrap.innerHTML = '<p class="empty-hint">Loading register…</p>';
+
+  const [{ data: students }, { data: marks }] = await Promise.all([
+    supabaseClient.rpc("get_students_in_classes", { p_classes: [className] }),
+    supabaseClient.from("attendance").select("*").eq("attendance_date", date).eq("term_id", termId),
+  ]);
+
+  const roster = (students || []).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  if (!roster.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-people"></i><p>No students in this class yet.</p></div>';
+    loadAttendanceSummary();
+    return;
+  }
+
+  const byStudent = Object.fromEntries((marks || []).map((m) => [m.student_id, m]));
+
+  wrap.innerHTML = `
+    <div class="row-actions" style="margin-bottom:0.85rem;">
+      <button type="button" class="approve-btn" id="markAllPresentBtn">Mark all present</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table stacked-on-mobile">
+        <thead><tr><th>Student</th><th>Status</th></tr></thead>
+        <tbody>
+          ${roster.map((s) => {
+            const current = byStudent[s.id] ? byStudent[s.id].status : "";
+            return `<tr data-student="${s.id}">
+              <td data-label="Student"><span class="avatar-chip" style="width:26px;height:26px;font-size:0.62rem;margin-right:7px;vertical-align:middle;">${initials(s.full_name)}</span>${s.full_name}</td>
+              <td data-label="Status">
+                <div class="attendance-toggle">
+                  ${ATTENDANCE_STATUSES.map((st) => `
+                    <button type="button" class="att-btn att-${st.key}${current === st.key ? " is-on" : ""}"
+                            data-status="${st.key}" title="${st.title}">${st.label}</button>`).join("")}
+                </div>
+              </td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+    <button type="button" class="primary-btn" id="saveRegisterBtn" style="margin-top:1rem;"><span class="btn-text">Save register</span></button>
+    <div id="registerResult"></div>`;
+
+  wrap.querySelectorAll(".att-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.parentElement.querySelectorAll(".att-btn").forEach((b) => b.classList.remove("is-on"));
+      btn.classList.add("is-on");
+    });
+  });
+
+  document.getElementById("markAllPresentBtn").addEventListener("click", () => {
+    wrap.querySelectorAll("tr[data-student]").forEach((row) => {
+      row.querySelectorAll(".att-btn").forEach((b) => b.classList.toggle("is-on", b.dataset.status === "present"));
+    });
+  });
+
+  document.getElementById("saveRegisterBtn").addEventListener("click", () => saveRegister(className, termId, date));
+  loadAttendanceSummary();
+}
+
+async function saveRegister(className, termId, date) {
+  const btn = document.getElementById("saveRegisterBtn");
+  const resultBox = document.getElementById("registerResult");
+  resultBox.innerHTML = "";
+
+  const rows = [...document.querySelectorAll("#attendanceWrap tr[data-student]")];
+  const payload = rows
+    .map((row) => {
+      const on = row.querySelector(".att-btn.is-on");
+      if (!on) return null; // unmarked students are left alone rather than guessed at
+      return {
+        student_id: row.dataset.student,
+        term_id: termId,
+        attendance_date: date,
+        status: on.dataset.status,
+        class_at_entry: className,
+        marked_by: currentTeacher.id,
+      };
+    })
+    .filter(Boolean);
+
+  if (!payload.length) {
+    resultBox.innerHTML = `<div class="alert alert-danger">Nothing marked yet.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving...';
+
+  const { error } = await supabaseClient
+    .from("attendance").upsert(payload, { onConflict: "student_id,attendance_date" });
+
+  if (error) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+  } else {
+    const skipped = rows.length - payload.length;
+    resultBox.innerHTML = `<div class="alert alert-success">Register saved for ${payload.length} student${payload.length === 1 ? "" : "s"}.${skipped ? ` ${skipped} left unmarked.` : ""}</div>`;
+    loadAttendanceSummary();
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<span class="btn-text">Save register</span>';
+}
+
+async function loadAttendanceSummary() {
+  const wrap = document.getElementById("attendanceSummaryWrap");
+  const className = document.getElementById("attendanceClass").value;
+  const termId = document.getElementById("attendanceTerm").value;
+  if (!className || !termId) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-bar-chart-line"></i><p>Choose a class and term above.</p></div>';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .rpc("get_attendance_summary", { p_term_id: termId, p_class_name: className });
+  if (error) { wrap.innerHTML = `<p class="empty-hint">${error.message}</p>`; return; }
+  if (!data || !data.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="bi bi-bar-chart-line"></i><p>No students in this class.</p></div>';
+    return;
+  }
+
+  const term = allTerms.find((t) => t.id === termId);
+  const opened = term && term.days_opened != null ? term.days_opened : null;
+
+  wrap.innerHTML = `
+    <p class="empty-hint" style="text-align:left;padding:0 0 0.75rem;">
+      Register taken on ${Math.max(...data.map((r) => Number(r.days_marked)))} day(s) so far${opened ? ` · term is ${opened} school day(s) long` : " · set \"days opened\" on the term to show a target"}.
+    </p>
+    <div class="table-wrap">
+      <table class="data-table stacked-on-mobile">
+        <thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Late</th><th>Days marked</th></tr></thead>
+        <tbody>${data.map((r) => `
+          <tr>
+            <td data-label="Student">${r.full_name}</td>
+            <td data-label="Present">${r.days_present}</td>
+            <td data-label="Absent">${r.days_absent}</td>
+            <td data-label="Late">${r.days_late}</td>
+            <td data-label="Days marked">${r.days_marked}</td>
+          </tr>`).join("")}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ==========================================================================
+   TIMETABLE — upload / replace
+   ========================================================================== */
+function setupTimetable() {
+  const sel = document.getElementById("timetableClass");
+  const classes = myClassOptionsHtml();
+  sel.innerHTML = classes
+    ? '<option value="">Select a class</option>' + classes
+    : '<option value="">You are not a class teacher of any class</option>';
+  sel.addEventListener("change", showCurrentTimetable);
+  document.getElementById("uploadTimetableBtn").addEventListener("click", uploadTimetable);
+  showCurrentTimetable();
+}
+
+async function showCurrentTimetable() {
+  const box = document.getElementById("timetableCurrent");
+  const className = document.getElementById("timetableClass").value;
+  if (!className) { box.innerHTML = ""; return; }
+
+  const { data } = await supabaseClient
+    .from("class_timetables").select("*").eq("class_name", className).maybeSingle();
+
+  if (!data) {
+    box.innerHTML = '<p class="empty-hint" style="text-align:left;padding:0;">No timetable uploaded for this class yet.</p>';
+    return;
+  }
+
+  const url = await timetableSignedUrl(supabaseClient, data.file_path);
+  const isPdf = (data.mime_type || "").includes("pdf");
+  box.innerHTML = `
+    <p class="empty-hint" style="text-align:left;padding:0 0 0.5rem;">
+      Current: ${data.original_name || "timetable"} · uploaded ${new Date(data.uploaded_at).toLocaleDateString()}
+    </p>
+    ${url
+      ? (isPdf
+          ? `<a class="approve-btn" href="${url}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Open PDF</a>`
+          : `<img src="${url}" alt="Timetable for ${className}" style="max-width:100%;border-radius:12px;border:1px solid var(--border-c);" />`)
+      : '<p class="empty-hint" style="text-align:left;padding:0;">Could not generate a preview link.</p>'}
+    <div class="row-actions" style="margin-top:0.75rem;">
+      <button type="button" class="approve-btn delete-btn" id="removeTimetableBtn"><i class="bi bi-trash-fill"></i> Remove</button>
+    </div>`;
+
+  document.getElementById("removeTimetableBtn").addEventListener("click", async () => {
+    if (!(await appConfirm(`Remove the timetable for ${className}? Students will no longer see one.`))) return;
+    await supabaseClient.storage.from("timetables").remove([data.file_path]);
+    const { error } = await supabaseClient.from("class_timetables").delete().eq("id", data.id);
+    if (error) { showToast(error.message); return; }
+    showToast("Timetable removed.", "success");
+    showCurrentTimetable();
+  });
+}
+
+async function uploadTimetable() {
+  const btn = document.getElementById("uploadTimetableBtn");
+  const resultBox = document.getElementById("timetableResult");
+  const className = document.getElementById("timetableClass").value;
+  const fileInput = document.getElementById("timetableFile");
+  const file = fileInput.files[0];
+  resultBox.innerHTML = "";
+
+  if (!className) { resultBox.innerHTML = `<div class="alert alert-danger">Pick a class first.</div>`; return; }
+  if (!file) { resultBox.innerHTML = `<div class="alert alert-danger">Choose an image or PDF to upload.</div>`; return; }
+  if (file.size > TIMETABLE_MAX_MB * 1024 * 1024) {
+    resultBox.innerHTML = `<div class="alert alert-danger">That file is ${(file.size / 1048576).toFixed(1)} MB — the limit is ${TIMETABLE_MAX_MB} MB.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Uploading...';
+
+  try {
+    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+    const path = `${timetableSlug(className)}/timetable.${ext}`;
+
+    // Replacing leaves the old object behind when the extension differs
+    // (timetable.pdf then timetable.png), so clear the previous one first.
+    const { data: existing } = await supabaseClient
+      .from("class_timetables").select("file_path").eq("class_name", className).maybeSingle();
+    if (existing && existing.file_path && existing.file_path !== path) {
+      await supabaseClient.storage.from("timetables").remove([existing.file_path]);
+    }
+
+    const { error: upErr } = await supabaseClient.storage
+      .from("timetables").upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) throw upErr;
+
+    const { error } = await supabaseClient.from("class_timetables").upsert({
+      class_name: className,
+      file_path: path,
+      mime_type: file.type,
+      original_name: file.name,
+      uploaded_by: currentTeacher.id,
+      uploaded_at: new Date().toISOString(),
+    }, { onConflict: "class_name" });
+    if (error) throw error;
+
+    resultBox.innerHTML = `<div class="alert alert-success">Timetable uploaded for ${className}.</div>`;
+    fileInput.value = "";
+    showCurrentTimetable();
+  } catch (err) {
+    resultBox.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Upload timetable</span>';
+  }
+}
+
+/* ==========================================================================
+   SETTINGS
+   ========================================================================== */
 guardAndInit();
 </script>
 </body>

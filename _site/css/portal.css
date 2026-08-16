@@ -73,37 +73,27 @@ h1, h2, .brand-badge, .role-pill span, .login-btn {
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 2.5rem;
 }
 
-/* The mark is a wide signboard lockup, not a square icon — cropping it to a
-   circle just yields a slice of the middle. Sized by height and set on a light
-   plaque so its pale ground doesn't fight the purple. The 325/240 ratio against
-   the 325x250 source shaves the half-cut address line off the bottom edge;
-   content-box keeps that ratio on the image itself, clear of the padding. */
+/* The mark is a square transparent PNG with its own generous internal padding.
+   Contain it in a square box and give it no ground of its own — the crest's
+   text sits on its own light arc, so it stays legible straight on the purple.
+   Never crop or letterbox this: any object-fit other than contain cuts the arc. */
 .portal-logo {
-  box-sizing: content-box;
-  height: 84px;
-  width: auto;
-  aspect-ratio: 325 / 240;
-  object-fit: cover;
-  object-position: top center;
-  padding: 5px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(12, 2, 26, 0.28);
+  width: 96px;
+  height: 96px;
+  flex: none;
+  object-fit: contain;
 }
 
 .brand-badge {
   font-size: 0.8rem;
   font-weight: 600;
-  line-height: 1.45;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.75);
-  padding-left: 16px;
-  border-left: 1px solid rgba(255,255,255,0.22);
 }
 
 .portal-left-content h1 {
@@ -441,25 +431,16 @@ h1, h2, .brand-badge, .role-pill span, .login-btn {
   }
 
   .mobile-logo {
-    box-sizing: content-box;
-    height: 88px;
-    width: auto;
-    aspect-ratio: 325 / 240;
-    object-fit: cover;
-    object-position: top center;
-    padding: 5px;
-    border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 8px 22px rgba(12, 2, 26, 0.32);
+    width: 104px;
+    height: 104px;
+    object-fit: contain;
   }
 
   .mobile-brand span {
     font-family: 'Sora', sans-serif;
-    font-weight: 600;
-    font-size: 0.82rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.78);
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
   }
 
   .login-card {

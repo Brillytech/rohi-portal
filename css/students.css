@@ -82,6 +82,43 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .welcome-label { font-family: 'Sora', san
 .sidebar-links .nav-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .sidebar-links .nav-link.active { background: rgba(255,255,255,0.16); color: #fff; }
 
+/* --------------------------------------------------------------------------
+   Desktop sidebar.
+
+   The markup always intended a persistent sidebar on wide screens — the
+   toggle button is d-lg-none, so above 992px there was no way to open the
+   menu and every nav link was unreachable. Bootstrap's .offcanvas-lg turns
+   the panel static at lg and up; it also blanks the background there, so the
+   gradient and layout have to be restated for that breakpoint.
+-------------------------------------------------------------------------- */
+@media (min-width: 992px) {
+  .student-sidebar.offcanvas-lg {
+    position: fixed;
+    top: 68px;                 /* clears the fixed topbar */
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    padding: 0 0.9rem 1rem;
+    overflow-y: auto;
+    z-index: 1025;             /* under the topbar, over the page */
+    background: linear-gradient(180deg, var(--purple-deep), var(--purple-dark) 70%, var(--purple-ink)) !important;
+  }
+  /* At lg+ Bootstrap collapses the body to flex-grow:0, which would strand
+     the mt-auto logout button at the top instead of the bottom. */
+  .student-sidebar.offcanvas-lg .offcanvas-body {
+    flex-grow: 1;
+    height: 100%;
+    padding: 0;
+    background: transparent !important;
+  }
+  .student-sidebar .offcanvas-header { display: none; }
+  .student-main { margin-left: 260px; }
+}
+
+/* Anchor jumps must clear the fixed topbar, or the section heading lands
+   underneath it and the page looks like it did not move at all. */
+.student-main section[id] { scroll-margin-top: 88px; }
+
 .sidebar-logout-btn {
   display: flex; align-items: center; justify-content: center;
   background: transparent;
@@ -515,3 +552,71 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .draft-status.show { display: inline-block; }
 .draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
 .draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }
+
+/* ==========================================================================
+   Notification bell, attendance badges, settings toggles
+   ========================================================================== */
+.bell-wrap { position: relative; display: inline-flex; }
+.bell-btn { position: relative; }
+.bell-count {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px;
+  background: #d92d20; color: #fff;
+  font-size: 0.66rem; font-weight: 700; line-height: 18px;
+  text-align: center;
+}
+.bell-panel {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: min(330px, calc(100vw - 32px));
+  max-height: 400px; overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border-c);
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(20,4,40,0.18);
+  z-index: 1060;
+}
+.bell-panel-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-c);
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem;
+  color: var(--purple-ink);
+}
+.bell-item {
+  display: flex; gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(229,222,239,0.6);
+  text-align: left;
+}
+.bell-item:last-child { border-bottom: none; }
+.bell-item.is-unread { background: rgba(89,6,148,0.05); }
+.bell-item > i { color: var(--orange); font-size: 0.95rem; margin-top: 2px; }
+.bell-item strong { display: block; font-size: 0.83rem; color: var(--purple-ink); }
+.bell-item span { display: block; font-size: 0.78rem; color: var(--muted); margin: 2px 0; }
+.bell-item small { font-size: 0.7rem; color: var(--muted); }
+.bell-empty { padding: 20px 14px; text-align: center; font-size: 0.82rem; color: var(--muted); }
+
+.badge-att {
+  font-size: 0.7rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+  text-transform: capitalize;
+}
+.badge-att-present { background: var(--success-bg); color: var(--success-fg); }
+.badge-att-absent  { background: #fdeaea; color: #b42318; }
+.badge-att-late    { background: #fff4e5; color: #b45309; }
+
+.pref-row {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(229,222,239,0.6);
+  cursor: pointer;
+}
+.pref-row:last-child { border-bottom: none; }
+.pref-row input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--purple-deep); }
+.pref-row strong { display: block; font-size: 0.86rem; color: var(--purple-ink); }
+.pref-row small { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+/* One pane at a time, matching the teacher/admin panels. */
+.student-view { display: none; }
+.student-view.active { display: block; animation: studentViewIn 0.25s ease; }
+@keyframes studentViewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }

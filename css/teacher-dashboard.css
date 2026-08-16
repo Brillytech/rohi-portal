@@ -75,13 +75,10 @@ h1, h2, .sidebar-brand strong, .primary-btn, .qa-chip span { font-family: 'Sora'
 .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(20,4,40,0.5); backdrop-filter: blur(2px); z-index: 19; }
 .sidebar-backdrop.show { display: block; }
 
-/* Wide signboard lockup — show it whole on a light plaque rather than cropping
-   a circle out of the middle, which lands on empty background. The 325/240
-   ratio trims the half-cut address line off the bottom of the source. */
-.sidebar-logo {
-  box-sizing: content-box; height: 42px; width: auto; aspect-ratio: 325 / 240; flex: none;
-  object-fit: cover; object-position: top center; padding: 3px; border-radius: 9px; background: #fff;
-}
+/* Square transparent crest: contain it and leave it on the sidebar's own
+   ground. No circle mask or border — the mark is a horseshoe arc, so a round
+   crop clips its ends and the ring reads as a second, competing outline. */
+.sidebar-logo { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .sidebar-brand strong { display: block; font-size: 0.95rem; }
 .sidebar-brand span { font-size: 0.72rem; color: rgba(255,255,255,0.6); }
 
@@ -690,3 +687,83 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .draft-status.show { display: inline-block; }
 .draft-status.draft-saved { background: rgba(52, 179, 100, 0.14); color: #1e7e3e; }
 .draft-status.draft-restored { background: rgba(255, 140, 0, 0.16); color: #b45309; }
+
+/* ==========================================================================
+   Notification bell, attendance register, settings toggles
+   ========================================================================== */
+.bell-wrap { position: relative; }
+.bell-btn {
+  position: relative;
+  border: 1px solid var(--border-c);
+  background: #fff;
+  color: var(--purple-deep);
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.bell-btn:hover { background: rgba(89,6,148,0.08); }
+.bell-count {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px;
+  background: #d92d20; color: #fff;
+  font-size: 0.66rem; font-weight: 700; line-height: 18px;
+  text-align: center;
+}
+.bell-panel {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: min(340px, calc(100vw - 32px));
+  max-height: 420px; overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border-c);
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(20,4,40,0.18);
+  z-index: 60;
+}
+.bell-panel-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-c);
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem;
+  color: var(--purple-ink);
+}
+.bell-item {
+  display: flex; gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(229,222,239,0.6);
+}
+.bell-item:last-child { border-bottom: none; }
+.bell-item.is-unread { background: rgba(89,6,148,0.05); }
+.bell-item > i { color: var(--orange); font-size: 0.95rem; margin-top: 2px; }
+.bell-item strong { display: block; font-size: 0.83rem; color: var(--purple-ink); }
+.bell-item span { display: block; font-size: 0.78rem; color: var(--muted); margin: 2px 0; }
+.bell-item small { font-size: 0.7rem; color: var(--muted); }
+.bell-empty { padding: 20px 14px; text-align: center; font-size: 0.82rem; color: var(--muted); }
+
+.attendance-toggle { display: inline-flex; gap: 5px; }
+.att-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-c);
+  background: #fff;
+  font-weight: 700; font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.att-btn:hover { border-color: var(--purple-deep); }
+.att-present.is-on { background: #e8f7ee; border-color: #1e7e3e; color: #1e7e3e; }
+.att-absent.is-on  { background: #fdeaea; border-color: #b42318; color: #b42318; }
+.att-late.is-on    { background: #fff4e5; border-color: #b45309; color: #b45309; }
+
+.pref-row {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(229,222,239,0.6);
+  cursor: pointer;
+}
+.pref-row:last-child { border-bottom: none; }
+.pref-row input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--purple-deep); }
+.pref-row strong { display: block; font-size: 0.86rem; color: var(--purple-ink); }
+.pref-row small { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+.pref-row input:disabled + span { opacity: 0.55; }
