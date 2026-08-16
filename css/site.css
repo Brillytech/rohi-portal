@@ -1004,3 +1004,135 @@ a:focus-visible, button:focus-visible, .btn-primary-solid:focus-visible, .btn-gh
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   PATHWAY — the KG-to-SSS route on the homepage.
+
+   A single connected band rather than five stacked cards: it stays one row
+   tall on desktop, reads as a progression rather than a menu, and keeps the
+   homepage from turning into a column of boxes.
+   ========================================================================== */
+.pathway {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-4);
+  position: relative;
+}
+
+/* The rail the steps sit on. Drawn behind the dots, stopping short at each
+   end so it never dangles past the first and last step. */
+.pathway::before {
+  content: "";
+  position: absolute;
+  top: 27px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--brand) 0%, var(--sky) 45%, var(--accent) 100%);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.pathway-step {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 0 0.35rem;
+}
+
+.pathway-dot {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--brand);
+  background: #fff;
+  border: 2px solid rgba(89, 6, 148, 0.18);
+  box-shadow: 0 6px 18px rgba(89, 6, 148, 0.10);
+  transition: transform 0.28s var(--ease), box-shadow 0.28s var(--ease),
+              border-color 0.28s var(--ease), color 0.28s var(--ease);
+}
+.pathway-step:hover .pathway-dot {
+  transform: translateY(-5px) scale(1.06);
+  border-color: var(--brand);
+  box-shadow: 0 14px 30px rgba(89, 6, 148, 0.22);
+}
+.pathway-step.is-final .pathway-dot {
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand), #2a0450);
+  border-color: transparent;
+}
+
+.pathway-step h3 {
+  font-family: "Sora", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: var(--ink);
+}
+.pathway-step p {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+.pathway-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: var(--sp-6) auto 0;
+  max-width: 62ch;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink-2, var(--muted));
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line, rgba(0,0,0,0.07));
+  border-radius: 14px;
+  padding: 0.85rem 1.25rem;
+}
+.pathway-note i { color: #1a7f42; font-size: 1.05rem; flex: none; }
+
+/* Tablet: two rows of steps, rail removed so it cannot cut between rows. */
+@media (max-width: 900px) {
+  .pathway { grid-template-columns: repeat(3, 1fr); gap: var(--sp-5) var(--sp-4); }
+  .pathway::before { display: none; }
+}
+
+/* Phone: a vertical run with the rail on the left, which reads better than
+   three cramped columns and keeps text at a comfortable measure. */
+@media (max-width: 620px) {
+  .pathway { grid-template-columns: 1fr; gap: var(--sp-4); }
+  .pathway-step {
+    display: grid;
+    grid-template-columns: 54px 1fr;
+    gap: 0 14px;
+    text-align: left;
+    align-items: start;
+  }
+  .pathway-dot { margin: 0; }
+  .pathway-step h3 { grid-column: 2; margin-top: 0.35rem; }
+  .pathway-step p { grid-column: 2; }
+  .pathway-note { text-align: left; }
+}
+
+/* ---------- Contact: campus blocks ---------- */
+.campus { margin-bottom: var(--sp-4); }
+.campus-name {
+  display: flex; align-items: center; gap: 7px;
+  font-family: "Sora", sans-serif; font-weight: 700;
+  font-size: 0.88rem; color: var(--brand);
+  margin-bottom: 0.2rem;
+}
+.campus p { margin: 0; font-size: 0.88rem; line-height: 1.55; color: var(--muted); }
+.campus-rule { border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin: var(--sp-5) 0 var(--sp-4); }
