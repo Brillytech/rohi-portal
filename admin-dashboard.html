@@ -372,38 +372,32 @@
             <div class="panel-header-icon"><i class="bi bi-cloud-upload-fill"></i></div>
           </div>
 
-          <!-- Three numbered steps rather than a paragraph explaining them. -->
-          <ol class="import-steps">
-            <li>
-              <span class="import-step-n">1</span>
-              <div>
-                <strong>Get the template</strong>
-                <a href="#" download="rohi-portal-student-template.csv" class="template-link" id="bulkTemplateLink">
-                  <i class="bi bi-download"></i> Download CSV
-                </a>
-              </div>
+          <!-- A connected rail with numbered nodes, the same shape as the
+               pathway band on the public site. Reads as a sequence at a
+               glance instead of three paragraphs of instructions. -->
+          <ol class="stepper">
+            <li class="stepper-step">
+              <span class="stepper-node">1</span>
+              <h4>Get the template</h4>
+              <a href="#" download="rohi-portal-student-template.csv" class="stepper-action template-link" id="bulkTemplateLink">
+                <i class="bi bi-download"></i> Download CSV
+              </a>
             </li>
-            <li>
-              <span class="import-step-n">2</span>
-              <div>
-                <strong>Choose your file</strong>
-                <input type="file" id="bulkCsvInput" accept=".csv" />
-              </div>
+            <li class="stepper-step">
+              <span class="stepper-node">2</span>
+              <h4>Fill it in and choose it</h4>
+              <input type="file" id="bulkCsvInput" accept=".csv" class="stepper-action" />
             </li>
-            <li>
-              <span class="import-step-n">3</span>
-              <div>
-                <strong>Check, then register</strong>
-                <div class="import-actions">
-                  <button type="button" class="approve-btn" id="bulkCheckBtn"><i class="bi bi-search"></i> Check file</button>
-                  <button type="button" class="primary-btn" id="bulkUploadBtn" disabled><span class="btn-text">Register students</span></button>
-                </div>
+            <li class="stepper-step">
+              <span class="stepper-node">3</span>
+              <h4>Check, then register</h4>
+              <div class="stepper-action stepper-buttons">
+                <button type="button" class="approve-btn" id="bulkCheckBtn"><i class="bi bi-search"></i> Check file</button>
+                <button type="button" class="primary-btn" id="bulkUploadBtn" disabled><span class="btn-text">Register</span></button>
               </div>
             </li>
           </ol>
 
-          <!-- Class names are reference material, not instructions, so they sit
-               behind a toggle instead of filling the panel by default. -->
           <details class="class-key-details">
             <summary><i class="bi bi-list-ul"></i> Class names you can use <span id="bulkClassCount"></span></summary>
             <div class="class-key" id="bulkClassKey"></div>
@@ -1883,6 +1877,26 @@ function renderClasses() {
       const newTeacherId = row.querySelector(".edit-class-teacher").value || null;
       if (!newName) return;
 
+      // profiles.class stores the class NAME as free text, not a foreign key,
+      // so renaming here does NOT carry the students with it — they would be
+      // left pointing at a name that no longer exists. That is exactly how 22
+      // JSS3 students ended up stranded. Move them in the same action.
+      const current = allClasses.find((c) => c.id === btn.dataset.id);
+      const oldName = current ? current.name : null;
+      const renaming = oldName && oldName !== newName;
+      const affected = renaming ? allStudents.filter((s) => s.class === oldName).length : 0;
+
+      if (affected) {
+        const ok = await appConfirm(
+          `Rename "${oldName}" to "${newName}"?
+
+` +
+          `${affected} student(s) are in this class and will be moved onto the new name, ` +
+          `along with their results, payments and attendance records.`
+        );
+        if (!ok) return;
+      }
+
       btn.disabled = true;
       btn.textContent = "Saving...";
 
@@ -1891,9 +1905,23 @@ function renderClasses() {
         .update({ name: newName, class_teacher_id: newTeacherId })
         .eq("id", btn.dataset.id);
 
+      if (!error && renaming) {
+        // Carry everything keyed by the old name across. Snapshot columns move
+        // too, otherwise a past term's records point at a class nobody can find.
+        await supabaseClient.from("profiles").update({ class: newName }).eq("role", "student").eq("class", oldName);
+        await supabaseClient.from("payments").update({ class_at_payment: newName }).eq("class_at_payment", oldName);
+        await supabaseClient.from("results").update({ class_at_entry: newName }).eq("class_at_entry", oldName);
+        await supabaseClient.from("attendance").update({ class_at_entry: newName }).eq("class_at_entry", oldName);
+        await supabaseClient.from("exams").update({ class_name: newName }).eq("class_name", oldName);
+        await supabaseClient.from("class_timetables").update({ class_name: newName }).eq("class_name", oldName);
+        await supabaseClient.from("announcements").update({ audience: newName }).eq("audience", oldName);
+        if (affected) showToast(`${affected} student(s) moved to ${newName}.`, "success");
+      }
+
       if (!error) {
-        logActivity(`Updated class <strong>${newName}</strong>`);
+        logActivity(`Renamed class <strong>${oldName || ""}</strong> to <strong>${newName}</strong>`);
         editingClassId = null;
+        await loadStudents();
         loadClasses();
       } else {
         showToast(error.message);
