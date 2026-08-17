@@ -177,6 +177,9 @@
 
       <!-- CLASSES -->
       <section class="view" id="view-classes">
+        <!-- Students whose class value matches no row in classes. They keep
+             appearing in Students and Payments but belong nowhere. -->
+        <div id="strandedWrap"></div>
         <div class="panel">
           <div class="panel-header-flex">
             <div class="panel-header">
@@ -364,29 +367,48 @@
           <div class="panel-header-flex">
             <div class="panel-header">
               <h2>Bulk import students</h2>
-              <p>Upload a CSV with columns <strong>full_name, surname, class</strong>. Every row is checked
-                against your real classes first — nothing is registered until you have seen the preview.</p>
+              <p>Three columns: <code>full_name</code>, <code>surname</code>, <code>class</code>.</p>
             </div>
             <div class="panel-header-icon"><i class="bi bi-cloud-upload-fill"></i></div>
           </div>
 
-          <!-- The class column must match a real class. Registration creates
-               login accounts and consumes portal numbers, so the accepted names
-               are listed here rather than left to guesswork. -->
-          <div class="class-key" id="bulkClassKey"></div>
+          <!-- Three numbered steps rather than a paragraph explaining them. -->
+          <ol class="import-steps">
+            <li>
+              <span class="import-step-n">1</span>
+              <div>
+                <strong>Get the template</strong>
+                <a href="#" download="rohi-portal-student-template.csv" class="template-link" id="bulkTemplateLink">
+                  <i class="bi bi-download"></i> Download CSV
+                </a>
+              </div>
+            </li>
+            <li>
+              <span class="import-step-n">2</span>
+              <div>
+                <strong>Choose your file</strong>
+                <input type="file" id="bulkCsvInput" accept=".csv" />
+              </div>
+            </li>
+            <li>
+              <span class="import-step-n">3</span>
+              <div>
+                <strong>Check, then register</strong>
+                <div class="import-actions">
+                  <button type="button" class="approve-btn" id="bulkCheckBtn"><i class="bi bi-search"></i> Check file</button>
+                  <button type="button" class="primary-btn" id="bulkUploadBtn" disabled><span class="btn-text">Register students</span></button>
+                </div>
+              </div>
+            </li>
+          </ol>
 
-          <a href="#" download="rohi-portal-student-template.csv" class="template-link" id="bulkTemplateLink">
-            <i class="bi bi-download"></i> Download CSV template
-          </a>
-          <div class="bulk-upload-row">
-            <input type="file" id="bulkCsvInput" accept=".csv" />
-            <button type="button" class="approve-btn" id="bulkCheckBtn">
-              <i class="bi bi-search"></i> Check file
-            </button>
-            <button type="button" class="primary-btn" id="bulkUploadBtn" disabled>
-              <span class="btn-text">Register students</span>
-            </button>
-          </div>
+          <!-- Class names are reference material, not instructions, so they sit
+               behind a toggle instead of filling the panel by default. -->
+          <details class="class-key-details">
+            <summary><i class="bi bi-list-ul"></i> Class names you can use <span id="bulkClassCount"></span></summary>
+            <div class="class-key" id="bulkClassKey"></div>
+          </details>
+
           <div id="bulkProgress"></div>
           <div id="bulkPreviewWrap"></div>
           <div id="bulkResultsWrap"></div>
@@ -987,6 +1009,25 @@
     <div id="studentResultsBody"></div>
     <div class="app-modal-actions" style="margin-top:1.25rem;">
       <button type="button" class="app-modal-cancel" id="studentResultsCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move students between classes -->
+<div class="app-modal-backdrop" id="moveStudentsModalBackdrop">
+  <div class="app-modal" style="max-width:440px;">
+    <div class="panel-header" style="margin-bottom:1rem;">
+      <h2 style="margin:0;font-size:1.05rem;" id="moveStudentsTitle">Move students</h2>
+      <p style="margin:2px 0 0;">Their results, payments and records all follow them.</p>
+    </div>
+    <div class="field">
+      <label for="moveStudentsTarget">Move them into</label>
+      <select id="moveStudentsTarget"></select>
+    </div>
+    <div id="moveStudentsResult"></div>
+    <div class="app-modal-actions" style="margin-top:1.25rem;">
+      <button type="button" class="app-modal-cancel" id="moveStudentsCancelBtn">Cancel</button>
+      <button type="button" class="app-modal-confirm" id="moveStudentsConfirmBtn">Move students</button>
     </div>
   </div>
 </div>
@@ -1639,6 +1680,103 @@ async function loadClasses() {
   refreshBulkTemplate();
 }
 
+/* ==========================================================================
+   STRANDED STUDENTS
+
+   profiles.class is free text, so a student can point at a class that no
+   longer exists — either because the class was deleted underneath them, or
+   because the value never matched one. They then show up in Students and
+   Payments while being invisible on Classes, which is confusing and quietly
+   breaks anything that joins the two.
+   ========================================================================== */
+function strandedClassGroups() {
+  const defined = new Set(allClasses.map((c) => c.name));
+  const groups = {};
+  allStudents.forEach((s) => {
+    const v = s.class;
+    // Graduated / Left School are holding buckets, not real classes.
+    if (!v || v === "Graduated" || v === "Left School" || defined.has(v)) return;
+    groups[v] = (groups[v] || 0) + 1;
+  });
+  return Object.keys(groups).map((name) => ({ name: name, count: groups[name] }));
+}
+
+function renderStrandedClasses() {
+  const wrap = document.getElementById("strandedWrap");
+  if (!wrap) return;
+  const groups = strandedClassGroups();
+  if (!groups.length) { wrap.innerHTML = ""; return; }
+
+  wrap.innerHTML = groups.map((g) => `
+    <div class="panel stranded-panel">
+      <div class="stranded-head">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+          <strong>${g.count} student${g.count === 1 ? "" : "s"} are in "${escapeHtmlAdmin(g.name)}", which is not one of your classes.</strong>
+          <span>They still appear under Students and Payments, but the class itself no longer exists — so results, registers and rosters cannot be set up for them. Move them into a real class to fix it.</span>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="primary-btn move-stranded-btn" data-name="${escapeHtmlAdmin(g.name)}">
+          <span class="btn-text">Move these ${g.count} student${g.count === 1 ? "" : "s"}</span>
+        </button>
+      </div>
+    </div>`).join("");
+
+  wrap.querySelectorAll(".move-stranded-btn").forEach((btn) => {
+    btn.addEventListener("click", () => promptMoveStudents(btn.dataset.name));
+  });
+}
+
+// Reassigns every student holding `fromName` to a real class chosen from a
+// dropdown. Uses one update rather than a row at a time.
+let moveFromClass = null;
+function promptMoveStudents(fromName) {
+  moveFromClass = fromName;
+  const count = allStudents.filter((s) => s.class === fromName).length;
+  const options = allClasses
+    .filter((c) => c.name !== fromName)
+    .map((c) => `<option value="${escapeHtmlAdmin(c.name)}">${escapeHtmlAdmin(c.name)}</option>`).join("");
+
+  document.getElementById("moveStudentsTitle").textContent = `Move ${count} student${count === 1 ? "" : "s"} out of "${fromName}"`;
+  document.getElementById("moveStudentsTarget").innerHTML = options ||
+    '<option value="">No other class exists — create one first</option>';
+  document.getElementById("moveStudentsResult").innerHTML = "";
+  document.getElementById("moveStudentsModalBackdrop").classList.add("show");
+}
+
+document.getElementById("moveStudentsCancelBtn").addEventListener("click", () => {
+  document.getElementById("moveStudentsModalBackdrop").classList.remove("show");
+});
+
+document.getElementById("moveStudentsConfirmBtn").addEventListener("click", async () => {
+  const target = document.getElementById("moveStudentsTarget").value;
+  if (!target || !moveFromClass) return;
+  const btn = document.getElementById("moveStudentsConfirmBtn");
+  const box = document.getElementById("moveStudentsResult");
+  const count = allStudents.filter((s) => s.class === moveFromClass).length;
+
+  btn.disabled = true;
+  btn.textContent = "Moving...";
+  const { error } = await supabaseClient.from("profiles")
+    .update({ class: target }).eq("role", "student").eq("class", moveFromClass);
+
+  if (error) {
+    box.innerHTML = `<div class="alert alert-danger">${escapeHtmlAdmin(error.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = "Move students";
+    return;
+  }
+
+  logActivity(`Moved ${count} student(s) from <strong>${moveFromClass}</strong> to <strong>${target}</strong>`);
+  document.getElementById("moveStudentsModalBackdrop").classList.remove("show");
+  btn.disabled = false;
+  btn.textContent = "Move students";
+  showToast(`${count} student(s) moved to ${target}.`, "success");
+  await loadStudents();
+  await loadClasses();
+});
+
 let editingClassId = null;
 
 function renderClasses() {
@@ -1686,15 +1824,34 @@ function renderClasses() {
         <td>${studentCount}</td>
         <td class="row-actions">
           <button class="approve-btn edit-class-btn" data-id="${c.id}">${teacher ? "Edit" : "Assign / Edit"}</button>
+          ${studentCount ? `<button class="approve-btn move-class-btn" data-name="${c.name}"><i class="bi bi-arrow-left-right"></i> Move students</button>` : ""}
           <button class="approve-btn delete-btn" data-id="${c.id}"><i class="bi bi-trash-fill"></i> Delete</button>
         </td>`;
     }
     tbody.appendChild(tr);
   });
 
+  renderStrandedClasses();
+
+  tbody.querySelectorAll(".move-class-btn").forEach((btn) => {
+    btn.addEventListener("click", () => promptMoveStudents(btn.dataset.name));
+  });
+
   tbody.querySelectorAll(".delete-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!(await appConfirm("Delete this class? Students already assigned to it will keep their class label but it'll no longer appear in the dropdown."))) return;
+      const cls = allClasses.find((c) => c.id === btn.dataset.id);
+      const stranded = allStudents.filter((s) => s.class === (cls && cls.name));
+
+      // Deleting a class that still holds students leaves them pointing at a
+      // class that no longer exists — they vanish from Classes but keep showing
+      // up in Students and Payments. That is exactly how 22 JSS3 students ended
+      // up orphaned. Move them first.
+      if (stranded.length) {
+        showToast(`${stranded.length} student(s) are still in ${cls.name}. Move them to another class first — use "Move students" on this row.`);
+        return;
+      }
+
+      if (!(await appConfirm(`Delete ${cls ? cls.name : "this class"}? It has no students, so nothing else is affected.`))) return;
       const { error } = await supabaseClient.from("classes").delete().eq("id", btn.dataset.id);
       if (!error) {
         logActivity(`Deleted a class`);
@@ -2570,15 +2727,16 @@ function refreshBulkTemplate() {
   const withArm = usable.find((c) => c.arm);
   const withoutArm = usable.find((c) => !c.arm);
 
+  const countEl = document.getElementById("bulkClassCount");
+  if (countEl) countEl.textContent = "(" + usable.length + ")";
+
   keyBox.innerHTML =
-    '<p class="class-key-label">Your classes — type any of these exactly:</p>' +
     '<div class="class-key-chips">' +
     usable.map((c) => '<span class="class-key-chip' + (c.arm ? " has-arm" : "") + '">' + escapeHtmlAdmin(c.name) + "</span>").join("") +
     "</div>" +
-    '<p class="class-key-note">Capitalisation and spacing are forgiven. ' +
-    "<strong>Need a new arm?</strong> Just type it — a class like " +
-    escapeHtmlAdmin((withoutArm || usable[0]).level_key) + " Red" +
-    " is offered as a new class to create when you check the file.</p>";
+    '<p class="class-key-note"><i class="bi bi-lightbulb-fill"></i> Spelling of a new arm is fine too — type ' +
+    "<strong>" + escapeHtmlAdmin((withoutArm || usable[0]).level_key) + " Red</strong>" +
+    " and it is offered as a new class to create.</p>";
 
   const exampleA = withArm || usable[0];
   const exampleB = withoutArm || usable[usable.length - 1];

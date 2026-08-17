@@ -1571,6 +1571,136 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .storage-pct.storage-danger { color: #b42318; }
 
 /* ==========================================================================
+   Bulk import
+
+   Three numbered steps instead of a paragraph describing them, and the class
+   list tucked behind a toggle — it is reference material, not instructions.
+   ========================================================================== */
+.import-steps {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+.import-steps li {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  background: rgba(89, 6, 148, 0.035);
+  border: 1px solid rgba(89, 6, 148, 0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.import-step-n {
+  width: 24px; height: 24px; flex: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple-deep), var(--purple-dark));
+  color: #fff;
+  font-family: 'Sora', sans-serif; font-size: 0.72rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.import-steps li > div { min-width: 0; flex: 1; }
+.import-steps strong {
+  display: block;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.82rem;
+  color: var(--purple-ink);
+  margin-bottom: 7px;
+}
+.import-steps input[type="file"] { max-width: 100%; font-size: 0.78rem; }
+.import-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.import-actions .primary-btn { padding: 8px 14px; font-size: 0.8rem; }
+
+.panel-header code {
+  background: rgba(89, 6, 148, 0.08);
+  color: var(--purple-deep);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 0.82em;
+}
+
+.class-key-details {
+  border: 1px solid var(--border-c);
+  border-radius: 11px;
+  margin-bottom: 1rem;
+  background: rgba(255,255,255,0.5);
+}
+.class-key-details > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--purple-ink);
+  list-style: none;
+}
+.class-key-details > summary::-webkit-details-marker { display: none; }
+.class-key-details > summary::after {
+  content: "A";
+  float: right;
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+  color: var(--muted);
+}
+.class-key-details[open] > summary::after { transform: rotate(-90deg); }
+.class-key-details > summary i { color: var(--orange); margin-right: 6px; }
+.class-key-details > summary span { color: var(--muted); font-weight: 500; }
+
+.class-key { padding: 0 14px 12px; }
+.class-key-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.class-key-chip {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--border-c);
+  border-radius: 7px;
+  padding: 3px 9px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.class-key-chip.has-arm {
+  border-color: rgba(89, 6, 148, 0.32);
+  color: var(--purple-deep);
+  font-weight: 700;
+}
+.class-key-note {
+  margin: 0.7rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.class-key-note i { color: var(--orange); margin-right: 4px; }
+.class-key-note strong { color: var(--purple-ink); font-family: 'Courier New', monospace; }
+
+/* ==========================================================================
+   Storage panel
+   ========================================================================== */
+.storage-total { margin-bottom: 1.25rem; }
+.storage-total-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px;
+  font-size: 0.88rem; color: var(--ink);
+}
+.storage-total-head strong { font-family: 'Sora', sans-serif; color: var(--purple-ink); font-size: 1.05rem; }
+.storage-pct { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem; }
+.storage-bar {
+  height: 12px; border-radius: 999px;
+  background: rgba(89, 6, 148, 0.09);
+  overflow: hidden;
+}
+.storage-bar > span {
+  display: block; height: 100%; border-radius: 999px;
+  transition: width 0.5s var(--ease, cubic-bezier(0.4,0,0.2,1));
+}
+.storage-bar > span.storage-ok     { background: linear-gradient(90deg, var(--purple-deep), #34b364); }
+.storage-bar > span.storage-warn   { background: linear-gradient(90deg, var(--orange), #e07600); }
+.storage-bar > span.storage-danger { background: linear-gradient(90deg, #d92d20, #b42318); }
+.storage-pct.storage-ok     { color: #1e7e3e; }
+.storage-pct.storage-warn   { color: #b45309; }
+.storage-pct.storage-danger { color: #b42318; }
+
+/* ==========================================================================
    Bulk import — class key
 
    The class column has to match a real class exactly, so the accepted names
@@ -1695,3 +1825,20 @@ html, body { max-width: 100%; overflow-x: hidden; }
   font-size: 0.8rem;
   color: var(--muted);
 }
+
+/* Students pointing at a class that no longer exists. Loud on purpose: they
+   are invisible on the Classes page while still showing under Students. */
+.stranded-panel {
+  border-left: 4px solid #d92d20;
+  background: rgba(217, 45, 32, 0.04);
+}
+.stranded-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 0.9rem; }
+.stranded-head > i { color: #d92d20; font-size: 1.15rem; margin-top: 2px; flex: none; }
+.stranded-head strong {
+  display: block;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.92rem;
+  color: var(--purple-ink);
+  margin-bottom: 4px;
+}
+.stranded-head span { font-size: 0.84rem; line-height: 1.55; color: var(--muted); }
